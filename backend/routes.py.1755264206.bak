@@ -1,0 +1,65 @@
+from flask import Blueprint, request, jsonify
+from datetime import datetime, timezone, timedelta
+from .models import Note
+from . import db
+
+bp = Blueprint("api", __name__, url_prefix="/api")
+
+@bp.get("/notes")
+def get_notes():
+    # paginación simple (page>=1)
+    try:
+        page = max(int(request.args.get("page", 1)), 1)
+    except ValueError:
+        page = 1
+    per_page = 10
+    q = Note.query.order_by(Note.timestamp.desc())
+    p = q.paginate(page=page, per_page=per_page, error_out=False)
+
+    notes = [{
+        "id": n.id,
+        "text": n.text,
+        "likes": getattr(n, "likes", 0) or 0,
+        "views": getattr(n, "views", 0) or 0,
+    } for n in p.items]
+
+    return jsonify({
+        "page": p.page,
+        "total_pages": p.pages or 1,
+        "notes": notes
+    })
+
+@bp.post("/notes")
+def create_note():
+    data = request.get_json(silent=True) or request.form or {}
+    text = (data.get("text") or "").strip()
+    if not text or len(text) > 500:
+        return {"error": "Texto vacío o >500 caracteres"}, 400
+
+    # duración en horas (default 168 = 7d)
+    try:
+        hours = int(data.get("expire_hours", 168))
+        assert 1 <= hours <= 24*28   # hasta 4 semanas
+    except Exception:
+        hours = 168
+
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+
+    note = Note(text=text, expires_at=expires_at)
+    db.session.add(note)
+    db.session.commit()
+    return {"id": note.id}, 201
+
+@bp.post("/notes/<int:note_id>/like")
+def like_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    note.likes = (getattr(note, "likes", 0) or 0) + 1
+    db.session.commit()
+    return {"ok": True, "likes": note.likes}, 200
+
+@bp.post("/notes/<int:note_id>/view")
+def view_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    note.views = (getattr(note, "views", 0) or 0) + 1
+    db.session.commit()
+    return {"ok": True, "views": note.views}, 200

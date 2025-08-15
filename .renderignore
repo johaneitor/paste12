@@ -1,0 +1,7 @@
+instance/
+*.db
+*.db-*
+*.bak
+.paste12.log
+.paste12.pid
+__pycache__/

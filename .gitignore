@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+instance/
+*.pyc
+*.pyo
+*.bak.*
+*.arcade.bak.*
+*.turq.bak.*
+*.versus.bak.*
+*.logoimg.bak.*
+*.datauri.bak.*

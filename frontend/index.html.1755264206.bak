@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paste12 — Notas efímeras</title>
+
+<!-- Google Font & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="hero">
+    
+<!-- arcade logo -->
+
+<!-- arcade logo TURQUOISE -->
+
+<!-- VS-Logo -->
+
+<!-- VS-Logo -->
+<div class="logo vs-logo">
+<svg viewBox="0 0 128 128" class="pixel-logo" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fireGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff700"/>
+      <stop offset="45%" stop-color="#ff4500"/>
+      <stop offset="100%" stop-color="#8b0000"/>
+    </linearGradient>
+    <linearGradient id="turqGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#30eaff"/>
+      <stop offset="100%" stop-color="#0077ff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- trazo magenta estilo pincel -->
+  <path d="M16 8h96v8h-6v32L80 72v8l26 24v32h6v8H16v-8h6V104l26-24v-8L22 48V16h-6V8z"
+        fill="#0b0017" stroke="#ff00ff" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- relleno “fuego” rojo/amarillo -->
+  <path d="M24 16h80v24L72 72v8l32 32v24H24v-24l32-32v-8L24 40V16z"
+        fill="url(#fireGrad)"/>
+
+  <!-- llamas turquesa arriba / abajo -->
+  <path d="M64 4l10 10H54l10-10zm0 20l15 15H49l15-15z" fill="url(#turqGrad)"/>
+  <path d="M64 124l-10-10h20l-10 10zm0-20l-15-15h30l-15 15z" fill="url(#turqGrad)"/>
+</svg>
+</div>
+
+
+
+
+    <h1 class="versus-title">Paste12</h1>
+    <p class="subtitle">Comparte notas que desaparecen</p>
+  </header>
+
+  <main class="card">
+    <form id="form" class="note-form">
+      <textarea name="text" rows="4" maxlength="500" placeholder="Escribe tu nota…" required></textarea>
+      <div class="form-row">
+        <label for="duration">Duración:</label>
+        <select id="duration" name="expire_hours">
+          <option value="12">12 h</option>
+          <option value="168" selected>7 días</option>
+        </select>
+        <span id="char-count">0/500</span>
+      </div>
+      <button type="submit" class="btn-primary">Publicar</button>
+    </form>
+
+    <section id="notes-section">
+      <ul id="notes" class="notes-list"></ul>
+      <nav id="pagination" class="pagination"></nav>
+    </section>
+  </main>
+
+<script src="js/app.js"></script>
+<script>
+  // Render SVG logo (hourglass + flame)
+  const svg = lucide.createIcons({
+    icons: {
+      hourglass: lucide.icons.Hourglass,
+      flame: lucide.icons.Flame
+    }
+  });
+  document.getElementById('logo').innerHTML =
+    '<svg width="48" height="48" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+      lucide.icons.Hourglass().outerHTML.replace('<svg','<g').replace('</svg>','</g>') +
+      lucide.icons.Flame().outerHTML.replace('<svg','<g transform="translate(4 4) scale(0.6)"').replace('</svg>','</g>') +
+    '</svg>';
+</script>
+<div style="margin-top:20px;"> 
+    <span>👁️ <span id="views-count">0</span> visitas</span> | 
+    <span>❤️ <span id="likes-count">0</span> likes</span> 
+
+</div> 
+<script> 
+function likeNote(){fetch(`/api/notes/${noteId}/like`,{method:"POST"}).then(r=>r.json()).then(d=>{document.getElementById("likes-count").textContent=d.likes;});} 
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paste12 — Notas efímeras</title>
+
+<!-- Google Font & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="hero">
+    
+<!-- arcade logo -->
+
+<!-- arcade logo TURQUOISE -->
+
+<!-- VS-Logo -->
+
+<!-- VS-Logo --><script>
+  // Render SVG logo (hourglass + flame)
+  const svg = lucide.createIcons({
+    icons: {
+      hourglass: lucide.icons.Hourglass,
+      flame: lucide.icons.Flame
+    }
+  });
+  document.getElementById('logo').innerHTML =
+    '<svg width="48" height="48" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+      lucide.icons.Hourglass().outerHTML.replace('<svg','<g').replace('</svg>','</g>') +
+      lucide.icons.Flame().outerHTML.replace('<svg','<g transform="translate(4 4) scale(0.6)"').replace('</svg>','</g>') +
+    '</svg>';
+</script>
+<footer class="legal">© 2025 Paste12 — Todos los derechos reservados · Este sitio es recreativo. No publiques datos sensibles.</footer>
+</body>
+</html>

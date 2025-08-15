@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paste12 — notas que desaparecen</title>
+<link rel="stylesheet" href="/css/styles.css?v=1755277389">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="hero">
+    <div class="logo">
+      
+    </div>
+    <h1>Paste12</h1>
+    <p class="playline">Haz un regalo • Dime un secreto • Reta a un amigo</p>
+  </header>
+
+  <main class="container">
+    <form id="form" class="card" action="#" method="post" onsubmit="return false;">
+      <textarea id="text" placeholder="Escribe tu nota…" rows="5" maxlength="500"></textarea>
+      <div class="form-row">
+        <label>Duración:
+          <select name="expire_hours" id="duration">
+            <option value="12">12 horas</option>
+            <option value="24">1 día</option>
+            <option value="168" selected>7 días</option>
+            <option value="336">14 días</option>
+            <option value="672">28 días</option>
+          </select>
+        </label>
+        <button id="publish" type="button" class="primary">Publicar</button>
+      </div>
+    </form>
+
+    <ul id="notes" class="notes"></ul>
+    <nav id="pagination" class="pagination"></nav>
+  </main>
+
+  <footer class="legal">© 2025 Paste12 — Todos los derechos reservados · Este sitio es recreativo. No publiques datos sensibles.</footer>
+  <script src="/js/app.js?v=1755277389" defer></script>
+</body>
+</html>

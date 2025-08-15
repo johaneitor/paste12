@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  paste12:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./instance:/app/instance
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=changeme
+      - DATABASE_URI=sqlite:////app/instance/production.db
