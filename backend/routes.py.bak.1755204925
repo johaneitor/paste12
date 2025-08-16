@@ -1,0 +1,92 @@
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask import Blueprint, request, jsonify, current_app
+from datetime import datetime, timezone, timedelta
+
+from .models import Note
+from . import db
+
+bp = Blueprint("api", __name__, url_prefix="/api")
+
+@bp.get("/notes")
+def get_notes():
+    page = max(int(request.args.get("page", 1)), 1)
+    per_page = 20
+    pagination = Note.query.order_by(Note.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    notes = [{
+        "id": n.id,
+        "text": n.text,
+        "timestamp": n.timestamp.isoformat(),
+        "expires_at": n.expires_at.isoformat(),
+        "reports": n.reports,
+    } for n in pagination.items]
+    return jsonify({"notes": notes, "page": page, "total_pages": pagination.pages})
+
+@bp.post("/notes")
+
+@bp.post("/notes")
+def create_note():
+    data = request.get_json(force=True, silent=True) or request.form or {}
+    text = (data.get("text") or "").strip()
+    if not text or len(text) > 500:
+        return {"error": "Texto vacío o >500 caracteres"}, 400
+
+    # soporte expire_hours (12h, 168h=7d)
+    try:
+        hours = int(data.get("expire_hours", 168))
+        assert 1 <= hours <= 168*4
+    except (ValueError, AssertionError):
+        hours = 168
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+
+    note = Note(text=text, expires_at=expires_at)
+    db.session.add(note)
+    db.session.commit()
+    return {"id": note.id}, 201
+
+
+@bp.delete("/notes/<int:note_id>")
+
+@bp.before_request
+def require_token():
+    if request.method == "DELETE":
+        token = request.headers.get("X-Auth-Token")
+        if token != os.getenv("ADMIN_TOKEN", "changeme"):
+            return {"error": "No autorizado"}, 403
+
+def delete_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    db.session.delete(note)
+    db.session.commit()
+    return "", 204
+
+@bp.post("/notes/<int:note_id>/like")
+def like_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    note.likes = (note.likes or 0) + 1
+    db.session.commit()
+    return {"ok": True, "likes": note.likes}, 200
+
+@bp.post("/notes/<int:note_id>/view")
+def view_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    note.views = (note.views or 0) + 1
+    db.session.commit()
+    return {"ok": True, "views": note.views}, 200
+
+## rate limits per endpoint
+try:
+    from flask import current_app
+    limiter = current_app.extensions.get("limiter")
+    if limiter:
+        limiter.limit("30/minute")(like_note)       # spam likes
+        limiter.limit("1/minute")(view_note)        # vistas por IP
+except Exception:
+    pass
+
+@bp.post("/notes/<int:note_id>/like")
+def like_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    note.likes += 1
+    db.session.commit()
+    return jsonify({"likes": note.likes})

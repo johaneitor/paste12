@@ -1,0 +1,15 @@
+import socket
+from backend import create_app
+from waitress import serve
+
+app = create_app()
+
+# ---------- Selección automática de puerto ----------
+PORT = 8000
+with socket.socket() as s:
+    if s.connect_ex(("127.0.0.1", PORT)) == 0:
+        PORT = 8080      # puerto alternativo
+
+if __name__ == "__main__":
+    print(f"✓ Servidor escuchando en http://127.0.0.1:{PORT}")
+    serve(app, listen=f"0.0.0.0:{PORT}")

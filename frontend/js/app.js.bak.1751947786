@@ -1,0 +1,52 @@
+class NotesApp {
+  constructor() {
+    this.list   = document.getElementById("notes");
+    this.pagNav = document.getElementById("pagination");
+    this.form   = document.getElementById("form");
+    this.count  = document.getElementById("char-count");
+    this.max    = 500;
+    this.page   = 1;
+    this.pages  = 1;
+    this.init();
+  }
+  init() {
+    this.load();
+    this.form.text.addEventListener("input", () =>
+      this.count.textContent = `${this.form.text.value.length}/${this.max}`
+    );
+    this.form.addEventListener("submit", e => this.submit(e));
+  }
+  async load(p = 1) {
+    const res  = await fetch(`/api/notes?page=${p}`);
+    if (!res.ok) return alert("Error al cargar notas");
+    const data = await res.json();
+    this.page  = data.page;
+    this.pages = data.total_pages;
+    this.renderNotes(data.notes);
+    this.renderPagination();
+  }
+  renderNotes(notes) {
+    this.list.innerHTML = notes.map(n => `<li>${n.text}</li>`).join("");
+  }
+  renderPagination() {
+    this.pagNav.innerHTML = "";
+    for (let i=1;i<=this.pages;i++){
+      const b=document.createElement("button");
+      b.textContent=i;
+      if(i===this.page) b.disabled=true;
+      b.onclick=()=>this.load(i);
+      this.pagNav.appendChild(b);
+    }
+  }
+  async submit(e){
+    e.preventDefault();
+    const text = this.form.text.value.trim();
+    if(!text) return;
+    const fd = new FormData(this.form);
+    const res = await fetch("/api/notes",{method:"POST",body:fd});
+    if(!res.ok){ alert("Error al guardar"); return; }
+    this.form.reset(); this.count.textContent="0/500";
+    this.load(1);
+  }
+}
+window.addEventListener("DOMContentLoaded",()=>new NotesApp());

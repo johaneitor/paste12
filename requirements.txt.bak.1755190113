@@ -1,0 +1,6 @@
+Flask~=3.0
+Flask-SQLAlchemy~=3.1
+Flask-Limiter[redis]~=3.5
+Flask-Cors~=4.0
+APScheduler~=3.10
+waitress~=3.0

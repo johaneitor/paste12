@@ -1,0 +1,82 @@
+:root{
+  --bg-gradient: linear-gradient(135deg,#ff9a9e 0%,#fad0c4 100%);
+  --glass-bg: rgba(255,255,255,0.15);
+  --glass-blur: blur(15px);
+  --accent:#ff6b6b;
+  font-family:"Poppins",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:var(--bg-gradient);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  color:#fff;
+}
+.hero{
+  text-align:center;
+  margin:3rem 0 1rem;
+}
+.logo svg{color:#fff;filter:drop-shadow(0 0 6px rgba(0,0,0,.4))}
+h1{font-size:2.5rem;font-weight:700;letter-spacing:1px}
+.subtitle{opacity:.8;margin-top:.25rem}
+.card{
+  width:92%;max-width:640px;
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  border-radius:1.5rem;
+  padding:2rem;
+  box-shadow:0 8px 32px rgba(0,0,0,.25);
+}
+.note-form textarea{
+  width:100%;font-size:1rem;border:none;border-radius:.75rem;
+  padding:.75rem;resize:vertical;background:rgba(255,255,255,.8);color:#333;
+}
+.form-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin:.5rem 0 1rem;font-size:.9rem;color:#333;
+}
+select{padding:.3rem .6rem;border-radius:.5rem;border:none}
+.btn-primary{
+  width:100%;padding:.75rem;border:none;border-radius:.75rem;
+  background:var(--accent);color:#fff;font-size:1.1rem;font-weight:500;
+  cursor:pointer;transition:transform .2s;
+}
+.btn-primary:hover{transform:scale(1.03)}
+.notes-list{list-style:none;margin-top:2rem}
+.notes-list li{
+  background:rgba(255,255,255,.85);color:#333;padding:.75rem 1rem;
+  border-radius:1rem;margin-bottom:.75rem;word-break:break-word;
+  position:relative;
+}
+.pagination{display:flex;justify-content:center;flex-wrap:wrap;margin-top:1rem}
+.pagination button{
+  margin:.25rem;border:none;background:#fff;color:#333;
+  width:42px;height:42px;border-radius:50%;cursor:pointer;
+  transition:background .2s,transform .2s;
+}
+.pagination button:hover{background:var(--accent);color:#fff;transform:scale(1.1)}
+.pagination button:disabled{opacity:.5;cursor:default}
+@media(prefers-color-scheme:dark){
+  body{--glass-bg:rgba(0,0,0,.25);color:#eee}
+  .note-form textarea{background:rgba(0,0,0,.5);color:#eee}
+  .btn-primary:hover{background:#ff8787}
+}
+
+/* --- Retro Arcade Theme -------------------------------------------------- */
+body{background:#000 url("data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=") repeat;
+       /* 1×1 línea vertical gris muy oscura */ }
+.pixel-logo{width:72px;height:72px;image-rendering:pixelated;margin:0 auto}
+.arcade-title{font-family:"Press Start 2P",monospace;font-size:1.25rem;margin:1rem 0;color:#00bfff;text-shadow:0 0 6px #0080ff;}
+.btn-primary{background:#00bfff;}
+.btn-primary:hover{background:#29c5ff}
+
+/* --- Turbo-arcade tweaks -------------------------------------------------- */
+:root{--magenta:#ff00ff;}
+.magenta{color:var(--magenta);text-shadow:0 0 8px var(--magenta);}
+.pixel-logo{width:96px;height:96px}
+.btn-primary{background:var(--magenta);}
+.btn-primary:hover{background:#ff33ff}
+.pagination button:hover{background:var(--magenta);color:#fff}

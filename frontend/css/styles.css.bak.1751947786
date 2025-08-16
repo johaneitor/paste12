@@ -1,0 +1,10 @@
+body{font-family:sans-serif;margin:0;padding:0;display:flex;justify-content:center}
+.container{max-width:600px;width:100%;padding:1rem}
+textarea{width:100%;box-sizing:border-box;font-size:1rem}
+button{padding:.5rem 1rem;margin-top:.5rem}
+ul{list-style:none;padding:0}
+.pagination button{min-width:48px;height:48px;margin:2px}
+@media(prefers-color-scheme:dark){
+ body{background:#121212;color:#eee}
+ textarea,button{background:#1f1f1f;color:#eee;border:1px solid #444}
+}

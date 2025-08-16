@@ -1,11 +1,27 @@
-venv/
+# Python / Flask
 __pycache__/
-instance/
-*.pyc
+*.py[cod]
 *.pyo
-*.bak.*
-*.arcade.bak.*
-*.turq.bak.*
-*.versus.bak.*
-*.logoimg.bak.*
-*.datauri.bak.*
+*.pyd
+*.egg-info/
+.env
+*.log
+
+# DB local y backups
+instance/
+*.db
+*.db-*
+*.bak
+*.sqlite3
+.paste12.log
+.paste12.pid
+
+# Entornos
+venv/
+.venv/
+
+# SO / editores
+.DS_Store
+.idea/
+.vscode/
+*.swp

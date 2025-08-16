@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Notas rápidas</title>
+<link rel="stylesheet" href="css/styles.css">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+  <main class="container">
+    <h1>Notas rápidas</h1>
+
+    <form id="form">
+      <textarea name="text" rows="4" maxlength="500" placeholder="Escribe algo..."></textarea>
+      <div id="char-count">0/500</div>
+      <button type="submit">Guardar</button>
+    </form>
+
+    <section id="notes-section">
+      <ul id="notes"></ul>
+      <div id="pagination" class="pagination"></div>
+    </section>
+  </main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paste12 — Notas efímeras</title>
+
+<!-- Google Font & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="hero">
+    
+<!-- arcade logo -->
+
+<!-- arcade logo TURQUOISE -->
+<div class="logo">
+  <svg viewBox="0 0 96 96" class="pixel-logo">
+    <!-- Reloj de arena -->
+    <path d="M24 10h48v6h-3v16l-12 12v4l12 12v16h3v6H24v-6h3V60l12-12v-4L27 32V16h-3v-6z"
+          fill="#0b0017" stroke="#ff00ff" stroke-width="4" shape-rendering="crispEdges"/>
+    <!-- Fuego turquesa (superior) -->
+    <path d="M48 4l6 6h-12l6-6zm0 12l9 9h-18l9-9z"
+          fill="#30eaff" shape-rendering="crispEdges"/>
+    <!-- Fuego turquesa (inferior) -->
+    <path d="M48 92l-6-6h12l-6 6zm0-12l-9-9h18l-9 9z"
+          fill="#30eaff" shape-rendering="crispEdges"/>
+  </svg>
+</div>
+
+
+    <h1 class="arcade-title magenta">Paste12</h1>
+    <p class="subtitle">Comparte notas que desaparecen</p>
+  </header>
+
+  <main class="card">
+    <form id="form" class="note-form">
+      <textarea name="text" rows="4" maxlength="500" placeholder="Escribe tu nota…" required></textarea>
+      <div class="form-row">
+        <label for="duration">Duración:</label>
+        <select id="duration" name="expire_hours">
+          <option value="12">12 h</option>
+          <option value="168" selected>7 días</option>
+        </select>
+        <span id="char-count">0/500</span>
+      </div>
+      <button type="submit" class="btn-primary">Publicar</button>
+    </form>
+
+    <section id="notes-section">
+      <ul id="notes" class="notes-list"></ul>
+      <nav id="pagination" class="pagination"></nav>
+    </section>
+  </main>
+
+<script src="js/app.js"></script>
+<script>
+  // Render SVG logo (hourglass + flame)
+  const svg = lucide.createIcons({
+    icons: {
+      hourglass: lucide.icons.Hourglass,
+      flame: lucide.icons.Flame
+    }
+  });
+  document.getElementById('logo').innerHTML =
+    '<svg width="48" height="48" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+      lucide.icons.Hourglass().outerHTML.replace('<svg','<g').replace('</svg>','</g>') +
+      lucide.icons.Flame().outerHTML.replace('<svg','<g transform="translate(4 4) scale(0.6)"').replace('</svg>','</g>') +
+    '</svg>';
+</script>
+</body>
+</html>
