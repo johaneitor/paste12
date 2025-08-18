@@ -52,3 +52,8 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
 .legal{ text-align:center; font-size:.85rem; opacity:.8; padding:12px 0 18px; }
 .legal a{ color: #a0e7ff; text-decoration: none; }
 .legal a:hover{ text-decoration: underline; }
+
+.story-tools{ margin-top:8px; display:flex; align-items:center; gap:10px; }
+.story-tools .hint{ opacity:.7; }
+.btn.ghost{ background:transparent; border:2px dashed rgba(255,255,255,.7); color:#fff; }
+.btn.ghost:hover{ border-style:solid; }

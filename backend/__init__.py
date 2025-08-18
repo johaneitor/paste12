@@ -15,8 +15,23 @@ def create_app():
     base_dir   = os.path.abspath(os.path.dirname(__file__))
     static_dir = os.path.join(base_dir, "..", "frontend")
 
-    app = Flask(__name__, static_folder=static_dir, static_url_path="")
+    app = Flask(__name__, static_folder="frontend", static_url_path="")
 
+
+
+
+    # --- robots ---
+    @app.get("/robots.txt")
+    def _static_robots():
+        return send_from_directory(app.static_folder, "robots.txt")
+    # --- ads ---
+    @app.get("/ads.txt")
+    def _static_ads():
+        return send_from_directory(app.static_folder, "ads.txt")
+    # --- legal ---
+    @app.get("/legal.html")
+    def _static_legal():
+        return send_from_directory(app.static_folder, "legal.html")
     # Config
     os.makedirs(app.instance_path, exist_ok=True)
     app.config.from_mapping(

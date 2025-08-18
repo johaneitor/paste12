@@ -53,7 +53,13 @@
         </label>
         <button id="publish" type="button" class="primary">Publicar</button>
       </div>
-    </form>
+    
+  <div class="story-tools">
+    <input type="file" id="story-photo" accept="image/*" style="display:none">
+    <button id="story-make" class="btn ghost">🖼️ Crear historia</button>
+    <small class="hint">Opcional: mantén pulsado el botón para elegir una foto de fondo.</small>
+  </div>
+</form>
 
     <ul id="notes" class="notes"></ul>
     <nav id="pagination" class="pagination"></nav>
@@ -74,5 +80,7 @@
   <footer class="legal">
     <a href="/legal.html" target="_blank" rel="noopener">Privacidad · Términos</a>
   </footer>
+
+  <canvas id="story-canvas" width="1080" height="1920" style="display:none"></canvas>
 </body>
 </html>

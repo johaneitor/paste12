@@ -190,3 +190,101 @@ class NotesApp {
   escape(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML.replace(/\n/g,"<br>"); }
 }
 document.addEventListener("DOMContentLoaded", ()=> new NotesApp());
+
+
+// ====== GENERADOR DE HISTORIAS (1080x1920) ======
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(/\s+/); let line = ""; const lines = [];
+  for (let n=0;n<words.length;n++){
+    const test = line + words[n] + " ";
+    if (ctx.measureText(test).width > maxWidth && n>0) { lines.push(line.trim()); line = words[n] + " "; }
+    else line = test;
+  }
+  lines.push(line.trim());
+  lines.forEach((ln,i)=>ctx.fillText(ln, x, y + i*lineHeight));
+  return y + (lines.length-1)*lineHeight;
+}
+
+function drawRoundedRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+async function createStoryImage(text, photoFile=null){
+  const c = document.getElementById('story-canvas'); const ctx = c.getContext('2d');
+  // Fondo: foto (cover) o degradado
+  if (photoFile){
+    const img = await new Promise(res=>{
+      const i=new Image(); i.onload=()=>res(i); i.src=URL.createObjectURL(photoFile);
+    });
+    // cover
+    const scale = Math.max(c.width/img.width, c.height/img.height);
+    const w = img.width*scale, h = img.height*scale;
+    const x = (c.width - w)/2, y = (c.height - h)/2;
+    ctx.drawImage(img, x, y, w, h);
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,c.height);
+    g.addColorStop(0, "#111827");
+    g.addColorStop(1, "#0ea5a4");
+    ctx.fillStyle = g; ctx.fillRect(0,0,c.width,c.height);
+  }
+  // Panel de nota
+  const box = {x:90, y:340, w:900, h:1240, r:36};
+  ctx.fillStyle = "rgba(255,255,255,0.86)";
+  drawRoundedRect(ctx, box.x, box.y, box.w, box.h, box.r); ctx.fill();
+
+  // Texto
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "48px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.textBaseline = "top";
+  const maxW = box.w - 80;
+  wrapText(ctx, text.trim().slice(0, 600), box.x+40, box.y+40, maxW, 62);
+
+  // Marca
+  ctx.font = "bold 64px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillStyle = "#f472b6";
+  ctx.fillText("Paste12", 90, 230);
+
+  // Watermark
+  ctx.font = "28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillStyle = "rgba(17,24,39,.85)";
+  ctx.fillText("paste12", 90, 1860);
+
+  return await new Promise(res=> c.toBlob(b=>res(b), "image/png"));
+}
+
+async function shareOrDownload(blob){
+  const file = new File([blob], "paste12_story.png", {type:"image/png"});
+  if (navigator.canShare && navigator.canShare({files:[file]})) {
+    await navigator.share({files:[file], title:"Paste12", text:""});
+  } else {
+    // descarga
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "paste12_story.png"; document.body.appendChild(a);
+    a.click(); a.remove(); URL.revokeObjectURL(url);
+    alert("📸 Imagen generada. Si no se descargó automáticamente, mantén pulsado para guardar.");
+  }
+}
+
+// UI handlers
+(function(){
+  const btn = document.getElementById("story-make");
+  const file = document.getElementById("story-photo");
+  if (!btn) return;
+  // tap: genera con o sin foto (si ya hay seleccionada)
+  btn.addEventListener("click", async ()=>{
+    const txt = document.getElementById("text")?.value || "";
+    if (!txt.trim()){ alert("Escribe una nota primero 😉"); return; }
+    const blob = await createStoryImage(txt, file.files[0] || null);
+    await shareOrDownload(blob);
+  });
+  // long-press: abrir selector de foto
+  let t; btn.addEventListener("touchstart", ()=>{ t=setTimeout(()=>file.click(),600); }, {passive:true});
+  ["touchend","touchcancel","mouseleave"].forEach(ev=>btn.addEventListener(ev, ()=>clearTimeout(t)));
+})();
