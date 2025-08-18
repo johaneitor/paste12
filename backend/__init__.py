@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
@@ -15,7 +16,8 @@ def create_app():
     base_dir   = os.path.abspath(os.path.dirname(__file__))
     static_dir = os.path.join(base_dir, "..", "frontend")
 
-    app = Flask(__name__, static_folder="frontend", static_url_path="")
+    STATIC_DIR = str((Path(__file__).resolve().parent.parent / "frontend").resolve())
+    app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
 
 
 
