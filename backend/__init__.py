@@ -20,6 +20,13 @@ def create_app():
 
 
 
+
+    @app.get("/__version")
+    def __version():
+        try:
+            return {"version": open("VERSION").read().strip()}
+        except Exception:
+            return {"version":"unknown"}
     # --- robots ---
     @app.get("/robots.txt")
     def _static_robots():
