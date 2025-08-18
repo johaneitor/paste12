@@ -126,6 +126,8 @@ class NotesApp {
   }
 
   render(items){
+    /* in-feed ads */ 
+    const isLocal = ['localhost','127.0.0.1'].some(h=>location.hostname.startsWith(h));
     this.list.innerHTML = items.map(n=>`
       <li class="note" data-id="${n.id}">
         <div class="note-actions">
@@ -142,6 +144,25 @@ class NotesApp {
           👁️ <span class="views-count">${n.views||0}</span></span>
         </div>
       </li>`).join("");
+    if (!isLocal) {
+      // Inserta slot después de cada 6ª nota
+      const lis = Array.from(this.list.querySelectorAll('li.note'));
+      lis.forEach((li,i)=>{
+        if ((i+1)%6===0) {
+          const ad = document.createElement('div');
+          ad.className = 'ad-slot infeed';
+          ad.innerHTML = `
+          <ins class="adsbygoogle" style="display:block"
+               data-ad-client=""
+               data-ad-slot=""
+               data-ad-format="fluid"
+               data-ad-layout-key="-fg+5n+6t-1j-5u"
+               data-full-width-responsive="true"></ins>
+          <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>`;
+          li.after(ad);
+        }
+      });
+    }
 
     // paginación
     this.pagNav.innerHTML = "";

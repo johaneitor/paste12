@@ -45,3 +45,10 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
 }
 .menu-item:hover{ background: rgba(255,255,255,.1); }
 .menu-item.disabled{ opacity:.6; cursor:not-allowed; }
+
+/* anuncios */
+.ad-slot{ margin: 14px 0; display:block; }
+.ad-slot.infeed{ margin: 10px 0 18px; }
+.legal{ text-align:center; font-size:.85rem; opacity:.8; padding:12px 0 18px; }
+.legal a{ color: #a0e7ff; text-decoration: none; }
+.legal a:hover{ text-decoration: underline; }

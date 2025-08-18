@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_cors import CORS
+from flask_compress import Compress
 from apscheduler.schedulers.background import BackgroundScheduler
 
 db = SQLAlchemy()
@@ -33,6 +34,8 @@ def create_app():
     db.init_app(app)
     Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
     CORS(app)
+    Compress(app)
+    app.config.setdefault('SEND_FILE_MAX_AGE_DEFAULT', 86400)
 
     # Blueprints
     from . import routes
