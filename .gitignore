@@ -25,3 +25,8 @@ venv/
 .idea/
 .vscode/
 *.swp
+
+# Backups y scripts locales
+*.bak.*
+render.yaml.bak.*
+fix_*.sh
