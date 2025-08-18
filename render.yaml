@@ -13,8 +13,6 @@ services:
     generateValue: true
   - key: DISABLE_SCHEDULER
     value: "0"
-  # En un solo contenedor el memory:// vale.
-  # Si usas más de 1 instancia, cambia a Redis gestionado y pon su URL aquí.
   - key: RATELIMIT_STORAGE_URL
     value: "memory://"
   - fromDatabase:
@@ -24,4 +22,4 @@ services:
 
 databases:
 - name: paste12-db
-  plan: starter
+  plan: basic-1gb
