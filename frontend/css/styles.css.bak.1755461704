@@ -25,23 +25,3 @@ select{border-radius:12px;padding:8px 12px;border:none;font:inherit}
 .pagination button{border:none;padding:.4rem .7rem;border-radius:8px;cursor:pointer}
 .pagination button[disabled]{opacity:.6}
 footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85}
-
-/* --- Opciones por nota (3 puntos) --- */
-.note{ position: relative; }
-.note-actions{ position:absolute; top:8px; right:8px; }
-.menu-btn{
-  background: rgba(255,255,255,.15); color:#fff; border:none; border-radius:10px;
-  width:32px; height:32px; cursor:pointer;
-}
-.menu{
-  position:absolute; top:36px; right:0; min-width:160px;
-  background: rgba(0,0,0,.85); color:#fff; border:1px solid rgba(255,255,255,.15);
-  border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.35); padding:6px;
-  backdrop-filter: blur(8px);
-}
-.menu-item{
-  width:100%; text-align:left; background:transparent; color:#fff; border:none;
-  padding:8px 10px; border-radius:8px; cursor:pointer; display:block;
-}
-.menu-item:hover{ background: rgba(255,255,255,.1); }
-.menu-item.disabled{ opacity:.6; cursor:not-allowed; }

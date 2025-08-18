@@ -1,3 +1,90 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -Eeuo pipefail
+ts=$(date +%s)
+echo "🗂️ Backups .$ts"
+
+# --- Respaldos ---
+for f in backend/models.py backend/routes.py frontend/js/app.js frontend/css/styles.css; do
+  [ -f "$f" ] && cp -p "$f" "$f.bak.$ts" || true
+done
+
+# --- 1) MODELS: agregar ReportLog si no existe ---
+python - <<'PY'
+from pathlib import Path
+p = Path("backend/models.py")
+code = p.read_text()
+
+if "class ReportLog(" not in code:
+    code += """
+
+# --- Registro de reportes (1 por token y nota) ---
+class ReportLog(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    note_id      = db.Column(db.Integer, db.ForeignKey('note.id'), nullable=False, index=True)
+    fingerprint  = db.Column(db.String(64), nullable=False, index=True)
+    created_at   = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (db.UniqueConstraint('note_id', 'fingerprint', name='uq_report_note_fp'),)
+"""
+    p.write_text(code)
+    print("✓ backend/models.py: ReportLog añadido")
+else:
+    print("• backend/models.py: ReportLog ya existía")
+PY
+
+# --- 2) ROUTES: endpoint /api/notes/<id>/report + compartir no requiere backend ---
+python - <<'PY'
+from pathlib import Path, re
+p = Path("backend/routes.py")
+code = p.read_text()
+
+if "def report_note(" not in code:
+    insert = """
+@bp.post("/notes/<int:note_id>/report")
+def report_note(note_id):
+    token = request.headers.get("X-Client-Token") or request.remote_addr or "anon"
+    if not token:
+        return jsonify({"error":"missing token"}), 400
+    note = Note.query.get_or_404(note_id)
+
+    # ¿Ya reportó este token?
+    from .models import ReportLog
+    exists = ReportLog.query.filter_by(note_id=note.id, fingerprint=token).first()
+    if exists:
+        return jsonify({"reports": note.reports, "already": True})
+
+    # Nuevo reporte
+    rl = ReportLog(note_id=note.id, fingerprint=token)
+    note.reports = (note.reports or 0) + 1
+    db.session.add(rl)
+
+    deleted = False
+    # Si llega a 5, borrar la nota y sus logs
+    if note.reports >= 5:
+        # borrar logs relacionados y la nota
+        ReportLog.query.filter_by(note_id=note.id).delete()
+        try:
+            from .models import LikeLog
+            LikeLog.query.filter_by(note_id=note.id).delete()
+        except Exception:
+            pass
+        db.session.delete(note)
+        deleted = True
+        db.session.commit()
+        return jsonify({"deleted": True, "reports": 5})
+
+    db.session.commit()
+    return jsonify({"deleted": False, "reports": note.reports})
+"""
+    # lo pegamos al final del archivo
+    code = code.rstrip() + "\n\n" + insert
+    p.write_text(code)
+    print("✓ backend/routes.py: /report añadido")
+else:
+    print("• backend/routes.py: /report ya existía")
+PY
+
+# --- 3) FRONTEND JS: menú 3 puntos (reportar/compartir) + handlers ---
+cat > frontend/js/app.js <<'JS'
 class NotesApp {
   constructor() {
     this.main   = document.querySelector("main") || document.body;
@@ -169,3 +256,40 @@ class NotesApp {
   escape(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML.replace(/\n/g,"<br>"); }
 }
 document.addEventListener("DOMContentLoaded", ()=> new NotesApp());
+JS
+echo "✓ frontend/js/app.js actualizado"
+
+# --- 4) CSS: estilos del menú 3 puntos y dropdown, + pequeños retoques ---
+cat >> frontend/css/styles.css <<'CSS'
+
+/* --- Opciones por nota (3 puntos) --- */
+.note{ position: relative; }
+.note-actions{ position:absolute; top:8px; right:8px; }
+.menu-btn{
+  background: rgba(255,255,255,.15); color:#fff; border:none; border-radius:10px;
+  width:32px; height:32px; cursor:pointer;
+}
+.menu{
+  position:absolute; top:36px; right:0; min-width:160px;
+  background: rgba(0,0,0,.85); color:#fff; border:1px solid rgba(255,255,255,.15);
+  border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.35); padding:6px;
+  backdrop-filter: blur(8px);
+}
+.menu-item{
+  width:100%; text-align:left; background:transparent; color:#fff; border:none;
+  padding:8px 10px; border-radius:8px; cursor:pointer; display:block;
+}
+.menu-item:hover{ background: rgba(255,255,255,.1); }
+.menu-item.disabled{ opacity:.6; cursor:not-allowed; }
+CSS
+echo "✓ frontend/css/styles.css: menú 3 puntos"
+
+# --- 5) Reiniciar servidor (scheduler off en local) ---
+pkill -f "python run.py" 2>/dev/null || true
+pkill -f waitress 2>/dev/null || true
+: > .paste12.log
+source venv/bin/activate
+nohup env PYTHONUNBUFFERED=1 DISABLE_SCHEDULER=1 python run.py >> .paste12.log 2>&1 &
+echo "🟢 PID $!"
+sleep 1
+tail -n 40 .paste12.log
