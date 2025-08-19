@@ -91,3 +91,11 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
 /* Botón Compartir (fallback) */
 .btn-share{ border:0; background:#17325b; color:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
 .btn-share:hover{ filter:brightness(1.1) }
+
+/* --- Menú ⋯ en cada tarjeta --- */
+.p12-menu-wrap{ position:absolute; top:8px; right:8px; }
+.p12-menu-btn{ border:0; background:#13233f; color:#fff; width:28px; height:28px; border-radius:8px; cursor:pointer; line-height:1; font-size:18px; }
+.p12-menu-btn:hover{ filter:brightness(1.1); }
+.p12-menu{ position:absolute; top:34px; right:0; background:#0b1530; color:#fff; border:1px solid #2a3c68; border-radius:10px; overflow:hidden; min-width:160px; box-shadow:0 6px 20px #0007; }
+.p12-menu button{ display:block; width:100%; text-align:left; padding:10px 12px; background:transparent; border:0; color:#fff; cursor:pointer; }
+.p12-menu button:hover{ background:#17325b; }
