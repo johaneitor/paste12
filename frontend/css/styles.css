@@ -87,3 +87,7 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
 .countdown{ background:#223361; padding:2px 8px; border-radius:999px; }
 .countdown.warn{ background:#f59e0b; color:#1a0f00; }
 .countdown.danger{ background:#ef4444; color:#fff; }
+
+/* Botón Compartir (fallback) */
+.btn-share{ border:0; background:#17325b; color:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
+.btn-share:hover{ filter:brightness(1.1) }
