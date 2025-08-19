@@ -2,34 +2,20 @@ from datetime import datetime, timezone, timedelta
 from . import db
 
 class Note(db.Model):
-    __table_args__ = (db.Index('ix_note_expires_at', 'expires_at'),)
-views = db.Column(db.Integer, default=0)
-    likes = db.Column(db.Integer, default=0)
-    id          = db.Column(db.Integer, primary_key=True)
+    __tablename__ = "note"
+
     id          = db.Column(db.Integer, primary_key=True)
     text        = db.Column(db.String(500), nullable=False)
     timestamp   = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)+timedelta(days=7))
+    # Por si no se pasa explícitamente al crear:
+    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc) + timedelta(days=7))
+
+    # Métricas / moderación
+    likes       = db.Column(db.Integer, default=0)
+    views       = db.Column(db.Integer, default=0)
     reports     = db.Column(db.Integer, default=0)
-    user_token  = db.Column(db.String(64), index=True)
-    likes       = db.Column(db.Integer, default=0, nullable=False)
-    views       = db.Column(db.Integer, default=0, nullable=False)
-    reported_by = db.Column(db.Text, default="")
+    user_token  = db.Column(db.String(64), index=True)     # opcional (para limitar por cliente)
+    reported_by = db.Column(db.Text, default="")           # opcional (lista de tokens)
 
-
-class LikeLog(db.Model):
-    __tablename__ = "like_log"
-    id = db.Column(db.Integer, primary_key=True)
-    note_id = db.Column(db.Integer, db.ForeignKey('note.id', ondelete='CASCADE'), nullable=False, index=True)
-    fingerprint = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    __table_args__ = (db.UniqueConstraint('note_id','fingerprint', name='uq_like_note_fp'),)
-
-
-# --- Registro de reportes (1 por token y nota) ---
-class ReportLog(db.Model):
-    id           = db.Column(db.Integer, primary_key=True)
-    note_id      = db.Column(db.Integer, db.ForeignKey('note.id'), nullable=False, index=True)
-    fingerprint  = db.Column(db.String(64), nullable=False, index=True)
-    created_at   = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    __table_args__ = (db.UniqueConstraint('note_id', 'fingerprint', name='uq_report_note_fp'),)
+    def __repr__(self) -> str:  # solo para debug
+        return f"<Note id={self.id}>"
