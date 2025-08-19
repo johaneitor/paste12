@@ -73,3 +73,17 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
 .note-meta{display:flex;gap:.6rem;align-items:center;margin-top:.35rem;flex-wrap:wrap}
 .countdown{background:#0ea5e9;color:#001024;font-weight:800;padding:.22rem .5rem;border-radius:.6rem;box-shadow:0 6px 18px rgba(14,165,233,.35);font-size:.85rem}
 .note-expired{opacity:.6;filter:saturate(.7)}
+
+/* --- hotfix tarjetas --- */
+.note-card{
+  background:#0b1020; border:1px solid #243055; border-radius:14px;
+  padding:14px; margin:10px 0; box-shadow:0 4px 18px rgba(0,0,0,.25);
+}
+.note-body{ white-space:pre-wrap; line-height:1.4; font-size:16px; color:#e9ecff; }
+.note-meta{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12px; color:#b9c1ff; }
+.note-meta .spacer{ flex:1 }
+.btn-like{ border:0; background:#1f2a4a; color:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
+.btn-like:hover{ filter:brightness(1.1) }
+.countdown{ background:#223361; padding:2px 8px; border-radius:999px; }
+.countdown.warn{ background:#f59e0b; color:#1a0f00; }
+.countdown.danger{ background:#ef4444; color:#fff; }
