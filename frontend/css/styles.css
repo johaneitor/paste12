@@ -67,3 +67,9 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
   font-weight:700; letter-spacing:.2px;
 }
 .btn-ig-story:active{ transform:translateY(1px); }
+
+
+/* Badge de cuenta regresiva */
+.note-meta{display:flex;gap:.6rem;align-items:center;margin-top:.35rem;flex-wrap:wrap}
+.countdown{background:#0ea5e9;color:#001024;font-weight:800;padding:.22rem .5rem;border-radius:.6rem;box-shadow:0 6px 18px rgba(14,165,233,.35);font-size:.85rem}
+.note-expired{opacity:.6;filter:saturate(.7)}

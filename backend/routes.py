@@ -5,6 +5,15 @@ from . import db
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
+def _note_to_dict(n):
+    now = datetime.now(timezone.utc)
+    try:
+        exp = n.expires_at.astimezone(timezone.utc)
+    except Exception:
+        exp = n.expires_at
+    ttl = max(0, int((exp - now).total_seconds()))
+    return _note_to_dict(n)
+
 def purge_expired_now():
     """Borra notas vencidas. Seguro aún sin scheduler."""
     from . import db
@@ -36,12 +45,7 @@ def get_notes():
     q = Note.query.filter(Note.expires_at > datetime.now(timezone.utc)).order_by(Note.timestamp.desc())
     p = q.paginate(page=page, per_page=per_page, error_out=False)
 
-    notes = [{
-        "id": n.id,
-        "text": n.text,
-        "likes": getattr(n, "likes", 0) or 0,
-        "views": getattr(n, "views", 0) or 0,
-    } for n in p.items]
+    notes = [_note_to_dict(n) for n in p.items]
 
     return jsonify({"page": p.page, "total_pages": p.pages or 1, "notes": notes})
 

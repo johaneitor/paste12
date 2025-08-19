@@ -437,3 +437,78 @@ document.addEventListener('click', async (ev)=>{
                || (card.querySelector('.note-text')?.textContent ?? '')).trim() || document.title;
   await shareIGStory(text);
 }, true);
+
+
+// ===== Countdown por nota (días/horas/min/seg) =====
+function fmtTTL(s){
+  s = Math.max(0, Math.floor(s));
+  const d = Math.floor(s/86400);
+  s -= d*86400;
+  const h = Math.floor(s/3600);
+  s -= h*3600;
+  const m = Math.floor(s/60);
+  const x = s - m*60;
+  if (d>0) return `${d}d ${h}h`;
+  if (h>0) return `${h}h ${m}m`;
+  if (m>0) return `${m}m ${x}s`;
+  return `${x}s`;
+}
+function startCountdownLoop(){
+  function tick(){
+    const now = Date.now();
+    document.querySelectorAll('.countdown[data-expires-at], .countdown[data-expires-in]').forEach(el=>{
+      let ttl = 0;
+      if (el.hasAttribute('data-expires-in')){
+        const base = parseInt(el.getAttribute('data-expires-in'),10)||0;
+        const t0 = parseInt(el.getAttribute('data-epoch0'),10)||0;
+        ttl = base - Math.floor((now - t0)/1000);
+      } else {
+        const t = Date.parse(el.getAttribute('data-expires-at'));
+        ttl = Math.floor((t - now)/1000);
+      }
+      if (ttl <= 0){
+        el.textContent = 'expirada';
+        el.closest('[data-note]')?.classList.add('note-expired');
+      }else{
+        el.textContent = fmtTTL(ttl);
+      }
+    });
+  }
+  tick(); setInterval(tick, 1000);
+}
+document.addEventListener('DOMContentLoaded', startCountdownLoop);
+
+// Hook: cuando pintes las notas, pon el span countdown si no existe
+function ensureCountdownForCard(card, note){
+  if(!card) return;
+  let meta = card.querySelector('.note-meta');
+  if(!meta){
+    meta = document.createElement('div');
+    meta.className = 'note-meta';
+    card.appendChild(meta);
+  }
+  if(!meta.querySelector('.countdown')){
+    const cd = document.createElement('span');
+    cd.className = 'countdown';
+    if(note?.expires_at){ cd.setAttribute('data-expires-at', note.expires_at); }
+    else if(note?.expires_in!=null){
+      cd.setAttribute('data-expires-in', note.expires_in);
+      cd.setAttribute('data-epoch0', Date.now());
+    }
+    meta.prepend(cd);
+  }
+}
+
+// Observador: si se agregan tarjetas con datos, intenta decorarlas
+const __observer = new MutationObserver(muts=>{
+  muts.forEach(m=>{
+    m.addedNodes.forEach(n=>{
+      if(!(n instanceof Element)) return;
+      if(n.matches?.('[data-note]')) ensureCountdownForCard(n, n.__note);
+      n.querySelectorAll?.('[data-note]').forEach(x=>ensureCountdownForCard(x, x.__note));
+    });
+  });
+});
+document.addEventListener('DOMContentLoaded', ()=>{
+  try{ __observer.observe(document.body,{childList:true,subtree:true}); }catch(e){}
+});
