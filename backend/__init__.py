@@ -1,87 +1,79 @@
 import os
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
 from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_cors import CORS
-from flask_compress import Compress
-from apscheduler.schedulers.background import BackgroundScheduler
 
+# SQLAlchemy singleton del paquete (otros módulos hacen "from . import db")
 db = SQLAlchemy()
 
 def create_app():
-    # Rutas base
-    base_dir   = os.path.abspath(os.path.dirname(__file__))
-    static_dir = os.path.join(base_dir, "..", "frontend")
-
-    STATIC_DIR = str((Path(__file__).resolve().parent.parent / "frontend").resolve())
-    app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
-
-
-
-
-
-    @app.get("/__version")
-    def __version():
-        try:
-            return {"version": open("VERSION").read().strip()}
-        except Exception:
-            return {"version":"unknown"}
-    # --- robots ---
-    @app.get("/robots.txt")
-    def _static_robots():
-        return send_from_directory(app.static_folder, "robots.txt")
-    # --- ads ---
-    @app.get("/ads.txt")
-    def _static_ads():
-        return send_from_directory(app.static_folder, "ads.txt")
-    # --- legal ---
-    @app.get("/legal.html")
-    def _static_legal():
-        return send_from_directory(app.static_folder, "legal.html")
-    # Config
-    os.makedirs(app.instance_path, exist_ok=True)
-    app.config.from_mapping(
-        SECRET_KEY=os.getenv("SECRET_KEY", "dev-secret"),
-        SQLALCHEMY_DATABASE_URI=os.getenv(
-            "DATABASE_URL",
-            "sqlite:///" + os.path.join(app.instance_path, "production.db")
-        ),
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        RATELIMIT_STORAGE_URL=os.getenv("RATELIMIT_STORAGE_URL", "memory://"),
-        JSON_SORT_KEYS=False,
+    # --- Flask + estáticos del frontend ---
+    ROOT = Path(__file__).resolve().parents[1]
+    app = Flask(
+        __name__,
+        static_folder=str(ROOT / "frontend"),
+        static_url_path=""  # sirve frontend en /
     )
 
-    # Extensiones
-    db.init_app(app)
-    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
-    CORS(app)
-    Compress(app)
-    app.config.setdefault('SEND_FILE_MAX_AGE_DEFAULT', 86400)
+    # --- CORS (API pública) ---
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    # Blueprints
+    # --- Rate limiter ---
+    limiter = Limiter(
+        key_func=get_remote_address,
+        app=app,
+        storage_uri=os.getenv("RATELIMIT_STORAGE_URL", "memory://"),
+        default_limits=[os.getenv("RATE_LIMIT", "200/minute")],
+    )
+
+    # --- Base de datos (Render Postgres / fallback SQLite) ---
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        # Render aún expone a veces postgres:// → normaliza a postgresql://
+        if db_url.startswith("postgres://"):
+            db_url = "postgresql://" + db_url[len("postgres://"):]
+        # En Render es buena práctica forzar SSL
+        if db_url.startswith("postgresql://") and "sslmode=" not in db_url:
+            sep = "&" if "?" in db_url else "?"
+            db_url = db_url + f"{sep}sslmode=require"
+        app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    else:
+        # Local/Termux: usa SQLite en instance/
+        os.makedirs(app.instance_path, exist_ok=True)
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + str(Path(app.instance_path) / "production.db")
+
+    # Engine/pool robusto para Postgres gestionado (evita SSL EOF)
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,   # segundos
+        "pool_timeout": 30,
+        "pool_size": 5,
+        "max_overflow": 10,
+    }
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Inicializa ORM
+    db.init_app(app)
+
+    # Crea tablas si no existen
+    with app.app_context():
+        db.create_all()
+
+    # Blueprints de API
     from . import routes
     app.register_blueprint(routes.bp)
 
-    # Frontend
+    # Ruta raíz: devuelve el frontend
     @app.route("/")
     def index():
         return send_from_directory(app.static_folder, "index.html")
 
-    # Scheduler opcional (deshabilitable en local)
-    if not os.getenv("DISABLE_SCHEDULER"):
-        try:
-            from .tasks import purge_expired
-            sch = BackgroundScheduler(timezone=timezone.utc)
-            sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
-            sch.start()
-        except Exception as e:
-            app.logger.warning(f"Scheduler no iniciado: {e}")
-
-    # DB
-    with app.app_context():
-        db.create_all()
+    # Healthcheck para Render
+    @app.get("/healthz")
+    def healthz():
+        return {"ok": True}
 
     return app
