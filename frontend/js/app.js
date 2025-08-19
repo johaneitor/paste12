@@ -288,3 +288,37 @@ async function shareOrDownload(blob){
   let t; btn.addEventListener("touchstart", ()=>{ t=setTimeout(()=>file.click(),600); }, {passive:true});
   ["touchend","touchcancel","mouseleave"].forEach(ev=>btn.addEventListener(ev, ()=>clearTimeout(t)));
 })();
+
+
+// === Share nativo: sin popups ===
+async function shareNative(text, url){
+  try{
+    if(navigator.share){
+      await navigator.share({title:'Paste12', text, url});
+      return;
+    }
+  }catch(e){}
+  try{
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    showToast('🔗 Enlace copiado');
+  }catch(e){
+    showToast('🔗 Copia manual: ' + url);
+  }
+}
+function showToast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 14px;border-radius:12px;z-index:9999;font-size:14px';
+  document.body.appendChild(t); setTimeout(()=>t.remove(),1400);
+}
+// Interceptor global: cualquier click en .share, .share-twitter o [data-share]
+document.addEventListener('click', async (ev)=>{
+  const el = ev.target.closest('[data-share], .share, .share-twitter');
+  if(!el) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const card = el.closest('[data-note]') || document;
+  const text = (el.getAttribute('data-text') 
+               || (card.querySelector('.note-text')?.textContent ?? '')).trim() || document.title;
+  const url  = el.getAttribute('data-url') || location.origin;
+  await shareNative(text, url);
+}, true);
