@@ -2,7 +2,8 @@ from datetime import datetime, timezone, timedelta
 from . import db
 
 class Note(db.Model):
-    views = db.Column(db.Integer, default=0)
+    __table_args__ = (db.Index('ix_note_expires_at', 'expires_at'),)
+views = db.Column(db.Integer, default=0)
     likes = db.Column(db.Integer, default=0)
     id          = db.Column(db.Integer, primary_key=True)
     id          = db.Column(db.Integer, primary_key=True)

@@ -5,6 +5,19 @@ from . import db
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
+def purge_expired_now():
+    """Borra notas vencidas. Seguro aún sin scheduler."""
+    from . import db
+    from .models import Note
+    now = datetime.now(timezone.utc)
+    try:
+        # SQL genérico (funciona en SQLite y Postgres)
+        db.session.query(Note).filter(Note.expires_at <= now).delete(synchronize_session=False)
+        db.session.commit()
+    purge_expired_now()
+    except Exception:
+        db.session.rollback()
+
 def _fp():
     # token persistente enviado por el cliente; si no, IP
     tok = request.headers.get("X-Client-Token", "").strip()[:120]
@@ -14,12 +27,13 @@ def _fp():
 
 @bp.get("/notes")
 def get_notes():
+    purge_expired_now()
     try:
         page = max(int(request.args.get("page", 1)), 1)
     except Exception:
         page = 1
     per_page = 10
-    q = Note.query.order_by(Note.timestamp.desc())
+    q = Note.query.filter(Note.expires_at > datetime.now(timezone.utc)).order_by(Note.timestamp.desc())
     p = q.paginate(page=page, per_page=per_page, error_out=False)
 
     notes = [{
@@ -33,6 +47,19 @@ def get_notes():
 
 @bp.post("/notes")
 def create_note():
+    data = request.get_json(silent=True) or {}
+    dur = str(data.get('duration', data.get('hours', ''))).strip().lower()
+    minutes = data.get('minutes')
+    HMAP = {'12h':12,'1d':24,'7d':168,'24h':24,'1h':1}
+    hours = None
+    if isinstance(dur,(int,float)): hours = int(dur)
+    elif dur.endswith('h') and dur[:-1].isdigit(): hours = int(dur[:-1])
+    elif dur in HMAP: hours = HMAP[dur]
+    if minutes and str(minutes).isdigit():
+        # para pruebas rápidas: expirar en X minutos
+        hours = max(1, int(minutes)//60) if int(minutes) >= 60 else 0
+    if hours is None:
+        hours = 168  # por defecto 7 días
     data = request.get_json(silent=True) or request.form or {}
     text = (data.get("text") or "").strip()
     if not text or len(text) > 500:
