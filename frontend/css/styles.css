@@ -57,3 +57,13 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
 .story-tools .hint{ opacity:.7; }
 .btn.ghost{ background:transparent; border:2px dashed rgba(255,255,255,.7); color:#fff; }
 .btn.ghost:hover{ border-style:solid; }
+
+/* Botón Historias IG */
+.btn-ig-story{
+  margin-left:.5rem; margin-top:.25rem;
+  padding:.45rem .7rem; border-radius:10px;
+  border:none; background:#e11d48; color:#fff;
+  box-shadow:0 6px 18px rgba(225,29,72,.35);
+  font-weight:700; letter-spacing:.2px;
+}
+.btn-ig-story:active{ transform:translateY(1px); }
