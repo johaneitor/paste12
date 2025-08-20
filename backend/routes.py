@@ -1,6 +1,6 @@
-from .models import ViewLog
 from __future__ import annotations
-from flask import Blueprint, request, jsonify, current_app
+from .models import ViewLog
+from flask import Blueprint, current_app, jsonify, request
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.exc import IntegrityError
 from . import db, limiter
@@ -45,6 +45,11 @@ def _per_page():
         v = 10
     max_v = int(os.getenv("MAX_PAGE_SIZE", "10"))
     return max(1, min(v, max_v))
+
+# === helpers de rate-limit / fingerprint (inyectados) ===
+def _rate_key():
+    return _fp()
+
 
 @bp.get("/notes")
 def list_notes():
