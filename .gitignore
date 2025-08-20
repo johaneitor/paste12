@@ -30,3 +30,6 @@ venv/
 *.bak.*
 render.yaml.bak.*
 fix_*.sh
+instance/*.db
+instance/*.sqlite
+*.pyc
