@@ -1,111 +1,99 @@
-from __future__ import annotations
+# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
 import os
 from datetime import timezone
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from sqlalchemy import text
-try:
-    from flask_compress import Compress
-except Exception:
-    Compress = None
-try:
-    from werkzeug.middleware.proxy_fix import ProxyFix
-except Exception:
-    ProxyFix = None
 
-# --- Singletons globales ---
+# Extensiones como singletons a nivel módulo (para 'from backend import db, limiter')
 db = SQLAlchemy()
 limiter = Limiter(key_func=get_remote_address, default_limits=[])
 
-def _register_frontend(app: Flask) -> None:
-    """Rutas estáticas idempotentes para frontend SPA."""
-    static_folder = app.static_folder
+def _abs(path: str) -> str:
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
 
-    # Evitar duplicados
-    existing_rules = {r.rule for r in app.url_map.iter_rules()}
-    if '/favicon.ico' not in existing_rules:
-        app.add_url_rule('/favicon.ico', 'static_favicon',
-                         lambda: send_from_directory(static_folder, 'favicon.svg', mimetype='image/svg+xml'))
-    if '/ads.txt' not in existing_rules:
-        app.add_url_rule('/ads.txt', 'static_ads',
-                         lambda: send_from_directory(static_folder, 'ads.txt', mimetype='text/plain'))
-    if '/' not in existing_rules:
-        app.add_url_rule('/', 'static_root',
-                         lambda: send_from_directory(static_folder, 'index.html'))
-
-    # Fallback SPA, bloquea /api/*
-    from flask import abort
-    import os as _os
-    def static_any(path: str):
-        if path.startswith('api/'):
-            return abort(404)
-        full = _os.path.join(static_folder, path)
-        if _os.path.isfile(full):
-            return send_from_directory(static_folder, path)
-        return send_from_directory(static_folder, 'index.html')
-    if 'static_any' not in app.view_functions:
-        app.add_url_rule('/<path:path>', 'static_any', static_any)
+def _build_database_uri() -> str:
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        os.makedirs(_abs("../instance"), exist_ok=True)
+        return "sqlite:///" + _abs("../instance/production.db")
+    if url.startswith(("postgres://", "postgresql://")) and "sslmode=" not in url:
+        url += ("&" if "?" in url else "?") + "sslmode=require"
+    return url
 
 def create_app():
-    from pathlib import Path as _P
-    _STATIC_DIR = str((_P(__file__).resolve().parent.parent / 'frontend').resolve())
-    app = Flask(__name__, static_folder=_STATIC_DIR, static_url_path='')
+    static_folder = _abs("../frontend")
+    app = Flask(__name__, static_folder=static_folder, static_url_path="")
 
-    # Proxy headers (Render)
-    if ProxyFix:
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
-
-    # --- Config DB ---
-    uri = os.getenv('DATABASE_URL', 'sqlite:///instance/production.db')
-    # Compat render postgres:// -> postgresql+psycopg2://
-    if uri.startswith('postgres://'):
-        uri = uri.replace('postgres://', 'postgresql+psycopg2://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = uri
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    # Conexiones más resilientes (Render)
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_pre_ping': True,
-        'pool_recycle': 280,
+    # ---- Config DB (con keepalive para Render) ----
+    app.config["SQLALCHEMY_DATABASE_URI"] = _build_database_uri()
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
     }
 
-    # Init extensiones
+    # Inicializar extensiones
     db.init_app(app)
     limiter.init_app(app)
-    if Compress:
-        try: Compress(app)
-        except Exception: pass
 
-    # Registrar frontend
-    _register_frontend(app)
+    # Migración mínima (SQLAlchemy 2.x-safe)
+    with app.app_context():
+        try:
+            from . import models  # asegura que los modelos se registren
+            db.create_all()
+            with db.engine.begin() as conn:
+                conn.execute(text("SELECT 1"))
+        except Exception as e:
+            app.logger.warning(f"migrate_min: {e}")
 
     # Registrar API
     try:
         from .routes import bp as api_bp
-        # Si routes.py usa @bp = Blueprint('api', __name__), ponemos prefijo aquí:
-        app.register_blueprint(api_bp, url_prefix='/api')
+        app.register_blueprint(api_bp, url_prefix="/api")
     except Exception as e:
-        app.logger.warning(f'No se pudo registrar blueprint API: {e}')
+        app.logger.error(f"No se pudo registrar blueprint API: {e}")
 
-    # Migración mínima + ping DB
-    with app.app_context():
-        try:
-            db.create_all()
-            with db.engine.begin() as conn:
-                conn.execute(text('SELECT 1'))
-        except Exception as e:
-            app.logger.warning(f'migrate_min/db ping: {e}')
+    # Rutas de frontend (idempotentes, sin decoradores)
+    def _register_frontend(app):
+        sf = app.static_folder
 
-    # Scheduler opcional (purga de expiradas)
-    if not os.getenv('DISABLE_SCHEDULER'):
-        try:
-            from apscheduler.schedulers.background import BackgroundScheduler
-            from .tasks import purge_expired
-            sch = BackgroundScheduler(timezone=timezone.utc)
-            sch.add_job(lambda: purge_expired(app), 'interval', minutes=30)
-            sch.start()
-        except Exception as e:
-            app.logger.warning(f'scheduler deshabilitado: {e}')
+        # /favicon.ico
+        if "/favicon.ico" not in {r.rule for r in app.url_map.iter_rules()}:
+            app.add_url_rule(
+                "/favicon.ico",
+                endpoint="static_favicon",
+                view_func=lambda: send_from_directory(sf, "favicon.svg", mimetype="image/svg+xml"),
+            )
 
+        # /ads.txt
+        if "/ads.txt" not in {r.rule for r in app.url_map.iter_rules()}:
+            app.add_url_rule(
+                "/ads.txt",
+                endpoint="static_ads",
+                view_func=lambda: send_from_directory(sf, "ads.txt", mimetype="text/plain"),
+            )
+
+        # /
+        if "/" not in {r.rule for r in app.url_map.iter_rules()}:
+            app.add_url_rule(
+                "/",
+                endpoint="static_root",
+                view_func=lambda: send_from_directory(sf, "index.html"),
+            )
+
+        # Fallback SPA y archivos estáticos
+        if "static_any" not in app.view_functions:
+            def static_any(path):
+                if path.startswith("api/"):
+                    return abort(404)
+                full = os.path.join(sf, path)
+                if os.path.isfile(full):
+                    return send_from_directory(sf, path)
+                return send_from_directory(sf, "index.html")
+            app.add_url_rule("/<path:path>", endpoint="static_any", view_func=static_any)
+
+    _register_frontend(app)
     return app
