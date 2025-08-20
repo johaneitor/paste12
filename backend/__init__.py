@@ -24,141 +24,88 @@ def _build_database_uri() -> str:
     return url
 
 def create_app():
-    static_folder = _abs("../frontend")
-    app = Flask(__name__, static_folder=static_folder, static_url_path="")
+    import os
+    from sqlalchemy import text
 
-    # ---- Config DB (con keepalive para Render) ----
-    app.config["SQLALCHEMY_DATABASE_URI"] = _build_database_uri()
+    app = Flask(__name__, static_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend")), static_url_path="")
+
+    # --- Config básica ---
+    uri = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URI")
+    if not uri:
+        # fallback a SQLite local
+        base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "instance"))
+        os.makedirs(base, exist_ok=True)
+        uri = f"sqlite:///{os.path.join(base, "production.db")}"
+    app.config["SQLALCHEMY_DATABASE_URI"] = uri
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_pre_ping": True,
-        "pool_recycle": 280,
-    }
 
-    # Inicializar extensiones
-    db.init_app(app)
-    limiter.init_app(app)
-
-    # Migración mínima (SQLAlchemy 2.x-safe)
-    with app.app_context():
-        try:
-            from . import models  # asegura que los modelos se registren
-            db.create_all()
-            with db.engine.begin() as conn:
-                conn.execute(text("SELECT 1"))
-        except Exception as e:
-            app.logger.warning(f"migrate_min: {e}")
-
-    # Registrar API
+    # --- Inicializar extensiones (una vez) ---
     try:
-        from .routes import bp as api_bp
-        app.register_blueprint(api_bp, url_prefix="/api")
+        db.init_app(app)
+    except Exception:
+        # ya estaba inicializado; ignorar
+        pass
+    try:
+        limiter.init_app(app)
+    except Exception:
+        pass
+
+    # --- Registrar blueprint /api (idempotente) ---
+    try:
+        from . import routes as _routes
+        if "api" not in app.blueprints:
+            app.register_blueprint(_routes.bp, url_prefix="/api")
     except Exception as e:
         app.logger.error(f"No se pudo registrar blueprint API: {e}")
 
-    # Rutas de frontend (idempotentes, sin decoradores)
-    def _register_frontend(app):
-        sf = app.static_folder
-
-        # /favicon.ico
-        if "/favicon.ico" not in {r.rule for r in app.url_map.iter_rules()}:
+    # --- Rutas estáticas/SPA (idempotentes) ---
+    try:
+        rules = {r.rule for r in app.url_map.iter_rules()}
+        if "/favicon.ico" not in rules:
             app.add_url_rule(
                 "/favicon.ico",
                 endpoint="static_favicon",
-                view_func=lambda: send_from_directory(sf, "favicon.svg", mimetype="image/svg+xml"),
+                view_func=lambda: send_from_directory(app.static_folder, "favicon.svg", mimetype="image/svg+xml"),
             )
-
-        # /ads.txt
-        if "/ads.txt" not in {r.rule for r in app.url_map.iter_rules()}:
+        if "/ads.txt" not in rules:
             app.add_url_rule(
                 "/ads.txt",
                 endpoint="static_ads",
-                view_func=lambda: send_from_directory(sf, "ads.txt", mimetype="text/plain"),
+                view_func=lambda: send_from_directory(app.static_folder, "ads.txt", mimetype="text/plain"),
             )
-
-        # /
-        if "/" not in {r.rule for r in app.url_map.iter_rules()}:
+        if "/" not in rules:
             app.add_url_rule(
                 "/",
                 endpoint="static_root",
-                view_func=lambda: send_from_directory(sf, "index.html"),
+                view_func=lambda: send_from_directory(app.static_folder, "index.html"),
             )
-
-        # Fallback SPA y archivos estáticos
         if "static_any" not in app.view_functions:
+            from flask import abort
             def static_any(path):
                 if path.startswith("api/"):
-                    return abort(404)
-                full = os.path.join(sf, path)
-                if os.path.isfile(full):
-                    return send_from_directory(sf, path)
-                return send_from_directory(sf, "index.html")
-            app.add_url_rule("/<path:path>", endpoint="static_any", view_func=static_any)
-
-    _register_frontend(app)
-    # Enforce cap al boot (una vez) si está habilitado
-    try:
-        from .tasks import enforce_global_cap as _egc
-        if os.getenv("ENFORCE_CAP_ON_BOOT", "1") == "1":
-            _egc(app)
-    except Exception as _e:
-        try:
-            app.logger.warning(f"enforce_cap_on_boot: {_e}")
-        except Exception:
-            pass
-
-    
-    # --- Registrar API blueprint ---
-    try:
-        from .routes import bp as api_bp
-        app.register_blueprint(api_bp)
-        app.logger.info("API blueprint registrado")
-    except Exception as e:
-        app.logger.error(f"No se pudo registrar blueprint API: {e}")
-
-    # --- Rutas estáticas idempotentes + SPA; NO capturar /api/*
-    try:
-        existing = {r.rule for r in app.url_map.iter_rules()}
-        if "/favicon.ico" not in existing:
-            app.add_url_rule("/favicon.ico","static_favicon", view_func=lambda: send_from_directory(app.static_folder, "favicon.svg", mimetype="image/svg+xml"))
-        if "/ads.txt" not in existing:
-            app.add_url_rule("/ads.txt","static_ads", view_func=lambda: send_from_directory(app.static_folder, "ads.txt", mimetype="text/plain"))
-        if "/" not in existing:
-            app.add_url_rule("/","static_root", view_func=lambda: send_from_directory(app.static_folder, "index.html"))
-        if "static_any" not in app.view_functions:
-            import os
-            def static_any(path):
-                if path.startswith("api/"):
-                    from flask import abort
                     return abort(404)
                 full = os.path.join(app.static_folder, path)
-                from flask import send_from_directory
-                import os as _os
-                if _os.path.isfile(full):
+                if os.path.isfile(full):
                     return send_from_directory(app.static_folder, path)
                 return send_from_directory(app.static_folder, "index.html")
-            app.add_url_rule("/<path:path>", "static_any", static_any)
+            app.add_url_rule("/<path:path>", endpoint="static_any", view_func=static_any)
     except Exception as e:
         app.logger.warning(f"Rutas estáticas: {e}")
-        
-        try:
-            enforce_cap_on_boot(app)
-        except Exception as e:
-            app.logger.warning(f"enforce_cap_on_boot: {e}")
-    return app
 
-
-def migrate_min(app):
-    from . import db
-    with app.app_context():
-        try:
-            db.create_all()
+    # --- Índices útiles (no falla si ya existen) ---
+    try:
+        with app.app_context():
             with db.engine.begin() as conn:
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_ts_desc ON note (timestamp DESC)"))
-        except Exception as e:
-            try:
-                app.logger.warning(f"migrate_min: {e}")
-            except Exception:
-                print("migrate_min warn:", e)
+    except Exception as e:
+        app.logger.warning(f"Índices: {e}")
+
+    # --- Cap de notas al arrancar (si está implementado) ---
+    try:
+        from .tasks import enforce_cap_on_boot
+        enforce_cap_on_boot(app)
+    except Exception as e:
+        app.logger.warning(f"enforce_cap_on_boot: {e}")
+
+    return app
