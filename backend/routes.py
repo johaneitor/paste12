@@ -135,9 +135,27 @@ def view_note(note_id: int):
         n.views = int(n.views or 0) + 1
         db.session.commit()
         counted = True
+        return jsonify({"views": int(n.views or 0), "counted": True, "ok": True}), 200
     except IntegrityError:
+        # vista duplicada (única por día): no contamos
         db.session.rollback()
-    return jsonify({"views": int(n.views or 0), "counted": counted})
+        try:
+            db.session.refresh(n)
+        except Exception:
+            pass
+        return jsonify({"views": int(n.views or 0), "counted": False, "ok": True}), 200
+    except Exception as e:
+        # no romper el feed por errores raros de DB
+        db.session.rollback()
+        try:
+            current_app.logger.error(f"/view failed for note {note_id}: {e}")
+        except Exception:
+            pass
+        try:
+            db.session.refresh(n)
+        except Exception:
+            pass
+        return jsonify({"views": int(n.views or 0), "counted": False, "ok": False, "error": str(e)[:120]}), 200
 
 @bp.post("/notes/<int:note_id>/report")
 def report_note(note_id: int):
