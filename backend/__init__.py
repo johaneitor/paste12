@@ -27,7 +27,8 @@ def _database_uri() -> str:
 def create_app():
     app = Flask(__name__, static_folder="frontend", static_url_path="")
 
-    # -- Registrar rutas frontend (idempotente) --
+
+    # -- Rutas frontend idempotentes (sin decoradores) --
 
     def _ensure_front_routes(app):
 
@@ -51,7 +52,7 @@ def create_app():
 
         if '/favicon.ico' not in existing_rules:
 
-            app.add_url_rule('/favicon.ico', endpoint='favicon_svg',
+            app.add_url_rule('/favicon.ico', endpoint='static_favicon',
 
                              view_func=lambda: send_from_directory(static_folder, 'favicon.svg', mimetype='image/svg+xml'))
 
@@ -59,7 +60,7 @@ def create_app():
 
         if '/ads.txt' not in existing_rules:
 
-            app.add_url_rule('/ads.txt', endpoint='ads_txt_file',
+            app.add_url_rule('/ads.txt', endpoint='static_ads',
 
                              view_func=lambda: send_from_directory(static_folder, 'ads.txt', mimetype='text/plain'))
 
@@ -67,11 +68,11 @@ def create_app():
 
         if '/' not in existing_rules:
 
-            app.add_url_rule('/', endpoint='root_index',
+            app.add_url_rule('/', endpoint='static_root',
 
                              view_func=lambda: send_from_directory(static_folder, 'index.html'))
 
-        # Fallback SPA: /<path:path> (evita /api/*)
+        # Fallback SPA: /<path:path> (pero NO /api/*)
 
         if 'static_any' not in existing_eps:
 
@@ -91,10 +92,10 @@ def create_app():
 
             app.add_url_rule('/<path:path>', endpoint='static_any', view_func=static_any)
 
+
     _ensure_front_routes(app)
 
-
-    # -- Registrar rutas del frontend (idempotente) --
+    # -- Registrar rutas frontend (idempotente) --
 
 
     return app
