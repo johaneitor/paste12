@@ -10,14 +10,14 @@ from sqlalchemy.exc import IntegrityError
 from . import db, limiter
 from .models import Note, LikeLog, ReportLog, ViewLog
 
-# Blueprint único; se registra en create_app con url_prefix="/api"
+# Blueprint único (se registra en create_app con url_prefix="/api")
 bp = Blueprint("api", __name__)
 
 # ===== Helpers =====
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
-def _as_aware(dt: Optional[datetime]) -> Optional[datetime]:
+def _aware(dt: Optional[datetime]) -> Optional[datetime]:
     if dt is None:
         return None
     return dt if getattr(dt, "tzinfo", None) else dt.replace(tzinfo=timezone.utc)
@@ -49,9 +49,9 @@ def _per_page() -> int:
     return v
 
 def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
-    now = _as_aware(now) or _now()
-    ts = _as_aware(getattr(n, "timestamp", None))
-    exp = _as_aware(getattr(n, "expires_at", None))
+    now = _aware(now) or _now()
+    ts = _aware(getattr(n, "timestamp", None))
+    exp = _aware(getattr(n, "expires_at", None))
     remaining = max(0, int((exp - now).total_seconds())) if exp else None
     return {
         "id": n.id,
@@ -64,8 +64,8 @@ def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
         "reports": int(n.reports or 0),
     }
 
-# ===== Error handler JSON para todo /api =====
-@bp.errorhandler(Exception)
+# ===== Error handler JSON a nivel app (cubre 500 con HTML) =====
+@bp.app_errorhandler(Exception)
 def _api_error(e):
     try:
         current_app.logger.exception("API error: %s", e)
@@ -80,23 +80,27 @@ def health():
 
 @bp.get("/notes")
 def list_notes():
-    now = _now()
     try:
-        page = int(request.args.get("page", "1"))
-    except Exception:
-        page = 1
-    if page < 1:
-        page = 1
-    page_size = _per_page()
-    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
-    items = q.offset((page - 1) * page_size).limit(page_size).all()
-    has_more = len(items) == page_size
-    return jsonify({
-        "page": page,
-        "page_size": page_size,
-        "has_more": has_more,
-        "notes": [_note_json(n, now) for n in items],
-    })
+        now = _now()
+        try:
+            page = int(request.args.get("page", "1"))
+        except Exception:
+            page = 1
+        if page < 1:
+            page = 1
+        page_size = _per_page()
+        q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+        items = q.offset((page - 1) * page_size).limit(page_size).all()
+        has_more = len(items) == page_size
+        return jsonify({
+            "page": page,
+            "page_size": page_size,
+            "has_more": has_more,
+            "notes": [_note_json(n, now) for n in items],
+        })
+    except Exception as e:
+        current_app.logger.exception("list_notes failed: %s", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @bp.post("/notes")
 @limiter.limit("1 per 10 seconds", key_func=_rate_key)
@@ -110,10 +114,7 @@ def create_note():
         hours = int(data.get("hours", 12))
     except Exception:
         hours = 12
-    if hours < 1:
-        hours = 1
-    if hours > 168:
-        hours = 168
+    hours = min(168, max(1, hours))
     now = _now()
     n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
     db.session.add(n)
