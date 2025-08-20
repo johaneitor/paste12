@@ -4,7 +4,7 @@ from hashlib import sha256
 from sqlalchemy.exc import IntegrityError
 
 from .models import Note, LikeLog, ReportLog
-from . import db
+from . import db, limiter
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -45,6 +45,16 @@ def _fingerprint():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
     return sha256(f"{ip}|{ua}".encode("utf-8")).hexdigest()
 
+
+def _rate_key():
+    tok = (request.headers.get('X-User-Token') or request.cookies.get('p12') or '').strip()
+    if tok:
+        return tok[:128]
+    xff = request.headers.get('X-Forwarded-For','')
+    ip = xff.split(',')[0].strip() if xff else (request.remote_addr or '')
+    ua = request.headers.get('User-Agent','')
+    return sha256(f"{ip}|{ua}".encode()).hexdigest()
+
 @bp.get("/notes")
 def get_notes():
     page = max(int(request.args.get("page", 1) or 1), 1)
@@ -55,6 +65,8 @@ def get_notes():
     return jsonify({"items": [_serialize(n) for n in p.items], "page": p.page, "pages": p.pages, "total": p.total})
 
 @bp.post("/notes")
+@limiter.limit('1 per 10 seconds', key_func=_rate_key)
+@limiter.limit('500 per day', key_func=_rate_key)
 def create_note():
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()

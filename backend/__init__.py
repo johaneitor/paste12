@@ -79,6 +79,7 @@ def create_app():
 
     # Inicializa ORM
     db.init_app(app)
+    limiter.init_app(app)
 
     # Crea tablas si no existen
     with app.app_context():
