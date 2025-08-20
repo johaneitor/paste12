@@ -58,7 +58,13 @@ def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
 
 @bp.get("/health")
 def health():
-    return jsonify({"ok": True, "now": _now().isoformat()}), 200
+    from flask import make_response
+    _resp = jsonify({"ok": True, "now": _now().isoformat()})
+    try:
+        _resp.headers['Cache-Control'] = 'public, max-age=5'
+    except Exception:
+        pass
+    return _resp, 200
 
 @bp.get("/notes")
 def list_notes():
@@ -149,6 +155,9 @@ def like_note(note_id: int):
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
     n = Note.query.get_or_404(note_id)
+    # Kill-switch de vistas para performance
+    if os.getenv("ENABLE_VIEWS","1") == "0":
+        return jsonify({"views": int(n.views or 0), "counted": False})
     fp = _fp()
     today = _now().date()
     counted = False
