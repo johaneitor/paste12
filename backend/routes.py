@@ -57,7 +57,7 @@ def list_notes():
         page_size = int(os.getenv("PAGE_SIZE", "20"))
     except Exception:
         page_size = 20
-    page_size = max(10, min(page_size, 100))  # clamp
+    page_size = max(10, min(page_size, 100))  # clamp 10..100
 
     q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
     items = q.offset((page-1)*page_size).limit(page_size).all()
@@ -112,7 +112,6 @@ def like_note(note_id: int):
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
     n = Note.query.get_or_404(note_id)
-    # fingerprint del cliente (header -> cookie -> IP)
     fp = request.headers.get("X-Client-Fingerprint") or request.cookies.get("fp") or request.remote_addr or "anon"
     today = datetime.now(timezone.utc).date()
     counted = False
