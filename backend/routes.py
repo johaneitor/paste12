@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from hashlib import sha256
 from sqlalchemy.exc import IntegrityError
 
-from .models import Note, LikeLog, ReportLog
+from .models import Note, LikeLog, ReportLog, ViewLog
 from . import db, limiter
 
 bp = Blueprint("api", __name__, url_prefix="/api")
@@ -108,12 +108,30 @@ def like_note(note_id: int):
         n = Note.query.get(note_id)
         return jsonify({"likes": n.likes, "already_liked": True})
 
+@limiter.limit("120 per minute")
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
+    """Cuenta la vista solo 1 vez por día por usuario (según fingerprint/cookie/ip)."""
+    now = datetime.now(timezone.utc)
     n = Note.query.get_or_404(note_id)
-    n.views = (n.views or 0) + 1
-    db.session.commit()
-    return jsonify({"views": n.views})
+
+    fp = request.headers.get("X-Client-Fingerprint") or request.cookies.get("p12_fp") or request.remote_addr or "anon"
+    day = now.date()
+
+    already = ViewLog.query.filter_by(note_id=note_id, fingerprint=fp, day=day).first()
+    if already:
+        return jsonify({"views": int(n.views or 0), "already_viewed": True})
+
+    try:
+        db.session.add(ViewLog(note_id=note_id, fingerprint=fp, day=day, created_at=now))
+        n.views = (n.views or 0) + 1
+        db.session.commit()
+        return jsonify({"views": int(n.views or 0), "already_viewed": False})
+    except Exception:
+        db.session.rollback()
+        # En caso de carrera, devolvemos el contador actual
+        return jsonify({"views": int(n.views or 0), "already_viewed": True})
+
 
 @bp.post("/notes/<int:note_id>/report")
 def report_note(note_id: int):
