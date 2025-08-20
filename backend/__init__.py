@@ -150,3 +150,10 @@ def create_app():
         except Exception as e:
             app.logger.warning(f"migrate_min: {e}")
     return app
+
+# Flask-Limiter singleton
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri=os.getenv('RATELIMIT_STORAGE_URL', 'memory://'),
+    default_limits=[],  # límites por endpoint
+)
