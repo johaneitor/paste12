@@ -99,3 +99,13 @@ footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85
 .p12-menu{ position:absolute; top:34px; right:0; background:#0b1530; color:#fff; border:1px solid #2a3c68; border-radius:10px; overflow:hidden; min-width:160px; box-shadow:0 6px 20px #0007; }
 .p12-menu button{ display:block; width:100%; text-align:left; padding:10px 12px; background:transparent; border:0; color:#fff; cursor:pointer; }
 .p12-menu button:hover{ background:#17325b; }
+
+/* --- Métricas (vistas) en tarjeta --- */
+.p12-metrics{
+  position:absolute; bottom:8px; right:8px;
+  background:#0b1530cc; color:#cfe3ff;
+  padding:6px 8px; border-radius:8px;
+  font-size:12px; display:flex; gap:10px;
+  align-items:center; border:1px solid #274a8a66;
+}
+.p12-metrics .p12-views{ opacity:0.9; }
