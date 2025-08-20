@@ -26,6 +26,37 @@ def _database_uri() -> str:
 
 def create_app():
     app = Flask(__name__, static_folder="frontend", static_url_path="")
+
+    # -- Registrar rutas del frontend (inline, sin decoradores globales) --
+    def _register_frontend(app):
+        @app.get('/favicon.ico')
+        def _favicon():
+            return send_from_directory(app.static_folder, 'favicon.svg', mimetype='image/svg+xml')
+
+        @app.get('/ads.txt')
+        def _ads():
+            return send_from_directory(app.static_folder, 'ads.txt', mimetype='text/plain')
+
+        @app.route('/')
+        def _index():
+            return send_from_directory(app.static_folder, 'index.html')
+
+        @app.route('/<path:path>')
+        def _static_any(path):
+            # Evitar colisión con API:
+            if path.startswith('api/'):
+                from flask import abort
+                return abort(404)
+            import os
+            full = os.path.join(app.static_folder, path)
+            if os.path.isfile(full):
+                return send_from_directory(app.static_folder, path)
+            # Fallback SPA
+            return send_from_directory(app.static_folder, 'index.html')
+
+    if '_register_frontend' not in locals():
+        pass  # por si re-ejecución
+    _register_frontend(app)
     app.config.update(
         SQLALCHEMY_DATABASE_URI=_database_uri(),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
