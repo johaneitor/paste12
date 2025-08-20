@@ -1,3 +1,9 @@
+window.P12App = { load: async function(page){ return await window.load(page); } };
+window.P12 = window.P12 || {};
+P12.page = 1;
+P12.loading = false;
+P12.renderedIds = new Set();
+P12.viewedOnce = new Set();
 class NotesApp {
   constructor() {
     this.main   = document.querySelector("main") || document.body;
@@ -118,76 +124,59 @@ class NotesApp {
   }
 
   async load(page=1){
+  if(P12.loading) return;
+  P12.loading = true;
+  try{
     const r = await fetch(`/api/notes?page=${page}`);
-    const j = await r.json().catch(()=>({notes:[], total_pages:1}));
-    this.page  = page;
-    this.pages = j.total_pages || 1;
-    this.render(j.notes || []);
-  }
+    const d = await r.json();
+    const notes = d.notes || [];
+    const hasMore = !!d.has_more;
+    const listEl = document.querySelector('#feed') || document.body;
 
-  render(items){
-    /* in-feed ads */ 
-    const isLocal = ['localhost','127.0.0.1'].some(h=>location.hostname.startsWith(h));
-    this.list.innerHTML = items.map(n=>`
-      <li class="note" data-id="${n.id}">
-        <div class="note-actions">
-          <button class="menu-btn" aria-haspopup="true" aria-expanded="false" title="Opciones">⋮</button>
-          <div class="menu" hidden>
-            <button type="button" class="menu-item report">🚩 Reportar</button>
-            <button type="button" class="menu-item share">🔗 Compartir</button>
-          </div>
-        </div>
-        <div class="note-text">${this.escape(n.text)}</div>
+    if(page === 1){
+      // limpiar y reiniciar set de ids renderizados
+      listEl.innerHTML = '';
+      P12.renderedIds.clear();
+    }
+
+    for(const n of notes){
+      if(P12.renderedIds.has(n.id)) continue; // dedupe por id
+      P12.renderedIds.add(n.id);
+
+      const card = document.createElement('div');
+      card.className = 'note-card';
+      card.dataset.id = n.id;
+      card.innerHTML = `
+        <div class="note-text"></div>
         <div class="note-meta">
-          <button type="button" class="like-btn">❤️ Like</button>
-          <span class="counters">👍 <span class="likes-count">${n.likes||0}</span> ·
-          👁️ <span class="views-count">${n.views||0}</span></span>
+          <span class="likes">❤ ${n.likes||0}</span>
+          <span class="views">👁 ${n.views||0}</span>
+          <span class="remaining"></span>
         </div>
-      </li>`).join("");
-    if (!isLocal) {
-      // Inserta slot después de cada 6ª nota
-      const lis = Array.from(this.list.querySelectorAll('li.note'));
-      lis.forEach((li,i)=>{
-        if ((i+1)%6===0) {
-          const ad = document.createElement('div');
-          ad.className = 'ad-slot infeed';
-          ad.innerHTML = `
-          <ins class="adsbygoogle" style="display:block"
-               data-ad-client=""
-               data-ad-slot=""
-               data-ad-format="fluid"
-               data-ad-layout-key="-fg+5n+6t-1j-5u"
-               data-full-width-responsive="true"></ins>
-          <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>`;
-          li.after(ad);
-        }
-      });
+      `;
+      card.querySelector('.note-text').textContent = n.text || '';
+      if(n.remaining != null){
+        card.querySelector('.remaining').textContent = fmtRemaining(n.remaining);
+      }
+      listEl.appendChild(card);
+
+      // Enviar vista solo 1 vez por sesión
+      if(!P12.viewedOnce.has(n.id)){
+        P12.viewedOnce.add(n.id);
+        fetch(`/api/notes/${n.id}/view`, {method:'POST'}).catch(()=>{});
+      }
     }
 
-    // paginación
-    this.pagNav.innerHTML = "";
-    for(let p=1;p<=this.pages;p++){
-      const b=document.createElement("button");
-      b.textContent=p;
-      if(p===this.page) b.disabled=true;
-      b.addEventListener("click",()=>this.load(p));
-      this.pagNav.appendChild(b);
+    // paginación infinita
+    if(hasMore){
+      P12.page = page + 1;
+      attachInfiniteScroll();
     }
-
-    // vistas (una vez por render)
-    this.list.querySelectorAll("li[data-id]").forEach(li=>{
-      const id = li.dataset.id;
-      if(this.seen.has(id)) return;
-      this.seen.add(id);
-      fetch(`/api/notes/${id}/view`, { method:"POST", headers:{ "X-Client-Token": this.token }})
-        .then(r=>r.json()).then(j=>{
-          const el = li.querySelector(".views-count");
-          if (el && j && typeof j.views === "number") el.textContent = j.views;
-        }).catch(()=>{});
-    });
+  }catch(e){
+    console.error('load error', e);
+  }finally{
+    P12.loading = false;
   }
-
-  escape(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML.replace(/\n/g,"<br>"); }
 }
 document.addEventListener("DOMContentLoaded", ()=> new NotesApp());
 
@@ -512,3 +501,13 @@ const __observer = new MutationObserver(muts=>{
 document.addEventListener('DOMContentLoaded', ()=>{
   try{ __observer.observe(document.body,{childList:true,subtree:true}); }catch(e){}
 });
+
+function fmtRemaining(sec){
+  sec = Math.max(0, parseInt(sec||0,10));
+  const d = Math.floor(sec/86400); sec%=86400;
+  const h = Math.floor(sec/3600); sec%=3600;
+  const m = Math.floor(sec/60);
+  if(d>0) return `${d}d ${h}h`;
+  if(h>0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
