@@ -1,43 +1,39 @@
 from __future__ import annotations
-
 import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, request, jsonify, abort
 from sqlalchemy.exc import IntegrityError
-
+from sqlalchemy import func
 from . import db, limiter
 from .models import Note, LikeLog, ReportLog, ViewLog
 
-# Blueprint único (se registra en create_app con url_prefix="/api")
-bp = Blueprint("api", __name__)
+bp = Blueprint("api", __name__)  # __init__ lo registra con url_prefix='/api'
 
-# ===== Helpers =====
 def _now() -> datetime:
-    # Siempre consciente de zona horaria (UTC)
     return datetime.now(timezone.utc)
 
 def _as_aware(dt: Optional[datetime]) -> Optional[datetime]:
-    """Fuerza tz-aware en UTC si viene naive."""
-    if dt is None:
-        return None
+    if dt is None: return None
     return dt if getattr(dt, "tzinfo", None) else dt.replace(tzinfo=timezone.utc)
 
 def _fp() -> str:
-    # prioridad: header -> cookie -> IP
+    h = request.headers
     return (
-        request.headers.get("X-Client-Fingerprint")
+        h.get("X-Client-Fingerprint")
+        or h.get("X-User-Token")
+        or request.cookies.get("p12_fp")
+        or h.get("CF-Connecting-IP")
+        or (h.get("X-Forwarded-For","").split(",")[0].strip() if h.get("X-Forwarded-For") else None)
         or request.cookies.get("fp")
         or request.remote_addr
         or "anon"
     )
 
-def _rate_key() -> str:
+def _rate_key():  # usado por Flask-Limiter
     return _fp()
 
-def _per_page() -> int:
-    # PAGE_SIZE clamped 10..100 (default 20)
+def _page_size() -> int:
     try:
         v = int(os.getenv("PAGE_SIZE", "20"))
     except Exception:
@@ -60,7 +56,6 @@ def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
         "reports": int(n.reports or 0),
     }
 
-# ===== Endpoints =====
 @bp.get("/health")
 def health():
     return jsonify({"ok": True, "now": _now().isoformat()}), 200
@@ -68,44 +63,72 @@ def health():
 @bp.get("/notes")
 def list_notes():
     now = _now()
-    # página
     try:
         page = max(1, int(request.args.get("page", "1")))
     except Exception:
         page = 1
-    page_size = _per_page()
-
-    # ordenar por más nuevas y filtrar expiradas
+    size = _page_size()
     q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
-    items = q.offset((page - 1) * page_size).limit(page_size).all()
-    has_more = len(items) == page_size
-
+    items = q.offset((page - 1) * size).limit(size).all()
+    has_more = len(items) == size
     return jsonify({
         "page": page,
-        "page_size": page_size,
+        "page_size": size,
         "has_more": has_more,
         "notes": [_note_json(n, now) for n in items],
     })
 
-# Crear nota — rate limit (1/10s y 500/día)
 @bp.post("/notes")
 @limiter.limit("1 per 10 seconds", key_func=_rate_key)
 @limiter.limit("500 per day", key_func=_rate_key)
 def create_note():
-    now = _now()
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
     if not text:
         return jsonify({"error": "text is required"}), 400
 
+    fp = _fp()
+    now = _now()
+    # límite por usuario por día (server-side)
+    try:
+        max_day = int(os.getenv("NOTES_PER_DAY", "10"))
+    except Exception:
+        max_day = 10
+    start_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    count_today = db.session.query(func.count(Note.id)).filter(
+        Note.author_fp == fp, Note.timestamp >= start_day
+    ).scalar() or 0
+    if count_today >= max_day:
+        return jsonify({"error": "daily limit reached", "limit": max_day}), 429
+
+    # TTL
     try:
         hours = int(data.get("hours", 12))
     except Exception:
         hours = 12
     hours = max(1, min(hours, 24 * 7))  # 1..168
 
-    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+    n = Note(
+        text=text,
+        timestamp=now,
+        expires_at=now + timedelta(hours=hours),
+        author_fp=fp,
+    )
     db.session.add(n)
+    db.session.flush()  # obtener id
+
+    # cap global
+    try:
+        max_notes = int(os.getenv("MAX_NOTES", "12000"))
+    except Exception:
+        max_notes = 12000
+    total = db.session.query(func.count(Note.id)).scalar() or 0
+    if total > max_notes:
+        excess = total - max_notes
+        olds = Note.query.order_by(Note.timestamp.asc()).limit(excess).all()
+        for o in olds:
+            db.session.delete(o)
+
     db.session.commit()
     return jsonify(_note_json(n, now)), 201
 
@@ -118,7 +141,7 @@ def like_note(note_id: int):
         db.session.flush()
         n.likes = int(n.likes or 0) + 1
         db.session.commit()
-        return jsonify({"likes": int(n.likes or 0), "already_liked": False})
+        return jsonify({"likes": n.likes, "already_liked": False})
     except IntegrityError:
         db.session.rollback()
         return jsonify({"likes": int(n.likes or 0), "already_liked": True})
@@ -135,27 +158,9 @@ def view_note(note_id: int):
         n.views = int(n.views or 0) + 1
         db.session.commit()
         counted = True
-        return jsonify({"views": int(n.views or 0), "counted": True, "ok": True}), 200
     except IntegrityError:
-        # vista duplicada (única por día): no contamos
         db.session.rollback()
-        try:
-            db.session.refresh(n)
-        except Exception:
-            pass
-        return jsonify({"views": int(n.views or 0), "counted": False, "ok": True}), 200
-    except Exception as e:
-        # no romper el feed por errores raros de DB
-        db.session.rollback()
-        try:
-            current_app.logger.error(f"/view failed for note {note_id}: {e}")
-        except Exception:
-            pass
-        try:
-            db.session.refresh(n)
-        except Exception:
-            pass
-        return jsonify({"views": int(n.views or 0), "counted": False, "ok": False, "error": str(e)[:120]}), 200
+    return jsonify({"views": int(n.views or 0), "counted": counted})
 
 @bp.post("/notes/<int:note_id>/report")
 def report_note(note_id: int):
@@ -166,12 +171,11 @@ def report_note(note_id: int):
         db.session.flush()
         n.reports = int(n.reports or 0) + 1
         if n.reports >= 5:
-            # borrar la nota (cascade elimina logs)
-            db.session.delete(n)
+            db.session.delete(n)  # cascada borra logs
             db.session.commit()
             return jsonify({"deleted": True, "reports": 0, "already_reported": False})
         db.session.commit()
-        return jsonify({"deleted": False, "reports": int(n.reports or 0), "already_reported": False})
+        return jsonify({"deleted": False, "reports": n.reports, "already_reported": False})
     except IntegrityError:
         db.session.rollback()
         return jsonify({"deleted": False, "reports": int(n.reports or 0), "already_reported": True})
