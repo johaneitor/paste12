@@ -1,11 +1,11 @@
 import secrets
 from zoneinfo import ZoneInfo
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, request, make_response, send_from_directory
+from flask import Flask, send_from_directory, request, make_response, send_from_directory
 from datetime import datetime, timezone, timedelta
 import os
 from pathlib import Path
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -32,6 +32,10 @@ def ensure_client_cookie(app):
         return None
 
 def create_app():
+    @app.get('/favicon.ico')
+    def _favicon():
+        return send_from_directory(app.static_folder, 'favicon.svg', mimetype='image/svg+xml')
+
     # --- Flask + estáticos del frontend ---
     ROOT = Path(__file__).resolve().parents[1]
     app = Flask(
@@ -157,3 +161,17 @@ limiter = Limiter(
     storage_uri=os.getenv('RATELIMIT_STORAGE_URL', 'memory://'),
     default_limits=[],  # límites por endpoint
 )
+
+
+def migrate_min(app):
+    """Migración mínima, compatible con SQLAlchemy 2.x (sin engine.execute)."""
+    from flask import current_app
+    with app.app_context():
+        try:
+            db.create_all()
+            # no-op para calentar la conexión
+            with db.engine.begin() as conn:
+                conn.execute(text('SELECT 1'))
+        except Exception as e:
+            current_app.logger.warning(f"migrate_min: {e}")
+
