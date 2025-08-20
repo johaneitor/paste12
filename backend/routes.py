@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import current_app,  Blueprint, request, jsonify
 from datetime import datetime, timezone, timedelta
 from hashlib import sha256
 from sqlalchemy.exc import IntegrityError
@@ -68,7 +68,14 @@ def get_notes():
 @limiter.limit('1 per 10 seconds', key_func=_rate_key)
 @limiter.limit('500 per day', key_func=_rate_key)
 def create_note():
-    data = request.get_json(silent=True) or {}
+    
+# enforce cap (ligero; no bloquea si falla)
+try:
+    from .tasks import enforce_global_cap as _egc
+    _egc(current_app)
+except Exception:
+    pass
+data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
     if not text:
         return jsonify({"error": "Texto requerido"}), 400

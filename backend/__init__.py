@@ -96,4 +96,31 @@ def create_app():
             app.add_url_rule("/<path:path>", endpoint="static_any", view_func=static_any)
 
     _register_frontend(app)
+    # Enforce cap al boot (una vez) si está habilitado
+    try:
+        from .tasks import enforce_global_cap as _egc
+        if os.getenv("ENFORCE_CAP_ON_BOOT", "1") == "1":
+            _egc(app)
+    except Exception as _e:
+        try:
+            app.logger.warning(f"enforce_cap_on_boot: {_e}")
+        except Exception:
+            pass
+
     return app
+
+
+def migrate_min(app):
+    from . import db
+    with app.app_context():
+        try:
+            db.create_all()
+            with db.engine.begin() as conn:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_ts_desc ON note (timestamp DESC)"))
+        except Exception as e:
+            try:
+                app.logger.warning(f"migrate_min: {e}")
+            except Exception:
+                print("migrate_min warn:", e)
