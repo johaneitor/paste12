@@ -1,3 +1,8 @@
+window.P12 = window.P12 || {};
+P12.page = 1;
+P12.loading = false;
+P12.renderedIds = new Set();
+P12.viewedOnce = new Set();
 window.P12App = { load: async function(page){ return await window.load(page); } };
 window.P12 = window.P12 || {};
 P12.page = 1;
