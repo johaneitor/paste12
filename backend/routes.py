@@ -23,6 +23,19 @@ def _serialize(n: Note):
     }
 
 def _fingerprint():
+    # 1) token explícito
+    tok = (request.headers.get('X-User-Token') or request.cookies.get('p12') or '').strip()
+    if tok:
+        return tok[:128]
+    # 2) X-Forwarded-For (primer IP)
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        ip = xff.split(',')[0].strip()
+    else:
+        ip = request.remote_addr or ''
+    ua = request.headers.get('User-Agent', '')
+    return sha256(f"{ip}|{ua}".encode('utf-8')).hexdigest()
+
     # 1) Preferir token de cliente
     tok = (request.headers.get("X-User-Token") or request.cookies.get("p12") or "").strip()
     if tok:

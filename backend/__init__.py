@@ -1,3 +1,8 @@
+import secrets
+from zoneinfo import ZoneInfo
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, request, make_response, send_from_directory
+from datetime import datetime, timezone, timedelta
 import os
 from pathlib import Path
 from flask import Flask, send_from_directory
@@ -8,6 +13,23 @@ from flask_limiter.util import get_remote_address
 
 # SQLAlchemy singleton del paquete (otros módulos hacen "from . import db")
 db = SQLAlchemy()
+
+def ensure_client_cookie(app):
+    @app.before_request
+    def _p12_cookie():
+        # si ya hay cookie, no hacemos nada
+        if request.cookies.get('p12'): return
+        # colocamos cookie en la primera respuesta
+        @app.after_request
+        def _set_cookie(resp):
+            try:
+                if not request.cookies.get('p12'):
+                    tok = secrets.token_hex(16)
+                    resp.set_cookie('p12', tok, max_age=60*60*24*365, httponly=False, samesite='Lax')
+            except Exception:
+                pass
+            return resp
+        return None
 
 def create_app():
     # --- Flask + estáticos del frontend ---
@@ -76,4 +98,54 @@ def create_app():
     def healthz():
         return {"ok": True}
 
+    
+    with app.app_context():
+        db.create_all()
+        try:
+            from sqlalchemy import text
+            eng = db.engine
+            # Crea LikeLog / ReportLog si no existen (por seguridad)
+            eng.execute(text('''
+            CREATE TABLE IF NOT EXISTS like_log (
+              id SERIAL PRIMARY KEY,
+              note_id INTEGER NOT NULL REFERENCES note(id) ON DELETE CASCADE,
+              fingerprint VARCHAR(128) NOT NULL,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            '''))
+            eng.execute(text('''
+            CREATE TABLE IF NOT EXISTS report_log (
+              id SERIAL PRIMARY KEY,
+              note_id INTEGER NOT NULL REFERENCES note(id) ON DELETE CASCADE,
+              fingerprint VARCHAR(128) NOT NULL,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            '''))
+            # UNIQUE constraints si faltan
+            eng.execute(text('''
+            DO $$
+            BEGIN
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint c
+                JOIN pg_class t ON c.conrelid=t.oid
+                WHERE t.relname='like_log' AND c.conname='uq_like_note_fp'
+              ) THEN
+                ALTER TABLE like_log ADD CONSTRAINT uq_like_note_fp UNIQUE (note_id, fingerprint);
+              END IF;
+            END$$;
+            '''))
+            eng.execute(text('''
+            DO $$
+            BEGIN
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint c
+                JOIN pg_class t ON c.conrelid=t.oid
+                WHERE t.relname='report_log' AND c.conname='uq_report_note_fp'
+              ) THEN
+                ALTER TABLE report_log ADD CONSTRAINT uq_report_note_fp UNIQUE (note_id, fingerprint);
+              END IF;
+            END$$;
+            '''))
+        except Exception as e:
+            app.logger.warning(f"migrate_min: {e}")
     return app
