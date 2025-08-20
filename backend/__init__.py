@@ -107,6 +107,40 @@ def create_app():
         except Exception:
             pass
 
+    
+    # --- Registrar API blueprint ---
+    try:
+        from .routes import bp as api_bp
+        app.register_blueprint(api_bp)
+        app.logger.info("API blueprint registrado")
+    except Exception as e:
+        app.logger.error(f"No se pudo registrar blueprint API: {e}")
+
+    # --- Rutas estáticas idempotentes + SPA; NO capturar /api/*
+    try:
+        existing = {r.rule for r in app.url_map.iter_rules()}
+        if "/favicon.ico" not in existing:
+            app.add_url_rule("/favicon.ico","static_favicon", view_func=lambda: send_from_directory(app.static_folder, "favicon.svg", mimetype="image/svg+xml"))
+        if "/ads.txt" not in existing:
+            app.add_url_rule("/ads.txt","static_ads", view_func=lambda: send_from_directory(app.static_folder, "ads.txt", mimetype="text/plain"))
+        if "/" not in existing:
+            app.add_url_rule("/","static_root", view_func=lambda: send_from_directory(app.static_folder, "index.html"))
+        if "static_any" not in app.view_functions:
+            import os
+            def static_any(path):
+                if path.startswith("api/"):
+                    from flask import abort
+                    return abort(404)
+                full = os.path.join(app.static_folder, path)
+                from flask import send_from_directory
+                import os as _os
+                if _os.path.isfile(full):
+                    return send_from_directory(app.static_folder, path)
+                return send_from_directory(app.static_folder, "index.html")
+            app.add_url_rule("/<path:path>", "static_any", static_any)
+    except Exception as e:
+        app.logger.warning(f"Rutas estáticas: {e}")
+
     return app
 
 

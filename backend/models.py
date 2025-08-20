@@ -43,6 +43,7 @@ class ReportLog(db.Model):
 
 
 
+
 class ViewLog(db.Model):
     __tablename__ = "view_log"
     id = db.Column(db.Integer, primary_key=True)
