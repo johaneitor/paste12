@@ -1,71 +1,83 @@
 from __future__ import annotations
-from .models import ViewLog
-from flask import Blueprint, current_app, jsonify, request
+
+import os
 from datetime import datetime, timezone, timedelta
+from typing import Optional
+
+from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError
+
 from . import db, limiter
-from .models import Note, LikeLog, ReportLog
+from .models import Note, LikeLog, ReportLog, ViewLog
 
-bp = Blueprint("api", __name__, url_prefix="/api")
+# Blueprint único (se registra en create_app con url_prefix="/api")
+bp = Blueprint("api", __name__)
 
-def _now():
+# ===== Helpers =====
+def _now() -> datetime:
+    # Siempre consciente de zona horaria (UTC)
     return datetime.now(timezone.utc)
 
+def _as_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    """Fuerza tz-aware en UTC si viene naive."""
+    if dt is None:
+        return None
+    return dt if getattr(dt, "tzinfo", None) else dt.replace(tzinfo=timezone.utc)
+
 def _fp() -> str:
-    # Lo más estable posible para identificar cliente
+    # prioridad: header -> cookie -> IP
     return (
         request.headers.get("X-Client-Fingerprint")
-        or request.headers.get("X-User-Token")
-        or request.cookies.get("p12_fp")
-        or request.headers.get("CF-Connecting-IP")
-        or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.cookies.get("fp")
         or request.remote_addr
         or "anon"
     )
 
-def _note_json(n: Note) -> dict:
-    now = _now()
-    rem = max(0, int((n.expires_at - now).total_seconds())) if getattr(n, "expires_at", None) else 0
+def _rate_key() -> str:
+    return _fp()
+
+def _per_page() -> int:
+    # PAGE_SIZE clamped 10..100 (default 20)
+    try:
+        v = int(os.getenv("PAGE_SIZE", "20"))
+    except Exception:
+        v = 20
+    return max(10, min(v, 100))
+
+def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
+    now = _as_aware(now) or _now()
+    ts = _as_aware(getattr(n, "timestamp", None))
+    exp = _as_aware(getattr(n, "expires_at", None))
+    remaining = max(0, int((exp - now).total_seconds())) if exp else None
     return {
         "id": n.id,
         "text": n.text,
-        "timestamp": (n.timestamp.isoformat() if getattr(n, "timestamp", None) else None),
-        "expires_at": (n.expires_at.isoformat() if getattr(n, "expires_at", None) else None),
-        "remaining": rem,
-        "likes": int(getattr(n, "likes", 0) or 0),
-        "views": int(getattr(n, "views", 0) or 0),
-        "reports": int(getattr(n, "reports", 0) or 0),
+        "timestamp": ts.isoformat() if ts else None,
+        "expires_at": exp.isoformat() if exp else None,
+        "remaining": remaining,
+        "likes": int(n.likes or 0),
+        "views": int(n.views or 0),
+        "reports": int(n.reports or 0),
     }
 
-def _per_page():
-    import os
-    try:
-        v = int(os.getenv("PER_PAGE_DEFAULT", "10"))
-    except Exception:
-        v = 10
-    max_v = int(os.getenv("MAX_PAGE_SIZE", "10"))
-    return max(1, min(v, max_v))
-
-# === helpers de rate-limit / fingerprint (inyectados) ===
-def _rate_key():
-    return _fp()
-
+# ===== Endpoints =====
+@bp.get("/health")
+def health():
+    return jsonify({"ok": True, "now": _now().isoformat()}), 200
 
 @bp.get("/notes")
 def list_notes():
-    now = datetime.now(timezone.utc)
+    now = _now()
+    # página
     try:
-        page = max(1, int(request.args.get("page", 1)))
+        page = max(1, int(request.args.get("page", "1")))
     except Exception:
         page = 1
-    try:
-        page_size = int(os.getenv("PAGE_SIZE", "20"))
-    except Exception:
-        page_size = 20
-    page_size = max(10, min(page_size, 100))  # clamp 10..100
+    page_size = _per_page()
 
+    # ordenar por más nuevas y filtrar expiradas
     q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
-    items = q.offset((page-1)*page_size).limit(page_size).all()
+    items = q.offset((page - 1) * page_size).limit(page_size).all()
     has_more = len(items) == page_size
 
     return jsonify({
@@ -75,55 +87,52 @@ def list_notes():
         "notes": [_note_json(n, now) for n in items],
     })
 
+# Crear nota — rate limit (1/10s y 500/día)
 @bp.post("/notes")
 @limiter.limit("1 per 10 seconds", key_func=_rate_key)
 @limiter.limit("500 per day", key_func=_rate_key)
 def create_note():
+    now = _now()
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+
     try:
         hours = int(data.get("hours", 12))
     except Exception:
         hours = 12
-    hours = max(1, min(hours, 24*7))  # entre 1h y 7 días
+    hours = max(1, min(hours, 24 * 7))  # 1..168
 
-    if not text:
-        return jsonify({"error": "text is required"}), 400
-
-    now = _now()
-    n = Note(
-        text=text,
-        timestamp=now,
-        expires_at=now + timedelta(hours=hours),
-    )
+    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
     db.session.add(n)
     db.session.commit()
-    return jsonify({"ok": True, "id": n.id, "note": _note_json(n)}), 201
+    return jsonify(_note_json(n, now)), 201
 
 @bp.post("/notes/<int:note_id>/like")
 def like_note(note_id: int):
-    fp = _fp()
     n = Note.query.get_or_404(note_id)
+    fp = _fp()
     try:
         db.session.add(LikeLog(note_id=note_id, fingerprint=fp))
+        db.session.flush()
         n.likes = int(n.likes or 0) + 1
         db.session.commit()
         return jsonify({"likes": int(n.likes or 0), "already_liked": False})
     except IntegrityError:
         db.session.rollback()
-        # ya likeó antes
         return jsonify({"likes": int(n.likes or 0), "already_liked": True})
 
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
     n = Note.query.get_or_404(note_id)
-    fp = request.headers.get("X-Client-Fingerprint") or request.cookies.get("fp") or request.remote_addr or "anon"
-    today = datetime.now(timezone.utc).date()
+    fp = _fp()
+    today = _now().date()
     counted = False
     try:
         db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
         db.session.flush()
-        n.views = (n.views or 0) + 1
+        n.views = int(n.views or 0) + 1
         db.session.commit()
         counted = True
     except IntegrityError:
@@ -132,13 +141,14 @@ def view_note(note_id: int):
 
 @bp.post("/notes/<int:note_id>/report")
 def report_note(note_id: int):
-    fp = _fp()
     n = Note.query.get_or_404(note_id)
+    fp = _fp()
     try:
         db.session.add(ReportLog(note_id=note_id, fingerprint=fp))
+        db.session.flush()
         n.reports = int(n.reports or 0) + 1
         if n.reports >= 5:
-            # borrar la nota
+            # borrar la nota (cascade elimina logs)
             db.session.delete(n)
             db.session.commit()
             return jsonify({"deleted": True, "reports": 0, "already_reported": False})
@@ -146,9 +156,4 @@ def report_note(note_id: int):
         return jsonify({"deleted": False, "reports": int(n.reports or 0), "already_reported": False})
     except IntegrityError:
         db.session.rollback()
-        # ya reportó
         return jsonify({"deleted": False, "reports": int(n.reports or 0), "already_reported": True})
-
-@bp.get("/health")
-def health():
-    return jsonify({"ok": True, "ts": _now().isoformat()})
