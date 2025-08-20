@@ -1,3 +1,4 @@
+from .models import ViewLog
 from __future__ import annotations
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timezone, timedelta
@@ -47,25 +48,27 @@ def _per_page():
 
 @bp.get("/notes")
 def list_notes():
-    page = int(request.args.get("page", "1"))
-    if page < 1:
+    now = datetime.now(timezone.utc)
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except Exception:
         page = 1
-    limit = _per_page()
-    now = _now()
-    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
-    total = q.count()
-    items = q.limit(limit).offset((page - 1) * limit).all()
-    return jsonify({
-        "notes": [_note_json(n) for n in items],
-        "page": page,
-        "per_page": limit,
-        "total": total,
-        "has_more": (page * limit) < total,
-    })
+    try:
+        page_size = int(os.getenv("PAGE_SIZE", "20"))
+    except Exception:
+        page_size = 20
+    page_size = max(10, min(page_size, 100))  # clamp
 
-# 1 cada 10s y 500 por día para crear
-def _rate_key():
-    return _fp()
+    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+    items = q.offset((page-1)*page_size).limit(page_size).all()
+    has_more = len(items) == page_size
+
+    return jsonify({
+        "page": page,
+        "page_size": page_size,
+        "has_more": has_more,
+        "notes": [_note_json(n, now) for n in items],
+    })
 
 @bp.post("/notes")
 @limiter.limit("1 per 10 seconds", key_func=_rate_key)
@@ -109,9 +112,19 @@ def like_note(note_id: int):
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
     n = Note.query.get_or_404(note_id)
-    n.views = int(n.views or 0) + 1
-    db.session.commit()
-    return jsonify({"views": int(n.views or 0)})
+    # fingerprint del cliente (header -> cookie -> IP)
+    fp = request.headers.get("X-Client-Fingerprint") or request.cookies.get("fp") or request.remote_addr or "anon"
+    today = datetime.now(timezone.utc).date()
+    counted = False
+    try:
+        db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
+        db.session.flush()
+        n.views = (n.views or 0) + 1
+        db.session.commit()
+        counted = True
+    except IntegrityError:
+        db.session.rollback()
+    return jsonify({"views": int(n.views or 0), "counted": counted})
 
 @bp.post("/notes/<int:note_id>/report")
 def report_note(note_id: int):
