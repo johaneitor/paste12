@@ -49,7 +49,9 @@ def _register_frontend(app: Flask) -> None:
         app.add_url_rule('/<path:path>', 'static_any', static_any)
 
 def create_app():
-    app = Flask(__name__, static_folder='frontend', static_url_path='')
+    from pathlib import Path as _P
+    _STATIC_DIR = str((_P(__file__).resolve().parent.parent / 'frontend').resolve())
+    app = Flask(__name__, static_folder=_STATIC_DIR, static_url_path='')
 
     # Proxy headers (Render)
     if ProxyFix:
