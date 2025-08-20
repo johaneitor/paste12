@@ -80,5 +80,12 @@ def create_app():
     # API
     from . import routes  # noqa: WPS433
     app.register_blueprint(routes.bp)
+    # --- Rutas estáticas del frontend (Blueprint) ---
+    try:
+        from .static_routes import bp as static_bp
+        app.register_blueprint(static_bp)
+    except Exception as _e:
+        app.logger.error(f"static_bp register failed: {_e}")
+
 
     return app
