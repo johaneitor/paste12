@@ -140,7 +140,11 @@ def create_app():
             app.add_url_rule("/<path:path>", "static_any", static_any)
     except Exception as e:
         app.logger.warning(f"Rutas estáticas: {e}")
-
+        
+        try:
+            enforce_cap_on_boot(app)
+        except Exception as e:
+            app.logger.warning(f"enforce_cap_on_boot: {e}")
     return app
 
 
