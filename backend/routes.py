@@ -135,7 +135,8 @@ def create_note():
     hours = min(168, max(1, hours))
     now = _now()
         author_fp=client_fingerprint(),
-    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours),
+        author_fp=client_fingerprint(),)
     db.session.add(n)
     db.session.commit()
     return jsonify(_note_json(n, now)), 201
