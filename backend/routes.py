@@ -249,3 +249,55 @@ def admin_ensure_viewlog():
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "error": str(e), **out}), 500
+
+# --- Admin: asegurar esquema de ViewLog (usa db.engine.begin) ---
+@bp.post("/admin/ensure_viewlog_fix")
+def admin_ensure_viewlog_fix():
+    import os
+    from sqlalchemy import text
+
+    tok = request.headers.get("X-Admin-Token") or ""
+    expected = os.getenv("ADMIN_TOKEN") or "changeme"
+    if tok != expected:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    out = {"steps": []}
+    try:
+        # Usar engine directamente, no db.session.bind
+        with db.engine.begin() as conn:
+            dialect = conn.dialect.name
+            out["dialect"] = dialect
+
+            if dialect == "postgresql":
+                conn.execute(text("ALTER TABLE view_log ADD COLUMN IF NOT EXISTS view_date date"))
+                out["steps"].append("ADD COLUMN view_date (pg)")
+                conn.execute(text("UPDATE view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
+                out["steps"].append("BACKFILL view_date")
+                # borrar UNIQUE viejo si existe
+                try:
+                    conn.execute(text('ALTER TABLE view_log DROP CONSTRAINT "uq_view_note_fp"'))
+                    out["steps"].append("DROP UNIQUE uq_view_note_fp")
+                except Exception:
+                    pass
+                # crear UNIQUE nuevo
+                try:
+                    conn.execute(text('ALTER TABLE view_log ADD CONSTRAINT "uq_view_note_fp_day" UNIQUE (note_id, fingerprint, view_date)'))
+                    out["steps"].append("ADD UNIQUE uq_view_note_fp_day")
+                except Exception:
+                    out["steps"].append("UNIQUE uq_view_note_fp_day exists")
+            else:
+                # SQLite
+                conn.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
+                out["steps"].append("ADD COLUMN view_date (sqlite)")
+                conn.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
+                out["steps"].append("BACKFILL view_date (sqlite)")
+                conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_view_note_fp_day ON view_log(note_id, fingerprint, view_date)"))
+                out["steps"].append("CREATE UNIQUE INDEX uq_view_note_fp_day (sqlite)")
+
+            # índices útiles
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
+
+        return jsonify({"ok": True, **out})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), **out}), 500
