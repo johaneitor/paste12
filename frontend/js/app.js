@@ -42,13 +42,7 @@ class NotesApp {
       const notes   = d.notes || [];
       const hasMore = !!d.has_more;
 
-      if (page === 1) {
-        // reset de feed y sets para evitar duplicados
-        this.listEl.innerHTML = '';
-        this.footer.textContent = '';
-        P12.renderedIds.clear();
-        P12.viewedOnce.clear();
-      }
+      if (page===1){ (document.querySelector('#feed')||document.body).innerHTML=''; P12.renderedIds.clear(); }
 
       // render + vistas idempotentes
       for (const n of notes) {
@@ -96,11 +90,12 @@ class NotesApp {
         }, { once:false });
       }
 
-      if (hasMore) {
-        P12.page = page + 1;
-        this.footer.textContent = 'Cargando más…';
-        attachInfiniteScroll(() => this.load(P12.page));
-      } else {
+      if (hasMore === true) {
+      P12.page = page + 1;
+      if (window.attachInfiniteScroll) attachInfiniteScroll();
+    } else {
+      if (window.detachInfiniteScroll) detachInfiniteScroll();
+    } else {
         this.footer.textContent = 'Fin del feed';
       }
     } catch (e) {
