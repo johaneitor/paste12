@@ -123,24 +123,32 @@ def list_notes():
 @bp.post("/notes")
 @limiter.limit("1 per 10 seconds", key_func=_rate_key)
 @limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+@app.route("/api/notes", methods=["POST"])
 def create_note():
-    data = request.get_json(silent=True) or {}
+    from flask import request, jsonify
+    from datetime import timedelta
+    try:
+        data = request.get_json(silent=True) or {}
+    except Exception:
+        data = {}
     text = (data.get("text") or "").strip()
     if not text:
-        return jsonify({"error": "text is required"}), 400
+        return jsonify({"error": "text required"}), 400
     try:
-        hours = int(data.get("hours", 12))
+        hours = int(data.get("hours", 24))
     except Exception:
-        hours = 12
+        hours = 24
     hours = min(168, max(1, hours))
-    now = _now()
+    now = _now()  # usa tu helper existente
+    n = Note(
+        text=text,
+        timestamp=now,
+        expires_at=now + timedelta(hours=hours),
         author_fp=client_fingerprint(),
-    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours),
-        author_fp=client_fingerprint(),)
+    )
     db.session.add(n)
     db.session.commit()
     return jsonify(_note_json(n, now)), 201
-
 @bp.post("/notes/<int:note_id>/like")
 def like_note(note_id: int):
     n = Note.query.get_or_404(note_id)
