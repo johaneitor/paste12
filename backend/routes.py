@@ -1,3 +1,4 @@
+from backend.utils.fingerprint import client_fingerprint
 from __future__ import annotations
 
 import os
@@ -133,6 +134,7 @@ def create_note():
         hours = 12
     hours = min(168, max(1, hours))
     now = _now()
+        author_fp=client_fingerprint(),
     n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
     db.session.add(n)
     db.session.commit()
