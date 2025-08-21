@@ -1,0 +1,6 @@
+PORT=8000
+GET /api/notes -> 404
+POST /api/notes -> 405
+/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask_limiter/extension.py:316: UserWarning: Using the in-memory storage for tracking rate limits as no storage was explicitly specified. This is not recommended for production use. See: https://flask-limiter.readthedocs.io#configuring-a-storage-backend for documentation about configuring the storage backend.
+  warnings.warn(
+[2025-08-21 20:27:29,273] ERROR in __init__: No se pudo registrar blueprint API: name 'app' is not defined

@@ -1,5 +1,6 @@
-from backend.utils.fingerprint import client_fingerprint
 from __future__ import annotations
+
+from backend.utils.fingerprint import client_fingerprint
 
 import os
 os.environ.setdefault("ENABLE_VIEWS","1")
@@ -97,58 +98,11 @@ def health():
     return jsonify({"ok": True, "now": _now().isoformat()}), 200
 
 @bp.get("/notes")
-def list_notes():
-    try:
-        now = _now()
-        try:
-            page = int(request.args.get("page", "1"))
-        except Exception:
-            page = 1
-        if page < 1:
-            page = 1
-        page_size = _per_page()
-        q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
-        items = q.offset((page - 1) * page_size).limit(page_size).all()
-        has_more = len(items) == page_size
-        return jsonify({
-            "page": page,
-            "page_size": page_size,
-            "has_more": has_more,
-            "notes": [_note_json(n, now) for n in items],
-        })
-    except Exception as e:
-        current_app.logger.exception("list_notes failed: %s", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 @bp.post("/notes")
 @limiter.limit("1 per 10 seconds", key_func=_rate_key)
 @limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
 @app.route("/api/notes", methods=["POST"])
-def create_note():
-    from flask import request, jsonify
-    from datetime import timedelta
-    try:
-        data = request.get_json(silent=True) or {}
-    except Exception:
-        data = {}
-    text = (data.get("text") or "").strip()
-    if not text:
-        return jsonify({"error": "text required"}), 400
-    try:
-        hours = int(data.get("hours", 24))
-    except Exception:
-        hours = 24
-    hours = min(168, max(1, hours))
-    now = _now()  # usa tu helper existente
-    n = Note(
-        text=text,
-        timestamp=now,
-        expires_at=now + timedelta(hours=hours),
-        author_fp=client_fingerprint(),
-    )
-    db.session.add(n)
-    db.session.commit()
-    return jsonify(_note_json(n, now)), 201
 @bp.post("/notes/<int:note_id>/like")
 def like_note(note_id: int):
     n = Note.query.get_or_404(note_id)
@@ -239,7 +193,6 @@ def __api_error_handler(e):
         return jsonify({"ok": False, "error": str(e)}), 500
     except Exception:  # fallback
         return ("", 500)
-
 
 @bp.post("/notes/report")
 def __report_missing():
@@ -431,7 +384,6 @@ def admin_ensure_viewlog_fix2():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e), **out}), 500
 
-
 @bp.get("/admin/diag_views")
 def diag_views():
     # requiere token admin por header
@@ -447,7 +399,6 @@ def diag_views():
         {"nid": note_id, "vd": today}
     ).mappings().all()
     return jsonify({"ok": True, "today": str(today), "count": len(rows), "rows": list(rows)}), 200
-
 
 @bp.post("/admin/fix_viewlog_uniques")
 def admin_fix_viewlog_uniques():
@@ -554,8 +505,6 @@ def admin_fix_viewlog_uniques():
     out["indexes"] = [dict(r) for r in out.get("indexes", [])] if isinstance(out.get("indexes"), list) else out.get("indexes")
     return jsonify(out), 200
 
-
-
 @bp.get("/admin/diag_viewlog_rows")
 def admin_diag_viewlog_rows():
     import os
@@ -575,7 +524,6 @@ def admin_diag_viewlog_rows():
     rows = db.session.execute(db.text(q), params).mappings().all()
     return jsonify({"ok": True, "count": len(rows), "rows": list(rows)}), 200
 
-
 @bp.get("/admin/routes")
 def admin_list_routes():
     import os
@@ -585,7 +533,6 @@ def admin_list_routes():
     for r in current_app.url_map.iter_rules():
         rules.append({"rule": str(r), "methods": sorted(m for m in r.methods if m not in {"HEAD","OPTIONS"})})
     return jsonify({"ok": True, "rules": rules}), 200
-
 
 @bp.get("/admin/diag_viewlog_schema")
 def admin_diag_viewlog_schema():
@@ -619,7 +566,6 @@ def admin_diag_viewlog_schema():
     out["indexes"] = [dict(r) for r in out.get("indexes", [])] if isinstance(out.get("indexes"), list) else out.get("indexes")
     return jsonify(out), 200
 
-
 @bp.post("/admin/diag_try_insert")
 def admin_diag_try_insert():
     import os
@@ -647,7 +593,6 @@ def admin_diag_try_insert():
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "error": str(e)}), 500
-
 
 @bp.post("/admin/force_viewlog_unique_v2")
 def admin_force_viewlog_unique_v2():
@@ -703,3 +648,48 @@ def admin_force_viewlog_unique_v2():
 
     db.session.commit()
     return jsonify(out), 200
+
+@app.route('/api/notes', methods=['GET'])
+def list_notes():
+    from flask import request, jsonify
+    try:
+        page = int(request.args.get('page', 1))
+    except Exception:
+        page = 1
+    page = max(1, page)
+    try:
+        q = Note.query.order_by(Note.timestamp.desc())
+        items = q.limit(20).offset((page-1)*20).all()
+        now = _now()
+        return jsonify([_note_json(n, now) for n in items]), 200
+    except Exception as e:
+        return jsonify({"error":"list_failed","detail":str(e)}), 500
+
+@app.route('/api/notes', methods=['POST'])
+def create_note():
+    from flask import request, jsonify
+    from datetime import timedelta
+    data = request.get_json(silent=True) or {}
+    text = (data.get('text') or '').strip()
+    if not text:
+        return jsonify({"error":"text required"}), 400
+    try:
+        hours = int(data.get('hours', 24))
+    except Exception:
+        hours = 24
+    hours = min(168, max(1, hours))
+    now = _now()
+    try:
+        n = Note(
+            text=text,
+            timestamp=now,
+            expires_at=now + timedelta(hours=hours),
+            author_fp=client_fingerprint(),
+        )
+        db.session.add(n)
+        db.session.commit()
+        return jsonify(_note_json(n, now)), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error":"create_failed","detail":str(e)}), 500
+
