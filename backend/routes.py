@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+os.environ.setdefault("ENABLE_VIEWS","1")
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -166,10 +167,13 @@ def report_note(note_id: int):
 
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
-    # Kill-switch para evitar locks de SQLite bajo carga
+    from flask import jsonify
+    import os
+    # Kill-switch (ahora por defecto 1)
     if os.getenv("ENABLE_VIEWS", "1") != "1":
         n = Note.query.get_or_404(note_id)
-        return jsonify({"views": int(n.views or 0), "counted": False})
+        return jsonify({"counted": False, "views": int(n.views or 0)})
+
     n = Note.query.get_or_404(note_id)
     fp = _fp()
     today = _now().date()
@@ -182,10 +186,8 @@ def view_note(note_id: int):
         counted = True
     except IntegrityError:
         db.session.rollback()
-    return jsonify({"views": int(n.views or 0), "counted": counted})
-
-
-# --- Generic JSON error handler that preserves HTTP status ---
+        # ya vio hoy con este fp
+    return jsonify({"counted": counted, "views": int(n.views or 0)})
 @bp.errorhandler(Exception)
 def __api_error_handler(e):
     from flask import current_app, jsonify
