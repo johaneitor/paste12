@@ -34,6 +34,11 @@ def _real_ip():
         return cip.strip()
     return request.remote_addr or "anon"
 
+def _views_enabled():
+    import os
+    # por defecto on (1). Sólo se apaga con ENABLE_VIEWS="0"
+    return (os.getenv("ENABLE_VIEWS","1") != "0")
+
 def _fp() -> str:
     return (
         request.headers.get("X-Client-Fingerprint")
@@ -167,21 +172,60 @@ def report_note(note_id: int):
 
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
-    from flask import jsonify
+    # Vista única por fingerprint y día (UTC). Postgres: ON CONFLICT DO NOTHING.
+    from flask import jsonify, current_app
+    import os
+    from sqlalchemy import text
     n = Note.query.get_or_404(note_id)
-    fp = _fp()
+
+    # Si alguien dejó un kill-switch, lo ignoramos salvo que esté explícitamente en "0"
+    if not _views_enabled():
+        return jsonify({"counted": False, "views": int(n.views or 0), "disabled": True})
+
+    fp = _fp() or "anon"
     today = _now().date()
     counted = False
     try:
-        db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
-        db.session.flush()
-        n.views = int(n.views or 0) + 1
-        db.session.commit()
-        counted = True
-    except IntegrityError as e:
+        dialect = db.session.bind.dialect.name
+
+        if dialect == "postgresql":
+            # Intento de inserción idempotente por (note_id, fp, view_date)
+            row = db.session.execute(text("""
+                INSERT INTO view_log (note_id, fingerprint, view_date, created_at)
+                VALUES (:nid, :fp, :vd, (NOW() AT TIME ZONE 'UTC'))
+                ON CONFLICT (note_id, fingerprint, view_date) DO NOTHING
+                RETURNING id
+            """), {"nid": note_id, "fp": fp, "vd": today}).first()
+
+            if row:
+                db.session.execute(text("UPDATE note SET views = COALESCE(views,0)+1 WHERE id=:nid"),
+                                   {"nid": note_id})
+                counted = True
+
+            # Leer valor actual para responder
+            v = db.session.execute(text("SELECT COALESCE(views,0) FROM note WHERE id=:nid"),
+                                   {"nid": note_id}).scalar() or 0
+            db.session.commit()
+            return jsonify({"counted": counted, "views": int(v)})
+
+        else:
+            # SQLite/u otros: ORM + UNIQUE (note_id, fp, view_date) maneja duplicados
+            try:
+                db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
+                db.session.flush()
+                n.views = int(n.views or 0) + 1
+                counted = True
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+            return jsonify({"counted": counted, "views": int(n.views or 0)})
+
+    except Exception as e:
+        # Log detallado y 500 para detectar esquemas rotos
+        current_app.logger.exception("view_note error: %s", e)
         db.session.rollback()
-        # si ya había vista previa para (note_id, fp, day) no cuenta
-    return jsonify({"counted": counted, "views": int(n.views or 0)})
+        return jsonify({"ok": False, "error": "view insert failed"}), 500
+
 @bp.errorhandler(Exception)
 def __api_error_handler(e):
     from flask import current_app, jsonify
