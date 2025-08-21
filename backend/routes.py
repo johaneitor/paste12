@@ -168,12 +168,6 @@ def report_note(note_id: int):
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
     from flask import jsonify
-    import os
-    # Kill-switch (ahora por defecto 1)
-    if os.getenv("ENABLE_VIEWS", "1") != "1":
-        n = Note.query.get_or_404(note_id)
-        return jsonify({"counted": False, "views": int(n.views or 0)})
-
     n = Note.query.get_or_404(note_id)
     fp = _fp()
     today = _now().date()
@@ -186,7 +180,6 @@ def view_note(note_id: int):
         counted = True
     except IntegrityError:
         db.session.rollback()
-        # ya vio hoy con este fp
     return jsonify({"counted": counted, "views": int(n.views or 0)})
 @bp.errorhandler(Exception)
 def __api_error_handler(e):
