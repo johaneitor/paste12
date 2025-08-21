@@ -9,7 +9,6 @@
 </head>
 <body>
   <header class="site-header"><h1>Paste12</h1></header>
-
   <section class="composer">
     <form id="composer">
       <textarea id="note-text" rows="3" maxlength="300" placeholder="Escribe tu nota…"></textarea>
@@ -26,19 +25,17 @@
     </form>
     <p id="composer-msg" style="display:none"></p>
   </section>
-
   <main>
     <ul id="feed"></ul>
     <h1 class="sr-only">Notas recientes</h1>
   </main>
-
   <script>
-  // Envío simple (el feed lo maneja /js/app.js)
   (function () {
     const form = document.getElementById('composer');
     const txt  = document.getElementById('note-text');
     const hrs  = document.getElementById('note-hours');
     const msg  = document.getElementById('composer-msg');
+    if (!form) return;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const text  = (txt.value || '').trim();
@@ -61,14 +58,13 @@
           msg.style.display = 'block';
           msg.textContent = 'Error al publicar';
         }
-      } catch (e) {
+      } catch {
         msg.style.display = 'block';
         msg.textContent = 'Error de red';
       }
     });
   })();
   </script>
-
-  <script defer src="/js/app.js?v=1755781033"></script>
+  <script defer src="/js/app.js?v=1755781396"></script>
 </body>
 </html>
