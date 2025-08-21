@@ -1,3 +1,18 @@
+
+// === Fingerprint simple y estable (1 año) ===
+(function(){
+  const KEY='p12_fp';
+  function mk(){try{return crypto.randomUUID()}catch(_){return (Date.now()+'-'+Math.random()).replace('.','')}} 
+  function getFP(){
+    try{
+      let v = localStorage.getItem(KEY);
+      if(!v){ v = mk(); localStorage.setItem(KEY, v); document.cookie = 'p12_fp='+v+'; path=/; max-age=31536000'; }
+      return v;
+    }catch(e){ return mk(); }
+  }
+  window.__P12_FP__ = getFP();
+})();
+
 // Ultra-minimal feed (dedupe + infinite scroll gated by has_more)
 // Sin dependencias, robusto ante recargas, evita duplicados por ID.
 
