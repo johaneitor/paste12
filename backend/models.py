@@ -38,3 +38,4 @@ class ViewLog(db.Model):
     view_date = db.Column(db.Date, nullable=False, index=True)  # 1 vista/día/nota/fp
     created_at = db.Column(db.DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
     __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", "view_date", name="uq_view_note_fp_day"),)
+    author_fp = db.Column(db.String(64), nullable=False, index=True)
