@@ -182,11 +182,11 @@ def view_note(note_id: int):
     try:
         dialect = (db.session.get_bind() or db.engine).dialect.name
         if dialect == "postgresql":
-            # Fuerzo schema public por si search_path está raro
+            # INSERT idempotente por constraint v2
             res = db.session.execute(db.text("""
                 INSERT INTO public.view_log (note_id, fingerprint, view_date, created_at)
                 VALUES (:nid, :fp, :vd, (NOW() AT TIME ZONE 'UTC'))
-                ON CONFLICT (note_id, fingerprint, view_date) DO NOTHING
+                ON CONFLICT ON CONSTRAINT uq_viewlog_note_fp_day_v2 DO NOTHING
             """), {"nid": note_id, "fp": fp, "vd": today})
             if getattr(res, "rowcount", 0) == 1:
                 db.session.execute(db.text("UPDATE public.note SET views = COALESCE(views,0)+1 WHERE id=:nid"), {"nid": note_id})
@@ -207,7 +207,6 @@ def view_note(note_id: int):
     except Exception as e:
         current_app.logger.exception("view_note error: %s", e)
         db.session.rollback()
-        # si viene X-Admin-Token correcto, devuelvo el detail
         import os
         tok = request.headers.get("X-Admin-Token") or ""
         if tok == (os.getenv("ADMIN_TOKEN") or "changeme"):
@@ -534,6 +533,9 @@ def admin_fix_viewlog_uniques():
         out["created"] += ["index:uq_view_note_fp_day","index:ix_view_log_note_id","index:ix_view_log_view_date"]
 
     db.session.commit()
+    out["columns"] = [dict(r) for r in out.get("columns", [])] if isinstance(out.get("columns"), list) else out.get("columns")
+    out["uniques"] = [dict(r) for r in out.get("uniques", [])] if isinstance(out.get("uniques"), list) else out.get("uniques")
+    out["indexes"] = [dict(r) for r in out.get("indexes", [])] if isinstance(out.get("indexes"), list) else out.get("indexes")
     return jsonify(out), 200
 
 
@@ -596,6 +598,9 @@ def admin_diag_viewlog_schema():
         out["columns"] = list(cols)
         out["uniques"] = list(uniques)
         out["indexes"] = list(idxs)
+    out["columns"] = [dict(r) for r in out.get("columns", [])] if isinstance(out.get("columns"), list) else out.get("columns")
+    out["uniques"] = [dict(r) for r in out.get("uniques", [])] if isinstance(out.get("uniques"), list) else out.get("uniques")
+    out["indexes"] = [dict(r) for r in out.get("indexes", [])] if isinstance(out.get("indexes"), list) else out.get("indexes")
     return jsonify(out), 200
 
 
@@ -626,3 +631,59 @@ def admin_diag_try_insert():
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@bp.post("/admin/force_viewlog_unique_v2")
+def admin_force_viewlog_unique_v2():
+    import os
+    from sqlalchemy import text
+    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    out = {"ok": True, "dialect": (db.session.get_bind() or db.engine).dialect.name, "dropped": [], "created": [], "info": []}
+    dialect = out["dialect"]
+    # 0) columna view_date
+    if dialect == "postgresql":
+        db.session.execute(text("ALTER TABLE public.view_log ADD COLUMN IF NOT EXISTS view_date date"))
+        db.session.execute(text("UPDATE public.view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
+    else:
+        try:
+            db.session.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
+        except Exception:
+            pass
+        db.session.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
+    # 1) PG: dropear constraints viejos que no incluyan view_date
+    if dialect == "postgresql":
+        cons = db.session.execute(text("""
+            SELECT conname, pg_get_constraintdef(oid) AS def
+            FROM pg_constraint
+            WHERE conrelid='public.view_log'::regclass AND contype='u'
+        """)).mappings().all()
+        for r in cons:
+            name = r["conname"]; defi = (r["def"] or "").lower()
+            if "unique" in defi and "view_date" not in defi:
+                db.session.execute(text(f'ALTER TABLE public.view_log DROP CONSTRAINT "{name}"'))
+                out["dropped"].append(f'constraint:{name}')
+        # dropear índice con nombre viejo si existe
+        db.session.execute(text('DROP INDEX IF EXISTS "uq_view_note_fp_day"'))
+        out["dropped"].append('index:uq_view_note_fp_day')
+
+        # dropear constraint v2 si existe (para recrear limpio)
+        db.session.execute(text('ALTER TABLE public.view_log DROP CONSTRAINT IF EXISTS "uq_viewlog_note_fp_day_v2"'))
+
+        # 2) crear constraint v2 correcto
+        db.session.execute(text('ALTER TABLE public.view_log ADD CONSTRAINT "uq_viewlog_note_fp_day_v2" UNIQUE (note_id, fingerprint, view_date)'))
+        out["created"].append('constraint:uq_viewlog_note_fp_day_v2')
+
+        # 3) índices útiles
+        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON public.view_log (note_id)"))
+        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON public.view_log (view_date)"))
+        out["created"] += ["index:ix_view_log_note_id","index:ix_view_log_view_date"]
+    else:
+        # sqlite/otros
+        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_viewlog_note_fp_day_v2 ON view_log(note_id, fingerprint, view_date)"))
+        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
+        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
+        out["created"] += ["index:uq_viewlog_note_fp_day_v2","index:ix_view_log_note_id","index:ix_view_log_view_date"]
+
+    db.session.commit()
+    return jsonify(out), 200
