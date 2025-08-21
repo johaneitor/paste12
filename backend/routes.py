@@ -6,6 +6,7 @@ from typing import Optional
 
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import HTTPException, MethodNotAllowed, NotFound, BadRequest
 
 from . import db, limiter
 from .models import Note, LikeLog, ReportLog, ViewLog
@@ -172,3 +173,32 @@ def view_note(note_id: int):
     except IntegrityError:
         db.session.rollback()
     return jsonify({"views": int(n.views or 0), "counted": counted})
+
+
+# --- Generic JSON error handler that preserves HTTP status ---
+@bp.errorhandler(Exception)
+def __api_error_handler(e):
+    from flask import current_app, jsonify
+    try:
+        if isinstance(e, HTTPException):
+            return jsonify({"ok": False, "error": e.description}), e.code
+        current_app.logger.exception("API error: %s", e)
+        return jsonify({"ok": False, "error": str(e)}), 500
+    except Exception:  # fallback
+        return ("", 500)
+
+
+@bp.post("/notes/report")
+def __report_missing():
+    from flask import jsonify
+    return jsonify({"ok": False, "error": "note_id required"}), 400
+
+@bp.post("/notes/like")
+def __like_missing():
+    from flask import jsonify
+    return jsonify({"ok": False, "error": "note_id required"}), 400
+
+@bp.post("/notes/view")
+def __view_missing():
+    from flask import jsonify
+    return jsonify({"ok": False, "error": "note_id required"}), 400

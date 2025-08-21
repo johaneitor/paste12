@@ -157,3 +157,27 @@
     load(1);
   });
 })();
+
+// /* guard invalid note actions */
+(function(){
+  try{
+    const origFetch = window.fetch;
+    window.fetch = function(input, init){
+      try{
+        const url = typeof input==='string' ? input : (input && input.url) || '';
+        const m = url && url.match(/\/api\/notes\/(\d+)\/(like|report|view)/);
+        if (m){
+          const id = parseInt(m[1],10);
+          if (!Number.isInteger(id) || id<=0){
+            console.warn("[guard] blocked invalid note action:", url);
+            return Promise.resolve(new Response(
+              JSON.stringify({ok:false,error:"invalid note id"}),
+              {status:400, headers:{"Content-Type":"application/json"}}
+            ));
+          }
+        }
+      }catch(_e){}
+      return origFetch(input, init);
+    };
+  }catch(_e){}
+})();
