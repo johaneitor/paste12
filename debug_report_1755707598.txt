@@ -1,0 +1,513 @@
+🔎 Paste12 – Debug bundle — 1755707598
+
+
+===== 1) Git y rama =====
+branch: main
+origin	https://github.com/johaneitor/paste12.git (fetch)
+origin	https://github.com/johaneitor/paste12.git (push)
+ M backend/routes.py
+?? backups_1755689326/
+?? backups_1755694697/
+?? backups_1755703401/
+?? backups_1755704186/
+?? backups_1755704271/
+?? collect_debug_bundle.sh
+?? debug_report_1755707598.txt
+?? diagnose_feed_and_views.sh
+2ce0bee fix(init): sangría de enforce_cap_on_boot dentro de create_app()
+1f2b10a fix(api): definir _rate_key/_fp antes de limiters; smoke test seguro
+290f0e0 chore: trigger render deploy
+e93200b fix(viewlog+feed): ViewLog único (view_date) + feed paginado + vistas idempotentes
+3996593 fix(feed+views): paginación server-side + vistas idempotentes por día
+HEAD: 2ce0bee81e317710dadc363fd9614397b01e2107
+
+
+===== 2) Estructura (profundidad 3) =====
+.
+├── .env
+├── .gitattributes
+├── .gitignore
+├── .paste12.log
+├── .paste12.pid
+├── .renderignore
+├── .renderignore.bak.1755666866
+├── Dockerfile
+├── Procfile
+├── VERSION
+├── add_actions_menu.sh
+├── add_countdown_timer.sh
+├── add_reports_and_share.sh
+├── add_share_instagram_story.sh
+├── add_views_counter.sh
+├── audit_paste12.sh
+├── backend
+│   ├── __init__.py
+│   ├── __init__.py.bad.1751947393
+│   ├── __init__.py.bad.1755203442
+│   ├── __init__.py.bad.1755277473
+│   ├── __init__.py.bak.1751947321
+│   ├── __init__.py.bak.1751947446
+│   ├── __init__.py.bak.1751947530
+│   ├── __init__.py.bak.1755190113
+│   ├── __init__.py.bak.1755277389
+│   ├── __init__.py.bak.1755547598
+│   ├── __init__.py.bak.1755554997
+│   ├── __init__.py.bak.1755556014
+│   ├── __init__.py.bak.1755640288
+│   ├── __init__.py.bak.1755640408
+│   ├── __init__.py.bak.1755649729
+│   ├── __init__.py.bak.1755661402
+│   ├── __init__.py.bak.1755661704
+│   ├── __init__.py.bak.1755663424
+│   ├── __init__.py.bak.1755663692
+│   ├── __init__.py.bak.1755663855
+│   ├── __init__.py.bak.1755664401
+│   ├── __init__.py.bak.1755664672
+│   ├── __init__.py.bak.1755665041
+│   ├── __init__.py.bak.1755665236
+│   ├── __init__.py.bak.1755665497
+│   ├── __init__.py.bak.1755665827
+│   ├── __init__.py.bak.1755666321
+│   ├── __init__.py.bak.1755666580
+│   ├── __init__.py.bak.1755666866
+│   ├── __init__.py.bak.1755667505
+│   ├── __init__.py.bak.1755667625
+│   ├── __init__.py.bak.1755667781
+│   ├── __init__.py.bak.1755686473
+│   ├── __init__.py.bak.1755686501
+│   ├── __init__.py.bak.1755686722
+│   ├── __init__.py.bak.1755686997
+│   ├── __init__.py.bak.1755705038
+│   ├── __init__.py.bak.1755705134
+│   ├── __init__.py.bak.1755705330
+│   ├── __init__.py.bak.1755705431
+│   ├── __init__.py.bak.1755706308
+│   ├── __init__.py.bak.1755706770
+│   ├── models.py
+│   ├── models.py.1755264206.bak
+│   ├── models.py.bak.1755189134
+│   ├── models.py.bak.1755461704
+│   ├── models.py.bak.1755623473
+│   ├── models.py.bak.1755630837
+│   ├── models.py.bak.1755637831
+│   ├── models.py.bak.1755668927
+│   ├── models.py.bak.1755699998
+│   ├── models.py.bak.1755702452
+│   ├── routes.py
+│   ├── routes.py.1755264206.bak
+│   ├── routes.py.bak.1751947786
+│   ├── routes.py.bak.1755189134
+│   ├── routes.py.bak.1755204230
+│   ├── routes.py.bak.1755204925
+│   ├── routes.py.bak.1755461704
+│   ├── routes.py.bak.1755623473
+│   ├── routes.py.bak.1755623762
+│   ├── routes.py.bak.1755627627
+│   ├── routes.py.bak.1755629635
+│   ├── routes.py.bak.1755630430
+│   ├── routes.py.bak.1755630728
+│   ├── routes.py.bak.1755639793
+│   ├── routes.py.bak.1755645584
+│   ├── routes.py.bak.1755649729
+│   ├── routes.py.bak.1755661402
+│   ├── routes.py.bak.1755661704
+│   ├── routes.py.bak.1755668927
+│   ├── routes.py.bak.1755686473
+│   ├── routes.py.bak.1755686501
+│   ├── routes.py.bak.1755686722
+│   ├── routes.py.bak.1755686997
+│   ├── routes.py.bak.1755699998
+│   ├── routes.py.bak.1755702452
+│   ├── routes.py.bak.1755705038
+│   ├── static_routes.py
+│   ├── tasks.py
+│   └── tasks.py.bak.1755686997
+├── backups_1755190274
+│   ├── index.html
+│   ├── models.py
+│   └── routes.py
+├── backups_1755689326
+│   ├── __init__.py
+│   └── routes.py
+├── backups_1755694697
+│   ├── __init__.py
+│   └── routes.py
+├── backups_1755703401
+│   ├── __init__.py
+│   ├── models.py
+│   └── routes.py
+├── backups_1755704186
+│   ├── __init__.py
+│   └── routes.py
+├── backups_1755704271
+│   ├── __init__.py
+│   └── routes.py
+├── collect_debug_bundle.sh
+├── debug_report_1755707598.txt
+├── deploy_to_render.sh
+├── diagnose_feed_and_views.sh
+├── docker-compose.yml
+├── enable_adsense.sh
+├── enable_adsense_min.sh
+├── enable_likes_views.sh
+├── enable_share_copy_only.sh
+├── enforce_cap_everywhere.sh
+├── enforce_like_report_once.sh
+├── ensure_legal_and_deploy.sh
+├── fix_and_push.sh
+├── fix_api_and_models.sh
+├── fix_backend_api_and_front.sh
+├── fix_backend_scheduler.sh
+├── fix_blueprint_and_boot.sh
+├── fix_boot_frontend.sh
+├── fix_core_stack.sh
+├── fix_expiration.sh
+├── fix_favicon_routes_and_migrate.sh
+├── fix_feed_pagination_and_views_idempotent.sh
+├── fix_front_root_inline.sh
+├── fix_front_routes_indent_safe.sh
+├── fix_front_routes_once.sh
+├── fix_frontend_render.sh
+├── fix_frontend_routes_final.sh
+├── fix_future_import_and_cap.sh
+├── fix_init_clean.sh
+├── fix_init_indent_cap.sh
+├── fix_legal_and_story.sh
+├── fix_limiter_import.sh
+├── fix_models_and_migrate.sh
+├── fix_rate_key_and_smoke.sh
+├── fix_register_frontend_name.sh
+├── fix_register_frontend_order.sh
+├── fix_remote_and_push.sh
+├── fix_render_db_plan.sh
+├── fix_render_legacy_db_plan.sh
+├── fix_render_static_and_routes.sh
+├── fix_root_404.sh
+├── fix_root_404_blueprint.sh
+├── fix_root_and_legal.sh
+├── fix_routes_and_register_api.sh
+├── fix_routes_purge_block.sh
+├── fix_schema.sh
+├── fix_static_root.sh
+├── fix_submit_and_style.sh
+├── fix_try_indentation_once.sh
+├── fix_viewlog_and_feed.sh
+├── fix_warn_and_favicon.sh
+├── force_fix_routes_render.sh
+├── force_frontend_fix.sh
+├── frontend
+│   ├── ads.txt
+│   ├── css
+│   │   ├── styles.css
+│   │   ├── styles.css.1755264206.bak
+│   │   ├── styles.css.arcade.bak.1751948495
+│   │   ├── styles.css.bak.1751947786
+│   │   ├── styles.css.bak.1755276778
+│   │   ├── styles.css.bak.1755277389
+│   │   ├── styles.css.bak.1755461704
+│   │   ├── styles.css.bak.1755491687
+│   │   ├── styles.css.bak.1755547598
+│   │   ├── styles.css.bak.1755564574
+│   │   ├── styles.css.bak.1755623762
+│   │   ├── styles.css.bak.1755643458
+│   │   ├── styles.css.bak.1755646281
+│   │   ├── styles.css.bak.1755659501
+│   │   ├── styles.css.turq.bak.1751948722
+│   │   ├── styles.css.versus.bak.1751948875
+│   │   └── styles.css.versus.bak.1751949528
+│   ├── favicon.svg
+│   ├── img
+│   │   └── og.png
+│   ├── index.html
+│   ├── index.html.1755264206.bak
+│   ├── index.html.arcade.bak.1751948495
+│   ├── index.html.bak.1751947786
+│   ├── index.html.bak.1755266570
+│   ├── index.html.bak.1755276778
+│   ├── index.html.bak.1755277389
+│   ├── index.html.bak.1755491687
+│   ├── index.html.bak.1755547598
+│   ├── index.html.bak.1755554997
+│   ├── index.html.bak.1755562548
+│   ├── index.html.bak.1755641530
+│   ├── index.html.bak.1755643458
+│   ├── index.html.bak.1755645584
+│   ├── index.html.bak.1755646281
+│   ├── index.html.bak.1755659501
+│   ├── index.html.bak.1755663424
+│   ├── index.html.bak.1755663692
+│   ├── index.html.bak.1755667505
+│   ├── index.html.bak.1755668927
+│   ├── index.html.fix.1755219823
+│   ├── index.html.recover.1755266235
+│   ├── index.html.turq.bak.1751948722
+│   ├── index.html.versus.bak.1751948875
+│   ├── index.html.versus.bak.1751949528
+│   ├── js
+│   │   ├── actions_menu.js
+│   │   ├── app.js
+│   │   ├── app.js.1755264206.bak
+│   │   ├── app.js.bak.1751947786
+│   │   ├── app.js.bak.1755189134
+│   │   ├── app.js.bak.1755266570
+│   │   ├── app.js.bak.1755276778
+│   │   ├── app.js.bak.1755277389
+│   │   ├── app.js.bak.1755461704
+│   │   ├── app.js.bak.1755491687
+│   │   ├── app.js.bak.1755547598
+│   │   ├── app.js.bak.1755562548
+│   │   ├── app.js.bak.1755564574
+│   │   ├── app.js.bak.1755623762
+│   │   ├── app.js.fix.1755219823
+│   │   ├── client_fp.js
+│   │   ├── hotfix.js
+│   │   ├── share_enhancer.js
+│   │   ├── stability_patch.js
+│   │   └── views_counter.js
+│   ├── legal.html
+│   └── robots.txt
+├── hard_fix_init.sh
+├── hard_fix_init_clean.sh
+├── hard_rewrite_routes.sh
+├── harden_like_report.sh
+├── harden_views_idempotent.sh
+├── hotfix_front_render.sh
+├── instance
+│   ├── production.db
+│   ├── production.db.bak.1755218839
+│   └── production.db.bak.1755219068
+├── limit_notes.sh
+├── limit_total_notes_and_index.sh
+├── limit_total_notes_and_index_fix.sh
+├── migrate_sqlite_to_pg.py
+├── migrate_sqlite_to_pg.sh
+├── patch_render_db_eof.sh
+├── publish_untracked.sh
+├── push_to_github.sh
+├── pytest.ini
+├── quick_fix.sh
+├── rebuild_index.sh
+├── remove_twitter_popup.sh
+├── render.yaml
+├── render.yaml.bak.1755485395
+├── render.yaml.bak.1755486452
+├── repair_models_and_migrate_all.sh
+├── requirements.txt
+├── requirements.txt.bak.1755190113
+├── run.py
+├── run.py.bak.1751946901
+├── run.py.bak.1751947074
+├── sanity_redeploy.sh
+├── setup_render.sh
+├── show_structure.sh
+├── stabilize_feed.sh
+├── tests
+│   └── test_api.py
+├── update_and_push.sh
+└── venv
+    ├── bin
+    │   ├── Activate.ps1
+    │   ├── activate
+    │   ├── activate.csh
+    │   ├── activate.fish
+    │   ├── dotenv
+    │   ├── flask
+    │   ├── gunicorn
+    │   ├── markdown-it
+    │   ├── pip
+    │   ├── pip3
+    │   ├── pip3.12
+    │   ├── pygmentize
+    │   ├── python -> /data/data/com.termux/files/usr/bin/python
+    │   ├── python3 -> python
+    │   ├── python3.12 -> python
+    │   └── waitress-serve
+    ├── include
+    │   ├── python3.12
+    │   └── site
+    ├── lib
+    │   └── python3.12
+    ├── lib64 -> lib
+    └── pyvenv.cfg
+
+22 directories, 284 files
+
+
+===== 3) Validación sintaxis Python =====
+
+
+===== 4) Grep rápido de backend (paginación/orden/limiter) =====
+backend/routes.py:46:        "expires_at": (n.expires_at.isoformat() if n.expires_at else None),
+backend/routes.py:47:        "remaining": max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else None,
+backend/routes.py:58:@bp.get("/notes")
+backend/routes.py:62:        page = max(1, int(request.args.get("page", "1")))
+backend/routes.py:66:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py:67:    items = q.offset((page-1)*page_size).limit(page_size).all()
+backend/routes.py:78:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py:79:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py:88:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/__init__.py:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py:6:from flask_limiter import Limiter
+backend/__init__.py:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py:157:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py:158:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+
+
+===== 5) Fragmentos clave de backend/routes.py =====
+--- cabecera (1..40) ---
+     1	from __future__ import annotations
+     2	
+     3	import os
+     4	from datetime import datetime, timezone, timedelta
+     5	
+     6	from flask import Blueprint, current_app, jsonify, request
+     7	from sqlalchemy.exc import IntegrityError
+     8	
+     9	from . import db, limiter
+    10	from .models import Note, LikeLog, ReportLog, ViewLog
+    11	
+    12	# Blueprint único (no registrar aquí; se registra en create_app)
+    13	bp = Blueprint("api", __name__)
+    14	
+    15	# ===== Helpers =====
+    16	def _now():
+    17	    return datetime.now(timezone.utc)
+    18	
+    19	def _fp():
+    20	    # prioridad: header -> cookie -> IP
+    21	    return (
+    22	        request.headers.get("X-Client-Fingerprint")
+    23	        or request.cookies.get("fp")
+    24	        or request.remote_addr
+    25	        or "anon"
+    26	    )
+    27	
+    28	def _rate_key():
+    29	    return _fp()
+    30	
+    31	def _per_page():
+    32	    # PAGE_SIZE clamped 10..100 (default 20)
+    33	    try:
+    34	        v = int(os.getenv("PAGE_SIZE", "20"))
+    35	    except Exception:
+    36	        v = 20
+    37	    v = max(10, min(v, 100))
+    38	    return v
+    39	
+    40	def _note_json(n: Note, now=None):
+--- def list_notes (...) ---
+     1	from __future__ import annotations
+     2	
+     3	import os
+     4	from datetime import datetime, timezone, timedelta
+     5	
+     6	from flask import Blueprint, current_app, jsonify, request
+     7	from sqlalchemy.exc import IntegrityError
+     8	
+     9	from . import db, limiter
+    10	from .models import Note, LikeLog, ReportLog, ViewLog
+    11	
+    12	# Blueprint único (no registrar aquí; se registra en create_app)
+    13	bp = Blueprint("api", __name__)
+    14	
+    15	# ===== Helpers =====
+    16	def _now():
+    17	    return datetime.now(timezone.utc)
+    18	
+    19	def _fp():
+    20	    # prioridad: header -> cookie -> IP
+    21	    return (
+    22	        request.headers.get("X-Client-Fingerprint")
+    23	        or request.cookies.get("fp")
+    24	        or request.remote_addr
+    25	        or "anon"
+    26	    )
+    27	
+    28	def _rate_key():
+    29	    return _fp()
+    30	
+    31	def _per_page():
+    32	    # PAGE_SIZE clamped 10..100 (default 20)
+    33	    try:
+    34	        v = int(os.getenv("PAGE_SIZE", "20"))
+    35	    except Exception:
+    36	        v = 20
+    37	    v = max(10, min(v, 100))
+    38	    return v
+    39	
+    40	def _note_json(n: Note, now=None):
+    41	    now = now or _now()
+    42	    return {
+    43	        "id": n.id,
+    44	        "text": n.text,
+    45	        "timestamp": (n.timestamp.isoformat() if n.timestamp else None),
+    46	        "expires_at": (n.expires_at.isoformat() if n.expires_at else None),
+    47	        "remaining": max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else None,
+    48	        "likes": int(n.likes or 0),
+    49	        "views": int(n.views or 0),
+    50	        "reports": int(n.reports or 0),
+    51	    }
+    52	
+    53	# ===== Endpoints =====
+    54	@bp.get("/health")
+    55	def health():
+    56	    return jsonify({"ok": True, "now": _now().isoformat()}), 200
+    57	
+    58	@bp.get("/notes")
+
+
+===== 6) Helpers de vista única y modelos (ViewLog/Unique) =====
+31:    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_like_note_fp"),)
+40:    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_report_note_fp"),)
+47:class ViewLog(db.Model):
+52:    view_date = db.Column(db.Date, nullable=False, index=True)  # día UTC
+55:        db.UniqueConstraint("note_id", "fingerprint", "view_date", name="uq_view_note_fp_day"),
+
+
+===== 7) Frontend: carga paginada y llamadas =====
+61:    const r = await fetch("/api/notes", {
+73:    const r = await fetch(`/api/notes/${id}/like`, { method:"POST", headers:{ "X-Client-Token": this.token }});
+83:    const r = await fetch(`/api/notes/${id}/report`, { method:"POST", headers:{ "X-Client-Token": this.token }});
+120:  async load(page=1){
+121:    const r = await fetch(`/api/notes?page=${page}`);
+182:      fetch(`/api/notes/${id}/view`, { method:"POST", headers:{ "X-Client-Token": this.token }})
+
+
+===== 8) Variables de entorno relevantes (local .env y proceso) =====
+-- .env --
+FLASK_ENV=production
+SECRET_KEY=$(openssl rand -hex 32)
+RATELIMIT_STORAGE_URL=memory://
+ADMIN_TOKEN=changeme
+DATABASE_URI=sqlite:///'/data/data/com.termux/files/home/paste12'/instance/production.db
+{'PAGE_SIZE': None, 'MAX_PAGE_SIZE': None, 'MAX_NOTES': None, 'DATABASE_URL': None, 'SQLALCHEMY_DATABASE_URI': None}
+
+
+===== 9) Inspección de la app Flask (rutas y blueprint /api) =====
+static_folder: /data/data/com.termux/files/home/paste12/frontend
+
+Rutas registradas:
+ - /                            | GET                | static_root
+ - /<path:filename>             | GET                | static
+ - /<path:path>                 | GET                | static_any
+ - /ads.txt                     | GET                | static_ads
+ - /api/health                  | GET                | api.health
+ - /api/notes                   | GET                | api.list_notes
+ - /api/notes                   | POST               | api.create_note
+ - /api/notes/<int:note_id>/like | POST               | api.like_note
+ - /api/notes/<int:note_id>/report | POST               | api.report_note
+ - /api/notes/<int:note_id>/view | POST               | api.view_note
+ - /favicon.ico                 | GET                | static_favicon
+
+¿Existe /api/notes?: True
+¿Hay blueprint /api?: True
+
+
+===== 10) Smoke test del feed (test_client) =====
+No test_client: module 'werkzeug' has no attribute '__version__'
+
+
+===== 11) Conteo y orden directo en DB (si se puede) =====
+total_notas = 7
+newest: ['id=8 ts=2025-08-18 04:45:18.396760 likes=0 views=2', 'id=7 ts=2025-08-18 04:44:46.348683 likes=0 views=2', 'id=6 ts=2025-08-18 04:44:15.936139 likes=1 views=2']
+oldest: ['id=1 ts=2025-08-15 00:51:53.572860 likes=13 views=16', 'id=2 ts=2025-08-15 00:52:03.499994 likes=51 views=16', 'id=4 ts=2025-08-16 03:51:01.944308 likes=2 views=9']

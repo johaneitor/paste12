@@ -14,8 +14,6 @@ class Note(db.Model):
     likes = db.Column(db.Integer, nullable=False, default=0)
     views = db.Column(db.Integer, nullable=False, default=0)
     reports = db.Column(db.Integer, nullable=False, default=0)
-    author_fp = db.Column(db.String(128), nullable=False, index=True, default="anon")
-
 class LikeLog(db.Model):
     __tablename__ = "like_log"
     id = db.Column(db.Integer, primary_key=True)

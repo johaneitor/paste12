@@ -1,3 +1,12 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+ts=$(date +%s)
+
+# 1) Backup
+cp -p backend/__init__.py "backend/__init__.py.bak.$ts" 2>/dev/null || true
+
+# 2) Reescribir backend/__init__.py con una versión limpia
+cat > backend/__init__.py <<'PY'
 # backend/__init__.py — versión mínima y estable
 from __future__ import annotations
 
@@ -114,3 +123,28 @@ def create_app() -> Flask:
             print("static routes warn:", e)
 
     return app
+PY
+
+# 3) Validación de sintaxis
+python -m py_compile backend/__init__.py
+
+# 4) Smoke rápido de rutas
+python - <<'PY'
+import os, sys
+sys.path.insert(0, os.getcwd())
+from backend import create_app
+a = create_app()
+rules = sorted([(r.rule, ",".join(sorted(r.methods-{"HEAD","OPTIONS"})), r.endpoint) for r in a.url_map.iter_rules()], key=lambda x:x[0])
+print("🛣️  Rutas registradas:")
+for r in rules:
+    print(" - {:<28} | {:<10} | {}".format(*r))
+print("¿/api/notes presente?:", any(rr[0]=="/api/notes" and "GET" in rr[1] for rr in rules))
+PY
+
+echo
+echo "✅ __init__.py reseteado. Ahora sube y redeploy:"
+echo "  git add backend/__init__.py && git commit -m 'fix(init): versión mínima estable de create_app' || true"
+echo "  git push -u origin main"
+echo "Luego prueba:"
+echo "  curl -sSf https://paste12-rmsk.onrender.com/api/health || true"
+echo "  curl -sSf 'https://paste12-rmsk.onrender.com/api/notes?page=1' | head -c 400; echo"

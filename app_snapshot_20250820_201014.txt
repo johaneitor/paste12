@@ -1,0 +1,1955 @@
+### SNAPSHOT @ 2025-08-20T20:10:14-03:00
+
+===== GIT =====
+main
+origin	https://github.com/johaneitor/paste12.git (fetch)
+origin	https://github.com/johaneitor/paste12.git (push)
+ M backend/__init__.py
+?? add_debug_overlay.sh
+?? aggressive_reset_pack.sh
+?? api_pages_check.sh
+?? app_snapshot_20250820_201014.txt
+?? backups_1755689326/
+?? backups_1755694697/
+?? backups_1755703401/
+?? backups_1755704186/
+?? backups_1755704271/
+?? backups_1755730760/
+?? bn.txt
+?? collect_debug_bundle.sh
+?? debug_report_1755707598.txt
+?? diagnose_feed_and_views.sh
+?? dump_architecture_and_code.sh
+?? hard_reset_routes.sh
+?? hn.txt
+?? patch_front_count_fix.sh
+?? patch_frontend_dedupe_and_pagination.sh
+?? patch_view_endpoint_resilient.sh
+?? peek_notes_response.sh
+?? peek_notes_response_local.sh
+?? reset_create_app_clean.sh
+?? reset_init_min.sh
+?? smoke_check.sh
+99b2e45 reset(aggressive): schema limpio + límites (12k y 10/día)
+0b5c606 hotfix(view): /view resiliente (sin 500)
+82b55ed fix(front): dedupe de notas en DOM
+5aae8c7 chore(debug): overlay ?debug=1
+efee810 fix(front): singleton boot, dedupe por id, scroll único, vistas 1x, fin del feed
+b62c28a fix(front): dedupe tarjetas, paginación estable, vistas idempotentes
+2b3ab01 fix(front): dedupe de tarjetas, paginación estable e idempotencia de vistas
+37f9ed3 reset(routes): versión estable con datetimes aware, paginación y logs idempotentes
+8644dfb fix(init): reset limpio de create_app estable
+2ce0bee fix(init): sangría de enforce_cap_on_boot dentro de create_app()
+1f2b10a fix(api): definir _rate_key/_fp antes de limiters; smoke test seguro
+290f0e0 chore: trigger render deploy
+e93200b fix(viewlog+feed): ViewLog único (view_date) + feed paginado + vistas idempotentes
+3996593 fix(feed+views): paginación server-side + vistas idempotentes por día
+00964dd chore: trigger redeploy
+
+===== TREE (hasta 3 niveles) =====
+.
+├── .env
+├── .gitattributes
+├── .gitignore
+├── .paste12.log
+├── .paste12.pid
+├── .renderignore
+├── .renderignore.bak.1755666866
+├── Dockerfile
+├── Procfile
+├── VERSION
+├── __pycache__
+│   └── run.cpython-312.pyc
+├── add_actions_menu.sh
+├── add_countdown_timer.sh
+├── add_debug_overlay.sh
+├── add_reports_and_share.sh
+├── add_share_instagram_story.sh
+├── add_views_counter.sh
+├── aggressive_reset_pack.sh
+├── api_pages_check.sh
+├── app_snapshot_20250820_201014.txt
+├── audit_paste12.sh
+├── backend
+│   ├── __init__.py
+│   ├── __init__.py.bad.1751947393
+│   ├── __init__.py.bad.1755203442
+│   ├── __init__.py.bad.1755277473
+│   ├── __init__.py.bak.1751947321
+│   ├── __init__.py.bak.1751947446
+│   ├── __init__.py.bak.1751947530
+│   ├── __init__.py.bak.1755190113
+│   ├── __init__.py.bak.1755277389
+│   ├── __init__.py.bak.1755547598
+│   ├── __init__.py.bak.1755554997
+│   ├── __init__.py.bak.1755556014
+│   ├── __init__.py.bak.1755640288
+│   ├── __init__.py.bak.1755640408
+│   ├── __init__.py.bak.1755649729
+│   ├── __init__.py.bak.1755661402
+│   ├── __init__.py.bak.1755661704
+│   ├── __init__.py.bak.1755663424
+│   ├── __init__.py.bak.1755663692
+│   ├── __init__.py.bak.1755663855
+│   ├── __init__.py.bak.1755664401
+│   ├── __init__.py.bak.1755664672
+│   ├── __init__.py.bak.1755665041
+│   ├── __init__.py.bak.1755665236
+│   ├── __init__.py.bak.1755665497
+│   ├── __init__.py.bak.1755665827
+│   ├── __init__.py.bak.1755666321
+│   ├── __init__.py.bak.1755666580
+│   ├── __init__.py.bak.1755666866
+│   ├── __init__.py.bak.1755667505
+│   ├── __init__.py.bak.1755667625
+│   ├── __init__.py.bak.1755667781
+│   ├── __init__.py.bak.1755686473
+│   ├── __init__.py.bak.1755686501
+│   ├── __init__.py.bak.1755686722
+│   ├── __init__.py.bak.1755686997
+│   ├── __init__.py.bak.1755705038
+│   ├── __init__.py.bak.1755705134
+│   ├── __init__.py.bak.1755705330
+│   ├── __init__.py.bak.1755705431
+│   ├── __init__.py.bak.1755706308
+│   ├── __init__.py.bak.1755706770
+│   ├── __init__.py.bak.1755714567
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── models.cpython-312.pyc
+│   │   ├── routes.cpython-312.pyc
+│   │   ├── static_routes.cpython-312.pyc
+│   │   └── tasks.cpython-312.pyc
+│   ├── models.py
+│   ├── models.py.1755264206.bak
+│   ├── models.py.bak.1755189134
+│   ├── models.py.bak.1755461704
+│   ├── models.py.bak.1755623473
+│   ├── models.py.bak.1755630837
+│   ├── models.py.bak.1755637831
+│   ├── models.py.bak.1755668927
+│   ├── models.py.bak.1755699998
+│   ├── models.py.bak.1755702452
+│   ├── routes.py
+│   ├── routes.py.1755264206.bak
+│   ├── routes.py.bak.1751947786
+│   ├── routes.py.bak.1755189134
+│   ├── routes.py.bak.1755204230
+│   ├── routes.py.bak.1755204925
+│   ├── routes.py.bak.1755461704
+│   ├── routes.py.bak.1755623473
+│   ├── routes.py.bak.1755623762
+│   ├── routes.py.bak.1755627627
+│   ├── routes.py.bak.1755629635
+│   ├── routes.py.bak.1755630430
+│   ├── routes.py.bak.1755630728
+│   ├── routes.py.bak.1755639793
+│   ├── routes.py.bak.1755645584
+│   ├── routes.py.bak.1755649729
+│   ├── routes.py.bak.1755661402
+│   ├── routes.py.bak.1755661704
+│   ├── routes.py.bak.1755668927
+│   ├── routes.py.bak.1755686473
+│   ├── routes.py.bak.1755686501
+│   ├── routes.py.bak.1755686722
+│   ├── routes.py.bak.1755686997
+│   ├── routes.py.bak.1755699998
+│   ├── routes.py.bak.1755702452
+│   ├── routes.py.bak.1755705038
+│   ├── routes.py.bak.1755715965
+│   ├── routes.py.bak.1755716565
+│   ├── routes.py.bak.1755716693
+│   ├── routes.py.bak.1755728838
+│   ├── static_routes.py
+│   ├── tasks.py
+│   └── tasks.py.bak.1755686997
+├── bn.txt
+├── collect_debug_bundle.sh
+├── debug_report_1755707598.txt
+├── deploy_to_render.sh
+├── diagnose_feed_and_views.sh
+├── docker-compose.yml
+├── dump_architecture_and_code.sh
+├── enable_adsense.sh
+├── enable_adsense_min.sh
+├── enable_likes_views.sh
+├── enable_share_copy_only.sh
+├── enforce_cap_everywhere.sh
+├── enforce_like_report_once.sh
+├── ensure_legal_and_deploy.sh
+├── fix_and_push.sh
+├── fix_api_and_models.sh
+├── fix_backend_api_and_front.sh
+├── fix_backend_scheduler.sh
+├── fix_blueprint_and_boot.sh
+├── fix_boot_frontend.sh
+├── fix_core_stack.sh
+├── fix_datetime_awareness.sh
+├── fix_datetime_indent.sh
+├── fix_enforce_block_hard.sh
+├── fix_enforce_block_safe.sh
+├── fix_enforce_indent_block.sh
+├── fix_expiration.sh
+├── fix_favicon_routes_and_migrate.sh
+├── fix_feed_pagination_and_views_idempotent.sh
+├── fix_front_root_inline.sh
+├── fix_front_routes_indent_safe.sh
+├── fix_front_routes_once.sh
+├── fix_frontend_render.sh
+├── fix_frontend_routes_final.sh
+├── fix_future_import_and_cap.sh
+├── fix_idempotent_api_registration.sh
+├── fix_init_clean.sh
+├── fix_init_indent_cap.sh
+├── fix_legal_and_story.sh
+├── fix_limiter_import.sh
+├── fix_models_and_migrate.sh
+├── fix_rate_key_and_smoke.sh
+├── fix_register_frontend_name.sh
+├── fix_register_frontend_order.sh
+├── fix_remote_and_push.sh
+├── fix_render_db_plan.sh
+├── fix_render_legacy_db_plan.sh
+├── fix_render_static_and_routes.sh
+├── fix_root_404.sh
+├── fix_root_404_blueprint.sh
+├── fix_root_and_legal.sh
+├── fix_routes_and_register_api.sh
+├── fix_routes_purge_block.sh
+├── fix_schema.sh
+├── fix_static_root.sh
+├── fix_submit_and_style.sh
+├── fix_try_indentation_once.sh
+├── fix_viewlog_and_feed.sh
+├── fix_warn_and_favicon.sh
+├── force_fix_routes_render.sh
+├── force_frontend_fix.sh
+├── frontend
+│   ├── ads.txt
+│   ├── css
+│   │   ├── styles.css
+│   │   ├── styles.css.1755264206.bak
+│   │   ├── styles.css.arcade.bak.1751948495
+│   │   ├── styles.css.bak.1751947786
+│   │   ├── styles.css.bak.1755276778
+│   │   ├── styles.css.bak.1755277389
+│   │   ├── styles.css.bak.1755461704
+│   │   ├── styles.css.bak.1755491687
+│   │   ├── styles.css.bak.1755547598
+│   │   ├── styles.css.bak.1755564574
+│   │   ├── styles.css.bak.1755623762
+│   │   ├── styles.css.bak.1755643458
+│   │   ├── styles.css.bak.1755646281
+│   │   ├── styles.css.bak.1755659501
+│   │   ├── styles.css.turq.bak.1751948722
+│   │   ├── styles.css.versus.bak.1751948875
+│   │   └── styles.css.versus.bak.1751949528
+│   ├── favicon.svg
+│   ├── img
+│   │   └── og.png
+│   ├── index.html
+│   ├── index.html.1755264206.bak
+│   ├── index.html.arcade.bak.1751948495
+│   ├── index.html.bak.1751947786
+│   ├── index.html.bak.1755266570
+│   ├── index.html.bak.1755276778
+│   ├── index.html.bak.1755277389
+│   ├── index.html.bak.1755491687
+│   ├── index.html.bak.1755547598
+│   ├── index.html.bak.1755554997
+│   ├── index.html.bak.1755562548
+│   ├── index.html.bak.1755641530
+│   ├── index.html.bak.1755643458
+│   ├── index.html.bak.1755645584
+│   ├── index.html.bak.1755646281
+│   ├── index.html.bak.1755659501
+│   ├── index.html.bak.1755663424
+│   ├── index.html.bak.1755663692
+│   ├── index.html.bak.1755667505
+│   ├── index.html.bak.1755668927
+│   ├── index.html.fix.1755219823
+│   ├── index.html.recover.1755266235
+│   ├── index.html.turq.bak.1751948722
+│   ├── index.html.versus.bak.1751948875
+│   ├── index.html.versus.bak.1751949528
+│   ├── js
+│   │   ├── actions_menu.js
+│   │   ├── app.js
+│   │   ├── app.js.1755264206.bak
+│   │   ├── app.js.bak.1751947786
+│   │   ├── app.js.bak.1755189134
+│   │   ├── app.js.bak.1755266570
+│   │   ├── app.js.bak.1755276778
+│   │   ├── app.js.bak.1755277389
+│   │   ├── app.js.bak.1755461704
+│   │   ├── app.js.bak.1755491687
+│   │   ├── app.js.bak.1755547598
+│   │   ├── app.js.bak.1755562548
+│   │   ├── app.js.bak.1755564574
+│   │   ├── app.js.bak.1755623762
+│   │   ├── app.js.bak.1755724962
+│   │   ├── app.js.bak.1755725064
+│   │   ├── app.js.bak.1755725605
+│   │   ├── app.js.fix.1755219823
+│   │   ├── client_fp.js
+│   │   ├── debug_overlay.js
+│   │   ├── hotfix.js
+│   │   ├── share_enhancer.js
+│   │   ├── stability_patch.js
+│   │   └── views_counter.js
+│   ├── legal.html
+│   └── robots.txt
+├── hard_fix_init.sh
+├── hard_fix_init_clean.sh
+├── hard_reset_routes.sh
+├── hard_rewrite_routes.sh
+├── harden_like_report.sh
+├── harden_views_idempotent.sh
+├── hn.txt
+├── hotfix_front_render.sh
+├── limit_notes.sh
+├── limit_total_notes_and_index.sh
+├── limit_total_notes_and_index_fix.sh
+├── migrate_sqlite_to_pg.py
+├── migrate_sqlite_to_pg.sh
+├── patch_front_count_fix.sh
+├── patch_frontend_dedupe_and_pagination.sh
+├── patch_render_db_eof.sh
+├── patch_view_endpoint_resilient.sh
+├── peek_notes_response.sh
+├── peek_notes_response_local.sh
+├── publish_untracked.sh
+├── push_to_github.sh
+├── pytest.ini
+├── quick_fix.sh
+├── rebuild_index.sh
+├── remove_twitter_popup.sh
+├── render.yaml
+├── render.yaml.bak.1755485395
+├── render.yaml.bak.1755486452
+├── repair_models_and_migrate_all.sh
+├── requirements.txt
+├── requirements.txt.bak.1755190113
+├── reset_create_app_clean.sh
+├── reset_init_min.sh
+├── run.py
+├── run.py.bak.1751946901
+├── run.py.bak.1751947074
+├── sanity_redeploy.sh
+├── setup_render.sh
+├── show_structure.sh
+├── smoke_check.sh
+├── stabilize_feed.sh
+├── tests
+│   └── test_api.py
+└── update_and_push.sh
+
+9 directories, 287 files
+
+===== LISTA COMPLETA DE ARCHIVOS DE CÓDIGO =====
+./Dockerfile
+./Procfile
+./backend/__init__.py
+./backend/models.py
+./backend/routes.py
+./backend/static_routes.py
+./backend/tasks.py
+./docker-compose.yml
+./frontend/css/styles.css
+./frontend/index.html
+./frontend/js/actions_menu.js
+./frontend/js/app.js
+./frontend/js/client_fp.js
+./frontend/js/debug_overlay.js
+./frontend/js/hotfix.js
+./frontend/js/share_enhancer.js
+./frontend/js/stability_patch.js
+./frontend/js/views_counter.js
+./frontend/legal.html
+./migrate_sqlite_to_pg.py
+./render.yaml
+./requirements.txt
+./run.py
+./tests/test_api.py
+
+===== CONTENIDO DE ARCHIVOS DE CÓDIGO =====
+
+----- BEGIN FILE: ./Dockerfile -----
+FROM python:3.12-slim
+WORKDIR /app
+COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 8000
+CMD ["python", "run.py"]
+----- END FILE: ./Dockerfile -----
+
+----- BEGIN FILE: ./Procfile -----
+web: gunicorn "backend:create_app()" -w 4 -k gthread --threads 8 -b 0.0.0.0:$PORT
+----- END FILE: ./Procfile -----
+
+----- BEGIN FILE: ./backend/__init__.py -----
+# backend/__init__.py — versión mínima y estable
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from flask import Flask, send_from_directory, abort
+from flask_sqlalchemy import SQLAlchemy
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from sqlalchemy import text
+
+# Extensiones como singletons (no recrear en cada import)
+db = SQLAlchemy()
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
+
+def _abs(rel: str) -> str:
+    return str((Path(__file__).parent / rel).resolve())
+
+def _database_uri() -> str:
+    # Render usa DATABASE_URL; fallback a SQLALCHEMY_DATABASE_URI; sino: SQLite local
+    uri = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URI")
+    if uri:
+        return uri
+    inst = (Path(__file__).parent / ".." / "instance").resolve()
+    inst.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{inst / 'production.db'}"
+
+def create_app() -> Flask:
+    app = Flask(
+        __name__,
+        static_folder=_abs("../frontend"),
+        static_url_path="",
+    )
+
+    # ---- Config DB (con keepalive) ----
+    app.config["SQLALCHEMY_DATABASE_URI"] = _database_uri()
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+    }
+
+    # ---- Inicializar extensiones (idempotente) ----
+    try:
+        db.init_app(app)
+    except Exception:
+        pass
+    try:
+        limiter.init_app(app)
+    except Exception:
+        pass
+
+    # ---- Migración mínima + índices ----
+    with app.app_context():
+        try:
+            from . import models  # registra modelos
+            db.create_all()
+            with db.engine.begin() as conn:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts   ON note (expires_at, timestamp)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_ts_desc  ON note (timestamp DESC)"))
+        except Exception as e:
+            try:
+                app.logger.warning(f"migrate_min: {e}")
+            except Exception:
+                print("migrate_min warn:", e)
+
+    # ---- Registrar blueprint /api (idempotente) ----
+    try:
+        if "api" not in app.blueprints:
+            from .routes import bp as api_bp
+            app.register_blueprint(api_bp, url_prefix="/api")
+    except Exception as e:
+        try:
+            app.logger.error(f"No se pudo registrar blueprint API: {e}")
+        except Exception:
+            print("API blueprint error:", e)
+
+    # ---- Rutas estáticas/SPA (idempotentes; no capturar /api/*) ----
+    try:
+        rules = {r.rule for r in app.url_map.iter_rules()}
+
+        if "/favicon.ico" not in rules:
+            app.add_url_rule(
+                "/favicon.ico",
+                endpoint="static_favicon",
+                view_func=lambda: send_from_directory(app.static_folder, "favicon.svg", mimetype="image/svg+xml"),
+            )
+        if "/ads.txt" not in rules:
+            app.add_url_rule(
+                "/ads.txt",
+                endpoint="static_ads",
+                view_func=lambda: send_from_directory(app.static_folder, "ads.txt", mimetype="text/plain"),
+            )
+        if "/" not in rules:
+            app.add_url_rule(
+                "/",
+                endpoint="static_root",
+                view_func=lambda: send_from_directory(app.static_folder, "index.html"),
+            )
+        if "static_any" not in app.view_functions:
+            def static_any(path: str):
+                if path.startswith("api/"):
+                    return abort(404)
+                full = os.path.join(app.static_folder, path)
+                if os.path.isfile(full):
+                    return send_from_directory(app.static_folder, path)
+                return send_from_directory(app.static_folder, "index.html")
+            app.add_url_rule("/<path:path>", endpoint="static_any", view_func=static_any)
+    except Exception as e:
+        try:
+            app.logger.warning(f"Rutas estáticas: {e}")
+        except Exception:
+            print("static routes warn:", e)
+
+    return app
+----- END FILE: ./backend/__init__.py -----
+
+----- BEGIN FILE: ./backend/models.py -----
+from __future__ import annotations
+from datetime import datetime, timezone, date
+from . import db
+
+def _utcnow():
+    return datetime.now(timezone.utc)
+
+class Note(db.Model):
+    __tablename__ = "note"
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+    likes = db.Column(db.Integer, nullable=False, default=0)
+    views = db.Column(db.Integer, nullable=False, default=0)
+    reports = db.Column(db.Integer, nullable=False, default=0)
+    author_fp = db.Column(db.String(128), nullable=False, index=True, default="anon")
+
+class LikeLog(db.Model):
+    __tablename__ = "like_log"
+    id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer, db.ForeignKey("note.id", ondelete="CASCADE"), nullable=False, index=True)
+    fingerprint = db.Column(db.String(128), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=_utcnow, nullable=False)
+    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_like_note_fp"),)
+
+class ReportLog(db.Model):
+    __tablename__ = "report_log"
+    id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer, db.ForeignKey("note.id", ondelete="CASCADE"), nullable=False, index=True)
+    fingerprint = db.Column(db.String(128), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=_utcnow, nullable=False)
+    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_report_note_fp"),)
+
+class ViewLog(db.Model):
+    __tablename__ = "view_log"
+    id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer, db.ForeignKey("note.id", ondelete="CASCADE"), nullable=False, index=True)
+    fingerprint = db.Column(db.String(128), nullable=False, index=True)
+    view_date = db.Column(db.Date, nullable=False, index=True)  # 1 vista/día/nota/fp
+    created_at = db.Column(db.DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
+    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", "view_date", name="uq_view_note_fp_day"),)
+----- END FILE: ./backend/models.py -----
+
+----- BEGIN FILE: ./backend/routes.py -----
+from __future__ import annotations
+import os
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+from flask import Blueprint, request, jsonify, abort
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
+from . import db, limiter
+from .models import Note, LikeLog, ReportLog, ViewLog
+
+bp = Blueprint("api", __name__)  # __init__ lo registra con url_prefix='/api'
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+def _as_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None: return None
+    return dt if getattr(dt, "tzinfo", None) else dt.replace(tzinfo=timezone.utc)
+
+def _fp() -> str:
+    h = request.headers
+    return (
+        h.get("X-Client-Fingerprint")
+        or h.get("X-User-Token")
+        or request.cookies.get("p12_fp")
+        or h.get("CF-Connecting-IP")
+        or (h.get("X-Forwarded-For","").split(",")[0].strip() if h.get("X-Forwarded-For") else None)
+        or request.cookies.get("fp")
+        or request.remote_addr
+        or "anon"
+    )
+
+def _rate_key():  # usado por Flask-Limiter
+    return _fp()
+
+def _page_size() -> int:
+    try:
+        v = int(os.getenv("PAGE_SIZE", "20"))
+    except Exception:
+        v = 20
+    return max(10, min(v, 100))
+
+def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
+    now = _as_aware(now) or _now()
+    ts = _as_aware(getattr(n, "timestamp", None))
+    exp = _as_aware(getattr(n, "expires_at", None))
+    remaining = max(0, int((exp - now).total_seconds())) if exp else None
+    return {
+        "id": n.id,
+        "text": n.text,
+        "timestamp": ts.isoformat() if ts else None,
+        "expires_at": exp.isoformat() if exp else None,
+        "remaining": remaining,
+        "likes": int(n.likes or 0),
+        "views": int(n.views or 0),
+        "reports": int(n.reports or 0),
+    }
+
+@bp.get("/health")
+def health():
+    return jsonify({"ok": True, "now": _now().isoformat()}), 200
+
+@bp.get("/notes")
+def list_notes():
+    now = _now()
+    try:
+        page = max(1, int(request.args.get("page", "1")))
+    except Exception:
+        page = 1
+    size = _page_size()
+    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+    items = q.offset((page - 1) * size).limit(size).all()
+    has_more = len(items) == size
+    return jsonify({
+        "page": page,
+        "page_size": size,
+        "has_more": has_more,
+        "notes": [_note_json(n, now) for n in items],
+    })
+
+@bp.post("/notes")
+@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+@limiter.limit("500 per day", key_func=_rate_key)
+def create_note():
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+
+    fp = _fp()
+    now = _now()
+    # límite por usuario por día (server-side)
+    try:
+        max_day = int(os.getenv("NOTES_PER_DAY", "10"))
+    except Exception:
+        max_day = 10
+    start_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    count_today = db.session.query(func.count(Note.id)).filter(
+        Note.author_fp == fp, Note.timestamp >= start_day
+    ).scalar() or 0
+    if count_today >= max_day:
+        return jsonify({"error": "daily limit reached", "limit": max_day}), 429
+
+    # TTL
+    try:
+        hours = int(data.get("hours", 12))
+    except Exception:
+        hours = 12
+    hours = max(1, min(hours, 24 * 7))  # 1..168
+
+    n = Note(
+        text=text,
+        timestamp=now,
+        expires_at=now + timedelta(hours=hours),
+        author_fp=fp,
+    )
+    db.session.add(n)
+    db.session.flush()  # obtener id
+
+    # cap global
+    try:
+        max_notes = int(os.getenv("MAX_NOTES", "12000"))
+    except Exception:
+        max_notes = 12000
+    total = db.session.query(func.count(Note.id)).scalar() or 0
+    if total > max_notes:
+        excess = total - max_notes
+        olds = Note.query.order_by(Note.timestamp.asc()).limit(excess).all()
+        for o in olds:
+            db.session.delete(o)
+
+    db.session.commit()
+    return jsonify(_note_json(n, now)), 201
+
+@bp.post("/notes/<int:note_id>/like")
+def like_note(note_id: int):
+    n = Note.query.get_or_404(note_id)
+    fp = _fp()
+    try:
+        db.session.add(LikeLog(note_id=note_id, fingerprint=fp))
+        db.session.flush()
+        n.likes = int(n.likes or 0) + 1
+        db.session.commit()
+        return jsonify({"likes": n.likes, "already_liked": False})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"likes": int(n.likes or 0), "already_liked": True})
+
+@bp.post("/notes/<int:note_id>/view")
+def view_note(note_id: int):
+    n = Note.query.get_or_404(note_id)
+    fp = _fp()
+    today = _now().date()
+    counted = False
+    try:
+        db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
+        db.session.flush()
+        n.views = int(n.views or 0) + 1
+        db.session.commit()
+        counted = True
+    except IntegrityError:
+        db.session.rollback()
+    return jsonify({"views": int(n.views or 0), "counted": counted})
+
+@bp.post("/notes/<int:note_id>/report")
+def report_note(note_id: int):
+    n = Note.query.get_or_404(note_id)
+    fp = _fp()
+    try:
+        db.session.add(ReportLog(note_id=note_id, fingerprint=fp))
+        db.session.flush()
+        n.reports = int(n.reports or 0) + 1
+        if n.reports >= 5:
+            db.session.delete(n)  # cascada borra logs
+            db.session.commit()
+            return jsonify({"deleted": True, "reports": 0, "already_reported": False})
+        db.session.commit()
+        return jsonify({"deleted": False, "reports": n.reports, "already_reported": False})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"deleted": False, "reports": int(n.reports or 0), "already_reported": True})
+----- END FILE: ./backend/routes.py -----
+
+----- BEGIN FILE: ./backend/static_routes.py -----
+import os
+from flask import Blueprint, current_app, send_from_directory, abort
+
+bp = Blueprint("static_files", __name__)
+
+@bp.get("/favicon.ico")
+def favicon():
+    return send_from_directory(current_app.static_folder, "favicon.svg", mimetype="image/svg+xml")
+
+@bp.get("/ads.txt")
+def ads_txt():
+    return send_from_directory(current_app.static_folder, "ads.txt", mimetype="text/plain")
+
+@bp.route("/")
+def index():
+    return send_from_directory(current_app.static_folder, "index.html")
+
+@bp.route("/<path:path>")
+def static_proxy(path: str):
+    # No interceptar API
+    if path.startswith("api/"):
+        abort(404)
+    full = os.path.join(current_app.static_folder, path)
+    if os.path.isfile(full):
+        # Sirve cualquier archivo que exista dentro de /frontend
+        return send_from_directory(current_app.static_folder, path)
+    # SPA fallback / rutas desconocidas del frontend → index.html
+    return send_from_directory(current_app.static_folder, "index.html")
+----- END FILE: ./backend/static_routes.py -----
+
+----- BEGIN FILE: ./backend/tasks.py -----
+from datetime import datetime, timezone
+from .models import Note
+
+def enforce_global_cap(app):
+    # Borra notas más viejas si superan MAX_NOTES (env; por defecto 20000).
+    import os
+    from . import db
+    from .models import Note, LikeLog, ReportLog
+    try:
+        cap = int(os.getenv("MAX_NOTES", "20000") or 0)
+    except Exception:
+        cap = 20000
+    if cap <= 0:
+        return 0
+    with app.app_context():
+        total = db.session.query(Note.id).count()
+        if total <= cap:
+            return 0
+        to_delete = total - cap
+        old_ids = [r[0] for r in db.session.query(Note.id).order_by(Note.timestamp.asc()).limit(to_delete).all()]
+        if not old_ids:
+            return 0
+        db.session.query(LikeLog).filter(LikeLog.note_id.in_(old_ids)).delete(synchronize_session=False)
+        db.session.query(ReportLog).filter(ReportLog.note_id.in_(old_ids)).delete(synchronize_session=False)
+        db.session.query(Note).filter(Note.id.in_(old_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return to_delete
+
+from . import db
+
+def purge_expired(app):
+    
+    try:
+        enforce_global_cap(app)
+    except Exception:
+        pass
+with app.app_context():
+        Note.query.filter(Note.expires_at <= datetime.now(timezone.utc)).delete()
+        db.session.commit()
+----- END FILE: ./backend/tasks.py -----
+
+----- BEGIN FILE: ./docker-compose.yml -----
+version: "3.9"
+services:
+  paste12:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./instance:/app/instance
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=changeme
+      - DATABASE_URI=sqlite:////app/instance/production.db
+----- END FILE: ./docker-compose.yml -----
+
+----- BEGIN FILE: ./frontend/css/styles.css -----
+:root{
+  --bg1:#f9a1a1; --bg2:#f3b6b6; --card:rgba(0,0,0,.18); --text:#fff;
+  --accent:#ff6b81; --accent2:#ff00ff; --shadow:0 10px 30px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;color:var(--text);
+     background:radial-gradient(1200px 800px at 20% -10%,var(--bg2),var(--bg1));min-height:100vh;}
+.hero{text-align:center;padding:24px 16px 8px}
+.logo-img{width:120px;image-rendering:pixelated;filter:drop-shadow(0 0 10px #30eaff) drop-shadow(0 0 5px #ff00ff)}
+h1{font-size:2.6rem;margin:.2rem 0 .5rem;letter-spacing:.5px}
+.playline{font-weight:600;opacity:.9;margin:-.2rem 0 1.2rem;text-shadow:0 0 8px #30eaff,0 0 4px #ff00ff}
+.container{max-width:860px;margin:0 auto;padding:16px}
+.card{background:var(--card);backdrop-filter:blur(8px);border-radius:20px;padding:14px;box-shadow:var(--shadow)}
+textarea{width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;font:inherit;outline:none}
+textarea::placeholder{color:#eee;opacity:.65}
+.form-row{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:10px}
+select{border-radius:12px;padding:8px 12px;border:none;font:inherit}
+.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;padding:10px 16px;border-radius:12px;cursor:pointer;font-weight:700;box-shadow:0 6px 18px rgba(255,0,255,.35)}
+.notes{list-style:none;padding:0;margin:18px 0 10px}
+.note{background:var(--card);border-radius:18px;padding:12px 14px;margin:10px 0;box-shadow:var(--shadow)}
+.note-text{white-space:pre-wrap;word-break:break-word}
+.note-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.4rem}
+.like-btn{background:#ff00ff;color:#fff;border:none;border-radius:10px;padding:.35rem .7rem;cursor:pointer}
+.pagination{display:flex;gap:6px;justify-content:center;margin:10px 0 40px}
+.pagination button{border:none;padding:.4rem .7rem;border-radius:8px;cursor:pointer}
+.pagination button[disabled]{opacity:.6}
+footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85}
+
+/* --- Opciones por nota (3 puntos) --- */
+.note{ position: relative; }
+.note-actions{ position:absolute; top:8px; right:8px; }
+.menu-btn{
+  background: rgba(255,255,255,.15); color:#fff; border:none; border-radius:10px;
+  width:32px; height:32px; cursor:pointer;
+}
+.menu{
+  position:absolute; top:36px; right:0; min-width:160px;
+  background: rgba(0,0,0,.85); color:#fff; border:1px solid rgba(255,255,255,.15);
+  border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.35); padding:6px;
+  backdrop-filter: blur(8px);
+}
+.menu-item{
+  width:100%; text-align:left; background:transparent; color:#fff; border:none;
+  padding:8px 10px; border-radius:8px; cursor:pointer; display:block;
+}
+.menu-item:hover{ background: rgba(255,255,255,.1); }
+.menu-item.disabled{ opacity:.6; cursor:not-allowed; }
+
+/* anuncios */
+.ad-slot{ margin: 14px 0; display:block; }
+.ad-slot.infeed{ margin: 10px 0 18px; }
+.legal{ text-align:center; font-size:.85rem; opacity:.8; padding:12px 0 18px; }
+.legal a{ color: #a0e7ff; text-decoration: none; }
+.legal a:hover{ text-decoration: underline; }
+
+.story-tools{ margin-top:8px; display:flex; align-items:center; gap:10px; }
+.story-tools .hint{ opacity:.7; }
+.btn.ghost{ background:transparent; border:2px dashed rgba(255,255,255,.7); color:#fff; }
+.btn.ghost:hover{ border-style:solid; }
+
+/* Botón Historias IG */
+.btn-ig-story{
+  margin-left:.5rem; margin-top:.25rem;
+  padding:.45rem .7rem; border-radius:10px;
+  border:none; background:#e11d48; color:#fff;
+  box-shadow:0 6px 18px rgba(225,29,72,.35);
+  font-weight:700; letter-spacing:.2px;
+}
+.btn-ig-story:active{ transform:translateY(1px); }
+
+
+/* Badge de cuenta regresiva */
+.note-meta{display:flex;gap:.6rem;align-items:center;margin-top:.35rem;flex-wrap:wrap}
+.countdown{background:#0ea5e9;color:#001024;font-weight:800;padding:.22rem .5rem;border-radius:.6rem;box-shadow:0 6px 18px rgba(14,165,233,.35);font-size:.85rem}
+.note-expired{opacity:.6;filter:saturate(.7)}
+
+/* --- hotfix tarjetas --- */
+.note-card{
+  background:#0b1020; border:1px solid #243055; border-radius:14px;
+  padding:14px; margin:10px 0; box-shadow:0 4px 18px rgba(0,0,0,.25);
+}
+.note-body{ white-space:pre-wrap; line-height:1.4; font-size:16px; color:#e9ecff; }
+.note-meta{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12px; color:#b9c1ff; }
+.note-meta .spacer{ flex:1 }
+.btn-like{ border:0; background:#1f2a4a; color:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
+.btn-like:hover{ filter:brightness(1.1) }
+.countdown{ background:#223361; padding:2px 8px; border-radius:999px; }
+.countdown.warn{ background:#f59e0b; color:#1a0f00; }
+.countdown.danger{ background:#ef4444; color:#fff; }
+
+/* Botón Compartir (fallback) */
+.btn-share{ border:0; background:#17325b; color:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
+.btn-share:hover{ filter:brightness(1.1) }
+
+/* --- Menú ⋯ en cada tarjeta --- */
+.p12-menu-wrap{ position:absolute; top:8px; right:8px; }
+.p12-menu-btn{ border:0; background:#13233f; color:#fff; width:28px; height:28px; border-radius:8px; cursor:pointer; line-height:1; font-size:18px; }
+.p12-menu-btn:hover{ filter:brightness(1.1); }
+.p12-menu{ position:absolute; top:34px; right:0; background:#0b1530; color:#fff; border:1px solid #2a3c68; border-radius:10px; overflow:hidden; min-width:160px; box-shadow:0 6px 20px #0007; }
+.p12-menu button{ display:block; width:100%; text-align:left; padding:10px 12px; background:transparent; border:0; color:#fff; cursor:pointer; }
+.p12-menu button:hover{ background:#17325b; }
+
+/* --- Métricas (vistas) en tarjeta --- */
+.p12-metrics{
+  position:absolute; bottom:8px; right:8px;
+  background:#0b1530cc; color:#cfe3ff;
+  padding:6px 8px; border-radius:8px;
+  font-size:12px; display:flex; gap:10px;
+  align-items:center; border:1px solid #274a8a66;
+}
+.p12-metrics .p12-views{ opacity:0.9; }
+----- END FILE: ./frontend/css/styles.css -----
+
+----- BEGIN FILE: ./frontend/index.html -----
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paste12 — notas que desaparecen</title>
+<link rel="stylesheet" href="/css/styles.css?v=1755277389">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" crossorigin="anonymous"></script>
+<!-- OpenGraph -->
+<meta property="og:title" content="Notas rápidas — anónimo y efímero">
+<meta property="og:description" content="Publica algo breve y efímero. Likes, vistas y compartir en un clic.">
+<meta property="og:image" content="/img/og.png">
+<meta property="og:type" content="website">
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Notas rápidas — anónimo y efímero">
+<meta name="twitter:description" content="Publica algo breve y efímero. Likes, vistas y compartir en un clic.">
+<meta name="twitter:image" content="/img/og.png">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="hero">
+    <div class="logo">
+      
+    </div>
+    <h1>Paste12</h1>
+    <p class="playline">Haz un regalo • Dime un secreto • Reta a un amigo</p>
+  </header>
+
+  <main class="container">
+  <div id="ad-top" class="ad-slot">
+    <ins class="adsbygoogle" style="display:block"
+         data-ad-client=""
+         data-ad-slot=""
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+    <form id="form" class="card" action="#" method="post" onsubmit="return false;">
+      <textarea id="text" placeholder="Escribe tu nota…" rows="5" maxlength="500"></textarea>
+      <div class="form-row">
+        <label>Duración:
+          <select name="expire_hours" id="duration">
+            <option value="12">12 horas</option>
+            <option value="24">1 día</option>
+            <option value="168" selected>7 días</option>
+            <option value="336">14 días</option>
+            <option value="672">28 días</option>
+          </select>
+        </label>
+        <button id="publish" type="button" class="primary">Publicar</button>
+      </div>
+    
+  <div class="story-tools">
+    <input type="file" id="story-photo" accept="image/*" style="display:none">
+    <button id="story-make" class="btn ghost">🖼️ Crear historia</button>
+    <small class="hint">Opcional: mantén pulsado el botón para elegir una foto de fondo.</small>
+  </div>
+</form>
+
+    <ul id="notes" class="notes"></ul>
+    <nav id="pagination" class="pagination"></nav>
+  
+  <div id="ad-bottom" class="ad-slot">
+    <ins class="adsbygoogle" style="display:block"
+         data-ad-client=""
+         data-ad-slot=""
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+</main>
+
+  <footer class="legal">© 2025 Paste12 — Todos los derechos reservados · Este sitio es recreativo. No publiques datos sensibles.</footer>
+  <script src="/js/app.js?v=1755277389" defer></script>
+
+  <footer class="legal">
+    <a href="/legal.html" target="_blank" rel="noopener">Privacidad · Términos</a>
+  </footer>
+
+  <canvas id="story-canvas" width="1080" height="1920" style="display:none"></canvas>
+  <script src="js/hotfix.js?v=1755641530"></script>
+  <script src="js/share_enhancer.js?v=1755643458"></script>
+  <script src="js/actions_menu.js?v=1755646281"></script>
+  <script src="js/views_counter.js?v=1755659501"></script>
+  <script src="/js/stability_patch.js?v=1755667505"></script>
+  <script defer src="/js/debug_overlay.js"></script>
+</body>
+</html>
+----- END FILE: ./frontend/index.html -----
+
+----- BEGIN FILE: ./frontend/js/actions_menu.js -----
+(function(){
+  // ===== Utils =====
+  function noteUrl(id){ return `${location.origin}/#n-${id}`; }
+
+  async function copyToClipboard(text){
+    try{ await navigator.clipboard.writeText(text); return true; }
+    catch(_){
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.top='-1000px';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); document.body.removeChild(ta);
+      return ok;
+    }
+  }
+
+  function toast(msg){
+    let t = document.getElementById('toast-p12');
+    if(!t){
+      t = document.createElement('div'); t.id='toast-p12';
+      Object.assign(t.style, {
+        position:'fixed', left:'50%', bottom:'16px', transform:'translateX(-50%) translateY(10px)',
+        background:'#111a', color:'#fff', padding:'10px 14px', borderRadius:'10px',
+        backdropFilter:'blur(6px)', zIndex:'9999', fontSize:'14px', opacity:'0',
+        transition:'opacity .2s, transform .2s'
+      });
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
+    setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(10px)'; }, 1500);
+  }
+
+  async function shareNote(id){
+    const url = noteUrl(id);
+    if (navigator.share && (!navigator.canShare || navigator.canShare({url}))){
+      try { await navigator.share({title:'Paste12', text:'Mira esta nota', url}); return; }
+      catch(e){/* cancelado → fallback a copiar */}
+    }
+    const ok = await copyToClipboard(url);
+    toast(ok ? 'Enlace copiado' : `Copia manual: ${url}`);
+  }
+
+  async function reportNote(id, card){
+    try{
+      const res = await fetch(`/api/notes/${id}/report`, {method:'POST', headers:{'Content-Type':'application/json'}});
+      const j = await res.json();
+      if (j.deleted){
+        // Borrar del DOM
+        card?.remove();
+        toast('La nota fue eliminada por reportes');
+      } else if (j.already_reported){
+        toast('Ya reportaste esta nota');
+      } else {
+        toast(`Reporte enviado (${j.reports}/5)`);
+      }
+    }catch(e){
+      console.warn('report failed', e);
+      toast('No se pudo reportar');
+    }
+  }
+
+  // ===== DOM helpers =====
+  function getIdFromCard(card){
+    return card.getAttribute('data-note')
+      || card.getAttribute('data-note-id')
+      || (card.dataset ? (card.dataset.note || card.dataset.id) : null)
+      || null;
+  }
+
+  function ensureAnchorId(card, id){
+    if (!card.id) card.id = 'n-'+id;
+  }
+
+  function ensureMenu(card, id){
+    if (card.querySelector('.p12-menu-wrap')) return;
+
+    // contenedor absoluto arriba-dcha
+    const wrap = document.createElement('div');
+    wrap.className = 'p12-menu-wrap';
+    wrap.innerHTML = `
+      <button type="button" class="p12-menu-btn" aria-label="Opciones">⋯</button>
+      <div class="p12-menu" hidden>
+        <button type="button" class="p12-share">Compartir</button>
+        <button type="button" class="p12-report">Reportar</button>
+      </div>`;
+    card.style.position = card.style.position || 'relative';
+    card.appendChild(wrap);
+
+    const btn = wrap.querySelector('.p12-menu-btn');
+    const menu = wrap.querySelector('.p12-menu');
+    const share = wrap.querySelector('.p12-share');
+    const report = wrap.querySelector('.p12-report');
+
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const v = menu.hasAttribute('hidden');
+      document.querySelectorAll('.p12-menu').forEach(m=>m.setAttribute('hidden',''));
+      if (v) menu.removeAttribute('hidden'); else menu.setAttribute('hidden','');
+    });
+
+    share.addEventListener('click', (e)=>{ e.stopPropagation(); menu.setAttribute('hidden',''); shareNote(id); });
+    report.addEventListener('click', (e)=>{ e.stopPropagation(); menu.setAttribute('hidden',''); reportNote(id, card); });
+
+    // cerrar al clicar fuera
+    document.addEventListener('click', ()=> menu.setAttribute('hidden',''));
+  }
+
+  function process(container){
+    container.querySelectorAll('[data-note], [data-note-id], .note-card, article, li').forEach(card=>{
+      const id = getIdFromCard(card);
+      if (!id) return;
+      ensureAnchorId(card, id);
+      ensureMenu(card, id);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const container = document.getElementById('notes')
+      || document.querySelector('[data-notes]')
+      || document.querySelector('#list')
+      || document.querySelector('main')
+      || document.body;
+
+    process(container);
+    const mo = new MutationObserver(()=>process(container));
+    mo.observe(container, {childList:true, subtree:true});
+    console.log('[actions_menu] listo (⋯ → Compartir/Reportar sin popups)');
+  });
+})();
+----- END FILE: ./frontend/js/actions_menu.js -----
+
+----- BEGIN FILE: ./frontend/js/app.js -----
+// paste12 — frontend estable (paginación + dedupe + vistas 1x)
+// Singleton boot
+if (window.__P12_BOOTED__) { /* ya iniciado */ } else { window.__P12_BOOTED__ = true; }
+
+window.P12 = window.P12 || {};
+P12.page = 1;
+P12.loading = false;
+P12.renderedIds = new Set();   // para dedupe de tarjetas
+P12.viewedOnce  = new Set();   // para POST /view 1x
+P12.infAttached = false;       // para listener de scroll único
+
+function fmtRemaining(sec){
+  sec = Math.max(0, parseInt(sec||0,10));
+  const d = Math.floor(sec/86400); sec%=86400;
+  const h = Math.floor(sec/3600);  sec%=3600;
+  const m = Math.floor(sec/60);
+  if(d>0) return `${d}d ${h}h`;
+  if(h>0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+class NotesApp {
+  constructor() {
+    this.listEl = document.querySelector('#feed') || document.body;
+    this.footer = document.querySelector('#feed-end') || (() => {
+      const el = document.createElement('div');
+      el.id = 'feed-end';
+      el.style.cssText = 'text-align:center; padding:16px; opacity:.7;';
+      this.listEl.after(el);
+      return document.getElementById('feed-end');
+    })();
+    // arranque: cargar page 1 una sola vez
+    this.load(1);
+  }
+
+  async load(page=1){
+    if(P12.loading) return;
+    P12.loading = true;
+    try {
+      const r = await fetch(`/api/notes?page=${page}`, { headers:{ "Accept":"application/json" }});
+      const d = await r.json();
+      const notes   = d.notes || [];
+      const hasMore = !!d.has_more;
+
+      if (page === 1) {
+        // reset de feed y sets para evitar duplicados
+        this.listEl.innerHTML = '';
+        this.footer.textContent = '';
+        P12.renderedIds.clear();
+        P12.viewedOnce.clear();
+      }
+
+      // render + vistas idempotentes
+      for (const n of notes) {
+        if (P12.renderedIds.has(n.id)) continue; // DEDUPE POR ID
+        P12.renderedIds.add(n.id);
+
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.dataset.id = n.id;
+        card.innerHTML = `
+          <div class="note-text"></div>
+          <div class="note-meta">
+            <button type="button" class="like-btn">❤️</button>
+            <span class="likes-count">${n.likes || 0}</span>
+            <span class="views-count">${n.views || 0}</span>
+            <span class="remaining"></span>
+          </div>
+        `;
+        card.querySelector('.note-text').textContent = n.text || '';
+        if (typeof n.remaining === 'number') {
+          card.querySelector('.remaining').textContent = fmtRemaining(n.remaining);
+        }
+        this.listEl.appendChild(card);
+
+        // /view una sola vez por sesión/navegación
+        if (!P12.viewedOnce.has(n.id)) {
+          P12.viewedOnce.add(n.id);
+          fetch(`/api/notes/${n.id}/view`, { method:'POST' })
+            .then(r=>r.json())
+            .then(j=>{
+              const el = card.querySelector('.views-count');
+              if (el && j && typeof j.views === 'number') el.textContent = j.views;
+            }).catch(()=>{});
+        }
+
+        // like
+        const likeBtn = card.querySelector('.like-btn');
+        likeBtn.addEventListener('click', async ()=>{
+          try {
+            const rr = await fetch(`/api/notes/${n.id}/like`, { method:'POST' });
+            const jj = await rr.json();
+            const lc = card.querySelector('.likes-count');
+            if (lc && jj && typeof jj.likes === 'number') lc.textContent = jj.likes;
+          } catch {}
+        }, { once:false });
+      }
+
+      if (hasMore) {
+        P12.page = page + 1;
+        this.footer.textContent = 'Cargando más…';
+        attachInfiniteScroll(() => this.load(P12.page));
+      } else {
+        this.footer.textContent = 'Fin del feed';
+      }
+    } catch (e) {
+      console.error('load error', e);
+    } finally {
+      P12.loading = false;
+    }
+  }
+}
+
+// Scroll infinito — se adjunta UNA sola vez
+function attachInfiniteScroll(cb){
+  if (P12.infAttached) return;
+  P12.infAttached = true;
+  let ticking = false;
+
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 400);
+      if (nearBottom && !P12.loading) cb();
+      ticking = false;
+    });
+  }, { passive:true });
+}
+
+// Eliminar shims viejos que llamaban load dos veces
+try { delete window.P12App; } catch {}
+try { delete window.load;   } catch {}
+
+// Boot
+document.addEventListener('DOMContentLoaded', () => {
+  if (!window.__P12_APP__) window.__P12_APP__ = new NotesApp();
+});
+----- END FILE: ./frontend/js/app.js -----
+
+----- BEGIN FILE: ./frontend/js/client_fp.js -----
+(function(){
+  function uuid(){
+    if (window.crypto?.randomUUID) return crypto.randomUUID();
+    const a = new Uint8Array(16);
+    (window.crypto||{}).getRandomValues?.(a);
+    return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  let t = localStorage.getItem('p12');
+  if (!t){ t = uuid(); localStorage.setItem('p12', t); }
+  // expón por si se necesita
+  window.p12Token = t;
+
+  // Parchea fetch para añadir la cabecera X-User-Token
+  const orig = window.fetch;
+  window.fetch = function(input, init){
+    init = init || {};
+    const headers = new Headers(init.headers || {});
+    headers.set('X-User-Token', t);
+    init.headers = headers;
+    return orig(input, init);
+  };
+  console.log('[client_fp] token listo');
+})();
+----- END FILE: ./frontend/js/client_fp.js -----
+
+----- BEGIN FILE: ./frontend/js/debug_overlay.js -----
+(()=>{ 
+  const on = /\bdebug=1\b/.test(location.search) || location.hash==="#debug";
+  if(!on) return;
+
+  function el(tag,attrs={},html=""){const e=document.createElement(tag);Object.assign(e,attrs);e.innerHTML=html;return e;}
+  async function getPageData(){
+    const p = (window.P12?.page)||1;
+    try{
+      const r = await fetch(`/api/notes?page=${p}`, {headers:{'Accept':'application/json'}});
+      return await r.json();
+    }catch{return {notes:[],has_more:false};}
+  }
+  function domStats(){
+    const cards=[...document.querySelectorAll('.note-card')];
+    const ids=cards.map(c=>c.dataset.id||'').filter(Boolean);
+    const uniq=[...new Set(ids)];
+    const counts=ids.reduce((m,id)=>((m[id]=(m[id]||0)+1),m),{});
+    const dups=Object.entries(counts).filter(([,c])=>c>1).map(([id,c])=>({id,c}));
+    return {cards:cards.length, uniq:uniq.length, dups};
+  }
+
+  const box=el('div',{id:'p12-debug-box'});
+  Object.assign(box.style,{
+    position:'fixed',top:'8px',right:'8px',zIndex:99999,
+    background:'rgba(0,0,0,.85)',color:'#fff',padding:'10px 12px',
+    font:'12px/1.35 system-ui, sans-serif',borderRadius:'8px',
+    boxShadow:'0 6px 20px rgba(0,0,0,.35)'
+  });
+  box.innerHTML=`
+    <div style="font-weight:700;margin-bottom:6px">P12 Debug</div>
+    <div>API page: <span id="dbg-page">?</span></div>
+    <div>API notes: <span id="dbg-api-count">?</span> · has_more: <span id="dbg-hm">?</span></div>
+    <div>DOM cards: <span id="dbg-dom">?</span> · únicos: <span id="dbg-uniq">?</span></div>
+    <div>Dup IDs: <span id="dbg-dups">—</span></div>
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+      <button id="dbg-hl" style="padding:4px 6px">Resaltar duplicados</button>
+      <button id="dbg-rm" style="padding:4px 6px">Eliminar duplicados</button>
+      <button id="dbg-x"  style="padding:4px 6px">Cerrar</button>
+    </div>
+  `;
+  document.body.appendChild(box);
+
+  async function refresh(){
+    const data = await getPageData();
+    const apiCount = (data.notes||[]).length;
+    const hm = !!data.has_more;
+    const page = (window.P12?.page)||1;
+    const {cards,uniq,dups} = domStats();
+
+    box.querySelector('#dbg-page').textContent = page;
+    box.querySelector('#dbg-api-count').textContent = apiCount;
+    box.querySelector('#dbg-hm').textContent = hm;
+    box.querySelector('#dbg-dom').textContent = cards;
+    box.querySelector('#dbg-uniq').textContent = uniq;
+    box.querySelector('#dbg-dups').textContent = dups.length
+      ? dups.slice(0,8).map(d=>`${d.id}×${d.c}`).join(', ')
+      : '—';
+  }
+  refresh();
+  const iv = setInterval(refresh, 1500);
+
+  box.querySelector('#dbg-hl').onclick = ()=>{
+    const seen=new Set();
+    document.querySelectorAll('.note-card').forEach(n=>{
+      const id=n.dataset.id;
+      if(seen.has(id)) n.style.outline='3px solid red';
+      else seen.add(id);
+    });
+  };
+  box.querySelector('#dbg-rm').onclick = ()=>{
+    const seen=new Set();
+    document.querySelectorAll('.note-card').forEach(n=>{
+      const id=n.dataset.id;
+      if(!id) return;
+      if(seen.has(id)) n.remove();
+      else seen.add(id);
+    });
+    refresh();
+  };
+  box.querySelector('#dbg-x').onclick = ()=>{ clearInterval(iv); box.remove(); };
+})();
+----- END FILE: ./frontend/js/debug_overlay.js -----
+
+----- BEGIN FILE: ./frontend/js/hotfix.js -----
+(function(){
+  function fmtCountdown(expISO){
+    if(!expISO) return "";
+    const now = Date.now();
+    const ms  = Date.parse(expISO) - now;
+    const s = Math.max(0, Math.floor(ms/1000));
+    const d = Math.floor(s/86400), r1 = s - d*86400;
+    const h = Math.floor(r1/3600), r2 = r1 - h*3600;
+    const m = Math.floor(r2/60), x = r2 - m*60;
+    if (d>0) return `${d}d ${h}h`;
+    if (h>0) return `${h}h ${m}m`;
+    if (m>0) return `${m}m ${x}s`;
+    return `${x}s`;
+  }
+
+  function startCountdownLoop(){
+    function tick(){
+      document.querySelectorAll('.countdown[data-expires-at]').forEach(el=>{
+        const iso = el.getAttribute('data-expires-at');
+        el.textContent = fmtCountdown(iso);
+        const ttl = (Date.parse(iso) - Date.now())/1000;
+        el.classList.toggle('danger', ttl<=3600);
+        el.classList.toggle('warn', ttl<=86400 && ttl>3600);
+        el.title = `Expira: ${new Date(iso).toLocaleString()}`;
+      });
+    }
+    tick(); setInterval(tick, 1000);
+  }
+
+  async function api(path, opts){
+    const r = await fetch(path, Object.assign({headers:{'Content-Type':'application/json'}}, opts||{}));
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+
+  function buildCard(n){
+    const art = document.createElement('article');
+    art.className = 'note-card';
+    art.setAttribute('data-note', n.id);
+    art.innerHTML = `
+      <div class="note-body">${(n.text||"").replace(/</g,"&lt;")}</div>
+      <div class="note-meta">
+        <span class="countdown" data-expires-at="${n.expires_at||""}"></span>
+        <div class="spacer"></div>
+        <button class="btn-like" data-id="${n.id}" aria-label="Me gusta">❤️ <b>${n.likes||0}</b></button>
+        <span class="views" title="Vistas">👁️ ${(n.views||0)}</span>
+      </div>
+    `;
+    const btn = art.querySelector('.btn-like');
+    btn.addEventListener('click', async (ev)=>{
+      ev.preventDefault();
+      try{
+        const j = await api(`/api/notes/${n.id}/like`, {method:'POST'});
+        btn.querySelector('b').textContent = j.likes ?? (parseInt(btn.querySelector('b').textContent||'0',10)+1);
+      }catch(e){ console.warn('like failed', e); }
+    });
+    return art;
+  }
+
+  async function loadAndRender(page=1){
+    try{
+      const data = await api(`/api/notes?page=${page}`);
+      const items = Array.isArray(data.items)? data.items : (Array.isArray(data.notes)? data.notes : []);
+      const list = document.getElementById('notes') || document.querySelector('[data-notes], #list, main');
+      if(!list) return;
+      list.innerHTML = '';
+      items.forEach(n => list.appendChild(buildCard(n)));
+      if(items.length>0) startCountdownLoop();
+      console.log(`[hotfix] renderizadas ${items.length} notas`);
+    }catch(e){
+      console.warn('[hotfix] fallo cargando notas', e);
+    }
+  }
+
+  function wireForm(){
+    const form = document.getElementById('form') || document.querySelector('form[data-note-form]');
+    if(!form) return;
+    form.addEventListener('submit', async (ev)=>{
+      try{
+        const t = (form.querySelector('textarea, [name="text"]')||{}).value?.trim() || '';
+        if(!t) return;
+        ev.preventDefault();
+        const hoursSel = form.querySelector('[name="duration"], [name="hours"]');
+        let body = { text: t };
+        if (hoursSel) {
+          const v = hoursSel.value || hoursSel.getAttribute('value') || '';
+          body.duration = v; // el backend acepta "12h","1d","7d"
+        }
+        await api('/api/notes', {method:'POST', body: JSON.stringify(body)});
+        (form.querySelector('textarea, [name="text"]')||{}).value = '';
+        await loadAndRender(1);
+      }catch(e){ console.warn('[hotfix] submit fallo', e); }
+    }, {once:true});
+  }
+
+  // Sólo corre si la lista está vacía después de que cargó la página (no pisa tu app.js)
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const list = document.getElementById('notes') || document.querySelector('[data-notes], #list, main');
+    setTimeout(()=>{
+      if (!list) return;
+      const empty = !list.children || list.children.length===0;
+      if (empty) {
+        console.log('[hotfix] lista vacía: aplicando renderer alternativo');
+        wireForm();
+        loadAndRender(1);
+      } else {
+        console.log('[hotfix] lista no vacía: no se aplica');
+      }
+    }, 400);
+  });
+})();
+----- END FILE: ./frontend/js/hotfix.js -----
+
+----- BEGIN FILE: ./frontend/js/share_enhancer.js -----
+(function(){
+  function noteUrl(id){ return `${location.origin}/#n-${id}`; }
+
+  async function copyToClipboard(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      return true;
+    }catch(_){
+      // Fallback execCommand
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }
+  }
+
+  function toast(msg){
+    let t = document.getElementById('toast-share');
+    if(!t){
+      t = document.createElement('div');
+      t.id = 'toast-share';
+      Object.assign(t.style, {
+        position:'fixed', left:'50%', bottom:'16px', transform:'translateX(-50%) translateY(10px)',
+        background:'#111a', color:'#fff', padding:'10px 14px', borderRadius:'10px',
+        backdropFilter:'blur(6px)', zIndex:'9999', fontSize:'14px', opacity:'0',
+        transition:'opacity .2s, transform .2s'
+      });
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(10px)'; }, 1500);
+  }
+
+  async function doShare(id){
+    const url = noteUrl(id);
+    if (navigator.share && (!navigator.canShare || navigator.canShare({url}))){
+      try { await navigator.share({title:'Paste12', text:'Mira esta nota', url}); return; }
+      catch(e){ /* cancelado por el usuario → fallback a copiar */ }
+    }
+    const ok = await copyToClipboard(url);
+    toast(ok ? 'Enlace copiado' : `Copia manual: ${url}`);
+  }
+
+  function findContainer(){
+    return document.getElementById('notes')
+        || document.querySelector('[data-notes]')
+        || document.querySelector('#list')
+        || document.querySelector('main')
+        || document.body;
+  }
+
+  function getCardId(card){
+    return card.getAttribute('data-note')
+        || card.getAttribute('data-note-id')
+        || (card.dataset ? (card.dataset.note || card.dataset.id) : null)
+        || null;
+  }
+
+  function ensureAnchorId(card, id){
+    if (!card.id) card.id = 'n-' + id;
+  }
+
+  function injectShareIfMissing(card, id){
+    if(card.querySelector('[data-share-id], .btn-share, .menu-share, .share-link')) return;
+    // Coloca el botón en la fila meta o crea una
+    let meta = card.querySelector('.note-meta');
+    if(!meta){
+      meta = document.createElement('div');
+      meta.className = 'note-meta';
+      Object.assign(meta.style, {display:'flex', alignItems:'center', gap:'10px', marginTop:'8px'});
+      card.appendChild(meta);
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-share';
+    btn.setAttribute('data-share-id', id);
+    btn.textContent = 'Compartir';
+    Object.assign(btn.style, {border:'0', background:'#17325b', color:'#fff', padding:'6px 10px', borderRadius:'10px', cursor:'pointer'});
+    meta.appendChild(btn);
+  }
+
+  function processExisting(container){
+    container.querySelectorAll('[data-note], [data-note-id], .note-card, article').forEach(card=>{
+      const id = getCardId(card);
+      if(!id) return;
+      ensureAnchorId(card, id);
+      injectShareIfMissing(card, id);
+    });
+  }
+
+  function interceptClicks(container){
+    container.addEventListener('click', (ev)=>{
+      // Captura clicks de compartir (y anula popups tipo Twitter antiguos)
+      const target = ev.target.closest('[data-share-id], .btn-share, .menu-share, .share-link, .share-twitter, .share-x, a[href*="twitter.com/intent"]');
+      if(!target) return;
+      ev.preventDefault();
+      const id = target.getAttribute('data-share-id')
+        || target.getAttribute('data-note-id')
+        || target.dataset?.note
+        || target.dataset?.id
+        || getCardId(target.closest('[data-note], [data-note-id], .note-card, article')) ;
+      if (id) doShare(id);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const container = findContainer();
+    processExisting(container);
+    interceptClicks(container);
+    // Si llegan nuevas tarjetas por JS, asegúralo también
+    const mo = new MutationObserver(()=>processExisting(container));
+    mo.observe(container, {childList:true, subtree:true});
+    console.log('[share_enhancer] activo (sin popups; share sheet en móvil; copia en escritorio)');
+  });
+})();
+----- END FILE: ./frontend/js/share_enhancer.js -----
+
+----- BEGIN FILE: ./frontend/js/stability_patch.js -----
+(()=> {
+  function dedupe(){
+    const cards = Array.from(document.querySelectorAll('.note-card[data-id]'));
+    const seen = new Set();
+    let removed = 0;
+    for(const c of cards){
+      const id = c.dataset.id;
+      if(!id) continue;
+      if(seen.has(id)){ c.remove(); removed++; }
+      else seen.add(id);
+    }
+    return removed;
+  }
+
+  // corre al cargar y luego cada 1.5s
+  const run = ()=>{ try{ dedupe(); }catch{} };
+  document.addEventListener('DOMContentLoaded', run, {once:true});
+  setInterval(run, 1500);
+
+  // si hay mutaciones (llegan nuevas notas), dedupe inmediato
+  try{
+    const mo = new MutationObserver(()=>{ try{ dedupe(); }catch{} });
+    mo.observe(document.documentElement, {childList:true, subtree:true});
+  }catch{}
+})();
+----- END FILE: ./frontend/js/stability_patch.js -----
+
+----- BEGIN FILE: ./frontend/js/views_counter.js -----
+(function(){
+  const SEEN_KEY = (id)=>`p12:viewed:${id}`;
+  const NOTES_SEL = '#notes, [data-notes], #list, main, body';
+
+  // map de id -> {views,...} del listado actual
+  const cache = new Map();
+  let fetching = false;
+
+  function getCurrentPage(){
+    const u = new URL(location.href);
+    const p = parseInt(u.searchParams.get('page')||'1',10);
+    return isNaN(p)||p<1 ? 1 : p;
+  }
+
+  async function hydrateCache(){
+    if (fetching) return;
+    fetching = true;
+    try{
+      const page = getCurrentPage();
+      const r = await fetch(`/api/notes?page=${page}`);
+      const j = await r.json();
+      (j.items||[]).forEach(n => cache.set(String(n.id), n));
+    }catch(e){ console.warn('[views] no se pudo hidratar', e); }
+    finally{ fetching = false; }
+  }
+
+  function getIdFromCard(card){
+    return card.getAttribute('data-note')
+      || card.getAttribute('data-note-id')
+      || (card.dataset ? (card.dataset.note || card.dataset.id) : null)
+      || (card.id && card.id.startsWith('n-') ? card.id.slice(2) : null)
+      || null;
+  }
+
+  function ensureMetrics(card){
+    let m = card.querySelector('.p12-metrics');
+    if (!m){
+      m = document.createElement('div');
+      m.className = 'p12-metrics';
+      m.innerHTML = `<span class="p12-views" title="Vistas">👁 0</span>`;
+      card.appendChild(m);
+    }
+    return m;
+  }
+
+  function setViews(card, count){
+    const span = card.querySelector('.p12-views');
+    if (span) span.textContent = `👁 ${count}`;
+  }
+
+  async function addViewOnce(id, card){
+    try{
+      if (sessionStorage.getItem(SEEN_KEY(id))) return; // ya sumado en esta sesión
+      const res = await fetch(`/api/notes/${id}/view`, {method:'POST'});
+      const j = await res.json();
+      setViews(card, j.views ?? '?');
+      sessionStorage.setItem(SEEN_KEY(id), '1');
+    }catch(e){
+      console.warn('[views] fallo al sumar', e);
+    }
+  }
+
+  async function process(container){
+    // hidratar cache una sola vez por corrida
+    if (cache.size === 0) await hydrateCache();
+
+    container.querySelectorAll('[data-note], [data-note-id], .note-card, article, li').forEach(card=>{
+      const id = getIdFromCard(card);
+      if (!id) return;
+      card.style.position = card.style.position || 'relative';
+      ensureMetrics(card);
+      // si sabemos la cifra desde cache del listado, muéstrala
+      if (cache.has(String(id))) setViews(card, cache.get(String(id)).views ?? 0);
+      // suma 1 vez por sesión en primera visualización
+      addViewOnce(id, card);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const container = document.querySelector(NOTES_SEL);
+    if(!container) return;
+    process(container);
+
+    // Observa cambios (paginación, nuevas notas)
+    const mo = new MutationObserver(()=>{
+      process(container);
+    });
+    mo.observe(container, {childList:true, subtree:true});
+    console.log('[views_counter] activo');
+  });
+})();
+----- END FILE: ./frontend/js/views_counter.js -----
+
+----- BEGIN FILE: ./frontend/legal.html -----
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Términos y Privacidad · Paste12</title>
+<link rel="stylesheet" href="/css/styles.css">
+<style>main{max-width:900px;margin:30px auto;padding:20px;background:rgba(0,0,0,.25);border-radius:16px;color:#fff}</style>
+</head><body>
+<main>
+  <h1>Paste12 · Términos y Privacidad</h1>
+  <p>Este sitio es recreativo. No publiques datos sensibles ni ilegales.</p>
+  <h2>Contenido y moderación</h2>
+  <ul>
+    <li>Las notas expiran automáticamente.</li>
+    <li>Los usuarios pueden reportar; 5 reportes eliminan la nota.</li>
+    <li>Se bloquea spam y contenido no permitido.</li>
+  </ul>
+  <h2>Datos</h2>
+  <p>No se exige registro. Se usan cookies locales para likes/reportes y logs mínimos para seguridad.</p>
+  <h2>Contacto</h2>
+  <p>Si ves un abuso, usa “Reportar” o escribe a admin@tu-dominio.</p>
+</main>
+</body></html>
+----- END FILE: ./frontend/legal.html -----
+
+----- BEGIN FILE: ./migrate_sqlite_to_pg.py -----
+import os
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
+
+SQLITE = os.environ.get("SQLITE_URL", "sqlite:///instance/production.db")
+PG     = os.environ.get("DATABASE_URL")
+if not PG:
+    raise SystemExit("❌ Falta DATABASE_URL (PostgreSQL).")
+
+print("Origen (SQLite):", SQLITE)
+print("Destino (Postgres):", PG.split('@')[-1])
+
+src = create_engine(SQLITE, future=True)
+dst = create_engine(PG, future=True)
+
+with dst.begin() as conn:
+    conn.execute(text("""
+    CREATE TABLE IF NOT EXISTS note(
+      id SERIAL PRIMARY KEY,
+      text VARCHAR(500) NOT NULL,
+      timestamp TIMESTAMPTZ,
+      expires_at TIMESTAMPTZ,
+      reports INTEGER DEFAULT 0,
+      user_token VARCHAR(64),
+      likes INTEGER DEFAULT 0,
+      views INTEGER DEFAULT 0
+    )
+    """))
+    print("✓ Tabla note en Postgres OK")
+
+rows = []
+with src.connect() as s:
+    rows = s.execute(text("SELECT id,text,timestamp,expires_at,reports,user_token,likes,views FROM note")).all()
+print(f"Encontradas {len(rows)} filas en SQLite")
+
+ins = text("""
+INSERT INTO note (id, text, timestamp, expires_at, reports, user_token, likes, views)
+VALUES (:id, :text, :ts, :exp, :rep, :tok, :lik, :vi)
+ON CONFLICT (id) DO NOTHING
+""")
+
+batch = 0
+with dst.begin() as d:
+    for r in rows:
+        d.execute(ins, dict(
+            id=r.id, text=r.text, ts=r.timestamp, exp=r.expires_at,
+            rep=r.reports, tok=r.user_token, lik=r.likes or 0, vi=r.views or 0
+        ))
+        batch += 1
+print(f"✓ Migradas {batch} filas a Postgres")
+----- END FILE: ./migrate_sqlite_to_pg.py -----
+
+----- BEGIN FILE: ./render.yaml -----
+services:
+- type: web
+  name: paste12
+  env: python
+  plan: starter
+  buildCommand: pip install -r requirements.txt
+  startCommand: gunicorn "backend:create_app()" -w 4 -k gthread --threads 8 -b 0.0.0.0:$PORT
+  autoDeploy: true
+  envVars:
+  - key: FLASK_ENV
+    value: production
+  - key: SECRET_KEY
+    generateValue: true
+  - key: DISABLE_SCHEDULER
+    value: "0"
+  - key: RATELIMIT_STORAGE_URL
+    value: "memory://"
+  - fromDatabase:
+      name: paste12-db
+      property: connectionString
+    key: DATABASE_URL
+
+databases:
+- name: paste12-db
+  plan: basic-1gb
+----- END FILE: ./render.yaml -----
+
+----- BEGIN FILE: ./requirements.txt -----
+Flask~=3.0
+Flask-SQLAlchemy~=3.1
+Flask-Limiter[redis]~=3.5
+Flask-Cors~=4.0
+APScheduler~=3.10
+waitress~=3.0
+gunicorn~=22.0
+psycopg2-binary~=2.9
+Flask-Compress~=1.15
+----- END FILE: ./requirements.txt -----
+
+----- BEGIN FILE: ./run.py -----
+import socket, itertools
+from backend import create_app
+from waitress import serve
+
+app = create_app()
+
+# --- Elegir primer puerto libre ---
+for PORT in itertools.chain([8000, 8080], range(8001, 8101)):
+    with socket.socket() as s:
+        if s.connect_ex(("127.0.0.1", PORT)) != 0:
+            break  # encontrado
+
+if __name__ == "__main__":
+    print(f"✓ Servidor en http://127.0.0.1:{PORT}")
+    serve(app, listen=f"0.0.0.0:{PORT}")
+----- END FILE: ./run.py -----
+
+----- BEGIN FILE: ./tests/test_api.py -----
+import pytest
+from backend import create_app, db
+from flask import json
+
+@pytest.fixture
+def client():
+    app = create_app()
+    app.config["TESTING"] = True
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    with app.app_context():
+        db.create_all()
+    return app.test_client()
+
+def test_create_and_get_notes(client):
+    r = client.post("/api/notes", json={"text": "hola mundo"})
+    assert r.status_code == 201
+    r = client.get("/api/notes")
+    assert r.status_code == 200
+    data = r.get_json()
+    assert "notes" in data
+    assert any("hola mundo" in n["text"] for n in data["notes"])
+----- END FILE: ./tests/test_api.py -----
+
+===== FLASK URL MAP (opcional) =====
+static_folder: /data/data/com.termux/files/home/paste12/frontend
+
+Rutas registradas:
+ - /                              | GET,HEAD,OPTIONS   | static_root
+ - /<path:filename>               | GET,HEAD,OPTIONS   | static
+ - /<path:path>                   | GET,HEAD,OPTIONS   | static_any
+ - /ads.txt                       | GET,HEAD,OPTIONS   | static_ads
+ - /api/health                    | GET,HEAD,OPTIONS   | api.health
+ - /api/notes                     | GET,HEAD,OPTIONS   | api.list_notes
+ - /api/notes                     | OPTIONS,POST       | api.create_note
+ - /api/notes/<int:note_id>/like  | OPTIONS,POST       | api.like_note
+ - /api/notes/<int:note_id>/report | OPTIONS,POST       | api.report_note
+ - /api/notes/<int:note_id>/view  | OPTIONS,POST       | api.view_note
+ - /favicon.ico                   | GET,HEAD,OPTIONS   | static_favicon

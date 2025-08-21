@@ -1,0 +1,11 @@
+HTTP/2 200 
+date: Wed, 20 Aug 2025 21:20:18 GMT
+content-type: application/json
+rndr-id: 6e3607db-4e25-4d18
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 9724ef147aa5ba6b-EZE
+alt-svc: h3=":443"; ma=86400
+
