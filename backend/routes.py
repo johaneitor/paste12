@@ -172,36 +172,29 @@ def report_note(note_id: int):
 
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
-    from flask import jsonify, current_app
+    from flask import jsonify, current_app, request
     n = Note.query.get_or_404(note_id)
-
-    # kill-switch (por defecto ON salvo ENABLE_VIEWS="0")
     if not _views_enabled():
         return jsonify({"counted": False, "views": int(n.views or 0)})
-
     fp = _fp() or "anon"
     today = _now().date()
     counted = False
     try:
         dialect = (db.session.get_bind() or db.engine).dialect.name
-
         if dialect == "postgresql":
-            # PG < 15: DO NOTHING no soporta RETURNING → usamos rowcount
+            # Fuerzo schema public por si search_path está raro
             res = db.session.execute(db.text("""
-                INSERT INTO view_log (note_id, fingerprint, view_date, created_at)
+                INSERT INTO public.view_log (note_id, fingerprint, view_date, created_at)
                 VALUES (:nid, :fp, :vd, (NOW() AT TIME ZONE 'UTC'))
                 ON CONFLICT (note_id, fingerprint, view_date) DO NOTHING
             """), {"nid": note_id, "fp": fp, "vd": today})
             if getattr(res, "rowcount", 0) == 1:
-                db.session.execute(db.text("UPDATE note SET views = COALESCE(views,0)+1 WHERE id=:nid"), {"nid": note_id})
+                db.session.execute(db.text("UPDATE public.note SET views = COALESCE(views,0)+1 WHERE id=:nid"), {"nid": note_id})
                 counted = True
-
-            v = db.session.execute(db.text("SELECT COALESCE(views,0) FROM note WHERE id=:nid"), {"nid": note_id}).scalar() or 0
+            v = db.session.execute(db.text("SELECT COALESCE(views,0) FROM public.note WHERE id=:nid"), {"nid": note_id}).scalar() or 0
             db.session.commit()
             return jsonify({"counted": counted, "views": int(v)})
-
         else:
-            # SQLite / otros: confía en UNIQUE + IntegrityError
             try:
                 db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
                 db.session.flush()
@@ -211,10 +204,14 @@ def view_note(note_id: int):
             except IntegrityError:
                 db.session.rollback()
             return jsonify({"counted": counted, "views": int(n.views or 0)})
-
     except Exception as e:
         current_app.logger.exception("view_note error: %s", e)
         db.session.rollback()
+        # si viene X-Admin-Token correcto, devuelvo el detail
+        import os
+        tok = request.headers.get("X-Admin-Token") or ""
+        if tok == (os.getenv("ADMIN_TOKEN") or "changeme"):
+            return jsonify({"ok": False, "error": "view insert failed", "detail": str(e)}), 500
         return jsonify({"ok": False, "error": "view insert failed"}), 500
 
 @bp.errorhandler(Exception)
@@ -559,3 +556,73 @@ def admin_diag_viewlog_rows():
     q += " ORDER BY created_at DESC LIMIT 100"
     rows = db.session.execute(db.text(q), params).mappings().all()
     return jsonify({"ok": True, "count": len(rows), "rows": list(rows)}), 200
+
+
+@bp.get("/admin/routes")
+def admin_list_routes():
+    import os
+    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    rules = []
+    for r in current_app.url_map.iter_rules():
+        rules.append({"rule": str(r), "methods": sorted(m for m in r.methods if m not in {"HEAD","OPTIONS"})})
+    return jsonify({"ok": True, "rules": rules}), 200
+
+
+@bp.get("/admin/diag_viewlog_schema")
+def admin_diag_viewlog_schema():
+    import os
+    from sqlalchemy import text
+    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    out = {"ok": True, "dialect": (db.session.get_bind() or db.engine).dialect.name}
+    if out["dialect"] == "postgresql":
+        cols = db.session.execute(text("""
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_name='view_log'
+            ORDER BY ordinal_position
+        """)).mappings().all()
+        uniques = db.session.execute(text("""
+            SELECT conname, pg_get_constraintdef(oid) AS def
+            FROM pg_constraint
+            WHERE conrelid='view_log'::regclass AND contype='u'
+        """)).mappings().all()
+        idxs = db.session.execute(text("""
+            SELECT indexname, indexdef
+            FROM pg_indexes
+            WHERE tablename='view_log'
+        """)).mappings().all()
+        out["columns"] = list(cols)
+        out["uniques"] = list(uniques)
+        out["indexes"] = list(idxs)
+    return jsonify(out), 200
+
+
+@bp.post("/admin/diag_try_insert")
+def admin_diag_try_insert():
+    import os
+    from sqlalchemy import text
+    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    try:
+        nid = int(data.get("note_id") or request.args.get("note_id") or 0)
+        fp  = (data.get("fp") or request.args.get("fp") or "diag-fp").strip() or "diag-fp"
+        vd  = _now().date()
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"bad args: {e}"}), 400
+    try:
+        if (db.session.get_bind() or db.engine).dialect.name != "postgresql":
+            return jsonify({"ok": False, "error": "only for postgres"}), 400
+        res = db.session.execute(db.text("""
+            INSERT INTO public.view_log (note_id, fingerprint, view_date, created_at)
+            VALUES (:nid, :fp, :vd, (NOW() AT TIME ZONE 'UTC'))
+            ON CONFLICT (note_id, fingerprint, view_date) DO NOTHING
+        """), {"nid": nid, "fp": fp, "vd": vd})
+        rc = int(getattr(res, "rowcount", 0))
+        db.session.commit()
+        return jsonify({"ok": True, "rowcount": rc}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(e)}), 500
