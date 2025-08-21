@@ -1,95 +1,17 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Paste12 — notas que desaparecen</title>
-<link rel="stylesheet" href="/css/styles.css?v=1755740126">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" crossorigin="anonymous"></script>
-<!-- OpenGraph -->
-<meta property="og:title" content="Notas rápidas — anónimo y efímero">
-<meta property="og:description" content="Publica algo breve y efímero. Likes, vistas y compartir en un clic.">
-<meta property="og:image" content="/img/og.png">
-<meta property="og:type" content="website">
-<!-- Twitter -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Notas rápidas — anónimo y efímero">
-<meta name="twitter:description" content="Publica algo breve y efímero. Likes, vistas y compartir en un clic.">
-<meta name="twitter:image" content="/img/og.png">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>paste12</title>
+  <link rel="preload" href="/css/styles.css" as="style">
+  <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <header class="hero">
-    <div class="logo">
-      
-    </div>
-    <h1>Paste12</h1>
-    <p class="playline">Haz un regalo • Dime un secreto • Reta a un amigo</p>
-  </header>
-
-  <main class="container">
-  <div id="feed"></div>
-  <div id="ad-top" class="ad-slot">
-    <ins class="adsbygoogle" style="display:block"
-         data-ad-client=""
-         data-ad-slot=""
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
-  </div>
-
-    <form id="form" class="card" action="#" method="post" onsubmit="return false;">
-      <textarea id="text" placeholder="Escribe tu nota…" rows="5" maxlength="500"></textarea>
-      <div class="form-row">
-        <label>Duración:
-          <select name="expire_hours" id="duration">
-            <option value="12">12 horas</option>
-            <option value="24">1 día</option>
-            <option value="168" selected>7 días</option>
-            <option value="336">14 días</option>
-            <option value="672">28 días</option>
-          </select>
-        </label>
-        <button id="publish" type="button" class="primary">Publicar</button>
-      </div>
-    
-  <div class="story-tools">
-    <input type="file" id="story-photo" accept="image/*" style="display:none">
-    <button id="story-make" class="btn ghost">🖼️ Crear historia</button>
-    <small class="hint">Opcional: mantén pulsado el botón para elegir una foto de fondo.</small>
-  </div>
-</form>
-
-    <ul id="notes" class="notes"></ul>
-    <nav id="pagination" class="pagination"></nav>
-  
-  <div id="ad-bottom" class="ad-slot">
-    <ins class="adsbygoogle" style="display:block"
-         data-ad-client=""
-         data-ad-slot=""
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
-  </div>
-</main>
-
-  <footer class="legal">© 2025 Paste12 — Todos los derechos reservados · Este sitio es recreativo. No publiques datos sensibles.</footer>
-  
-
-  <footer class="legal">
-    <a href="/legal.html" target="_blank" rel="noopener">Privacidad · Términos</a>
-  </footer>
-
-  <canvas id="story-canvas" width="1080" height="1920" style="display:none"></canvas>
-  <script src="js/hotfix.js?v=1755641530"></script>
-  <script src="js/share_enhancer.js?v=1755643458"></script>
-  <script src="js/actions_menu.js?v=1755646281"></script>
-  <script src="js/views_counter.js?v=1755659501"></script>
-  <script src="/js/stability_patch.js?v=1755667505"></script>
-  <!-- disabled: /js/debug_overlay.js -->
-  <script src="/js/app.js?v=1755742064" defer></script>
+  <main>
+    <h1 class="sr-only">Notas recientes</h1>
+    <div id="feed"></div>
+  </main>
+  <script src="/js/app.js?v=1755742895" defer></script>
 </body>
 </html>
