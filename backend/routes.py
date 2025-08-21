@@ -23,6 +23,16 @@ def _aware(dt: Optional[datetime]) -> Optional[datetime]:
         return None
     return dt if getattr(dt, "tzinfo", None) else dt.replace(tzinfo=timezone.utc)
 
+def _real_ip():
+    h = request.headers
+    xff = (h.get("X-Forwarded-For") or "").strip()
+    if xff:
+        return xff.split(",")[0].strip()
+    cip = h.get("CF-Connecting-IP")
+    if cip:
+        return cip.strip()
+    return request.remote_addr or "anon"
+
 def _fp() -> str:
     return (
         request.headers.get("X-Client-Fingerprint")
