@@ -186,7 +186,7 @@ def view_note(note_id: int):
     today = _now().date()
     counted = False
     try:
-        dialect = db.session.bind.dialect.name
+        dialect = db.session.get_bind().dialect.name
 
         if dialect == "postgresql":
             # Intento de inserción idempotente por (note_id, fp, view_date)
@@ -263,7 +263,7 @@ def admin_ensure_viewlog():
     if tok != expected:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
 
-    dialect = db.session.bind.dialect.name
+    dialect = db.session.get_bind().dialect.name
     out = {"dialect": dialect, "steps": []}
     def step(s): out["steps"].append(s)
     try:
@@ -463,7 +463,7 @@ def admin_fix_viewlog_uniques():
     if tok != expected:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
 
-    out = {"ok": True, "dialect": db.session.bind.dialect.name, "dropped": [], "created": [], "info": []}
+    out = {"ok": True, "dialect": db.session.get_bind().dialect.name, "dropped": [], "created": [], "info": []}
     dialect = out["dialect"]
 
     def info(msg): out["info"].append(msg)
