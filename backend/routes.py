@@ -182,10 +182,10 @@ def view_note(note_id: int):
     try:
         dialect = (db.session.get_bind() or db.engine).dialect.name
         if dialect == "postgresql":
-            # INSERT idempotente por constraint v2
+            # IMPORTANTE: insertar 'day' (NOT NULL) y 'view_date' (se usa para el UNIQUE)
             res = db.session.execute(db.text("""
-                INSERT INTO public.view_log (note_id, fingerprint, view_date, created_at)
-                VALUES (:nid, :fp, :vd, (NOW() AT TIME ZONE 'UTC'))
+                INSERT INTO public.view_log (note_id, fingerprint, view_date, day, created_at)
+                VALUES (:nid, :fp, :vd, :vd, (NOW() AT TIME ZONE 'UTC'))
                 ON CONFLICT ON CONSTRAINT uq_viewlog_note_fp_day_v2 DO NOTHING
             """), {"nid": note_id, "fp": fp, "vd": today})
             if getattr(res, "rowcount", 0) == 1:
@@ -196,7 +196,12 @@ def view_note(note_id: int):
             return jsonify({"counted": counted, "views": int(v)})
         else:
             try:
-                db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
+                # Para SQLite/otros, intenta setear 'day' si existe en el modelo:
+                try:
+                    db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today, day=today))
+                except TypeError:
+                    # si el modelo no tiene 'day', inserta sin esa columna
+                    db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
                 db.session.flush()
                 n.views = int(n.views or 0) + 1
                 counted = True
