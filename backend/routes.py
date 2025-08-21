@@ -504,3 +504,23 @@ def admin_fix_viewlog_uniques():
     db.session.commit()
     return jsonify(out), 200
 
+
+
+@bp.get("/admin/diag_viewlog_rows")
+def admin_diag_viewlog_rows():
+    import os
+    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN","changeme")):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    try:
+        note_id = int(request.args.get("note_id","0"))
+    except Exception:
+        return jsonify({"ok": False, "error": "note_id required"}), 400
+    fp = request.args.get("fp")
+    q = "SELECT id,note_id,fingerprint,view_date,created_at FROM view_log WHERE note_id=:nid"
+    params = {"nid": note_id}
+    if fp:
+        q += " AND fingerprint=:fp"
+        params["fp"] = fp
+    q += " ORDER BY created_at DESC LIMIT 100"
+    rows = db.session.execute(db.text(q), params).mappings().all()
+    return jsonify({"ok": True, "count": len(rows), "rows": list(rows)}), 200
