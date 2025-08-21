@@ -301,3 +301,79 @@ def admin_ensure_viewlog_fix():
         return jsonify({"ok": True, **out})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e), **out}), 500
+
+# --- Admin: migración robusta de ViewLog (PG/SQLite, transacciones separadas) ---
+@bp.post("/admin/ensure_viewlog_fix2")
+def admin_ensure_viewlog_fix2():
+    import os
+    from sqlalchemy import text
+
+    tok = request.headers.get("X-Admin-Token") or ""
+    expected = os.getenv("ADMIN_TOKEN") or "changeme"
+    if tok != expected:
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+
+    out = {"steps": []}
+
+    try:
+        # Detectar dialecto con una conexión corta
+        with db.engine.begin() as conn:
+            dialect = conn.dialect.name
+        out["dialect"] = dialect
+
+        if dialect == "postgresql":
+            # 1) Columna view_date (sin romper si ya existe)
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE view_log ADD COLUMN IF NOT EXISTS view_date date"))
+                out["steps"].append("ADD COLUMN view_date (pg)")
+            # 2) Backfill
+            with db.engine.begin() as conn:
+                conn.execute(text("UPDATE view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
+                out["steps"].append("BACKFILL view_date")
+            # 3) Drop UNIQUE viejo si existiera
+            with db.engine.begin() as conn:
+                conn.execute(text('ALTER TABLE view_log DROP CONSTRAINT IF EXISTS "uq_view_note_fp"'))
+                out["steps"].append("DROP UNIQUE uq_view_note_fp IF EXISTS")
+            # 4) Crear UNIQUE nuevo solo si no existe
+            with db.engine.begin() as conn:
+                exists = conn.execute(text("""
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conrelid = 'view_log'::regclass
+                      AND conname = 'uq_view_note_fp_day'
+                      AND contype='u'
+                """)).first()
+                if not exists:
+                    conn.execute(text('ALTER TABLE view_log ADD CONSTRAINT "uq_view_note_fp_day" UNIQUE (note_id, fingerprint, view_date)'))
+                    out["steps"].append("ADD UNIQUE uq_view_note_fp_day")
+                else:
+                    out["steps"].append("UNIQUE uq_view_note_fp_day exists")
+            # 5) Índices (idempotentes)
+            with db.engine.begin() as conn:
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
+                out["steps"].append("INDEXES ensured")
+
+        else:
+            # SQLite
+            with db.engine.begin() as conn:
+                # ADD COLUMN en SQLite falla si ya existe; probamos lectura primero
+                try:
+                    conn.execute(text("SELECT view_date FROM view_log LIMIT 0"))
+                    out["steps"].append("COLUMN view_date already present (sqlite)")
+                except Exception:
+                    conn.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
+                    out["steps"].append("ADD COLUMN view_date (sqlite)")
+            with db.engine.begin() as conn:
+                conn.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
+                out["steps"].append("BACKFILL view_date (sqlite)")
+            with db.engine.begin() as conn:
+                conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_view_note_fp_day ON view_log(note_id, fingerprint, view_date)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
+                out["steps"].append("INDEXES ensured (sqlite)")
+
+        return jsonify({"ok": True, **out}), 200
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), **out}), 500
