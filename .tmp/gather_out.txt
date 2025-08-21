@@ -1,0 +1,144 @@
+=== DETECTAR PUERTO LOCAL ===
+PORT_LOCAL=8000
+
+=== RUTAS EN routes.py (decoradores y defs relevantes) ===
+105:@app.route("/api/notes", methods=["POST"])
+652:@app.route('/api/notes', methods=['GET'])
+653:def list_notes():
+668:@app.route('/api/notes', methods=['POST'])
+669:def create_note():
+
+=== CONTEXTO ALREDEDOR DE create_note (80 líneas) ===
+   639	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON public.view_log (note_id)"))
+   640	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON public.view_log (view_date)"))
+   641	        out["created"] += ["index:ix_view_log_note_id","index:ix_view_log_view_date"]
+   642	    else:
+   643	        # sqlite/otros
+   644	        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_viewlog_note_fp_day_v2 ON view_log(note_id, fingerprint, view_date)"))
+   645	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
+   646	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
+   647	        out["created"] += ["index:uq_viewlog_note_fp_day_v2","index:ix_view_log_note_id","index:ix_view_log_view_date"]
+   648	
+   649	    db.session.commit()
+   650	    return jsonify(out), 200
+   651	
+   652	@app.route('/api/notes', methods=['GET'])
+   653	def list_notes():
+   654	    from flask import request, jsonify
+   655	    try:
+   656	        page = int(request.args.get('page', 1))
+   657	    except Exception:
+   658	        page = 1
+   659	    page = max(1, page)
+   660	    try:
+   661	        q = Note.query.order_by(Note.timestamp.desc())
+   662	        items = q.limit(20).offset((page-1)*20).all()
+   663	        now = _now()
+   664	        return jsonify([_note_json(n, now) for n in items]), 200
+   665	    except Exception as e:
+   666	        return jsonify({"error":"list_failed","detail":str(e)}), 500
+   667	
+   668	@app.route('/api/notes', methods=['POST'])
+   669	def create_note():
+   670	    from flask import request, jsonify
+   671	    from datetime import timedelta
+   672	    data = request.get_json(silent=True) or {}
+   673	    text = (data.get('text') or '').strip()
+   674	    if not text:
+   675	        return jsonify({"error":"text required"}), 400
+   676	    try:
+   677	        hours = int(data.get('hours', 24))
+   678	    except Exception:
+   679	        hours = 24
+   680	    hours = min(168, max(1, hours))
+   681	    now = _now()
+   682	    try:
+   683	        n = Note(
+   684	            text=text,
+   685	            timestamp=now,
+   686	            expires_at=now + timedelta(hours=hours),
+   687	            author_fp=client_fingerprint(),
+   688	        )
+   689	        db.session.add(n)
+   690	        db.session.commit()
+   691	        return jsonify(_note_json(n, now)), 201
+   692	    except Exception as e:
+   693	        db.session.rollback()
+   694	        return jsonify({"error":"create_failed","detail":str(e)}), 500
+   695	
+
+=== ESQUEMA SQLITE (tabla note) ===
+
+=== HOOK LOG (últimas 80) ===
+
+=== LOG APP LOCAL (últimas 120) ===
+/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask_limiter/extension.py:316: UserWarning: Using the in-memory storage for tracking rate limits as no storage was explicitly specified. This is not recommended for production use. See: https://flask-limiter.readthedocs.io#configuring-a-storage-backend for documentation about configuring the storage backend.
+  warnings.warn(
+[2025-08-21 20:27:29,273] ERROR in __init__: No se pudo registrar blueprint API: name 'app' is not defined
+
+=== SMOKE LOCAL ===
+--- GET /api/notes?page=1
+HTTP/1.1 404 NOT FOUND
+Content-Length: 207
+Content-Type: text/html; charset=utf-8
+Date: Thu, 21 Aug 2025 23:41:04 GMT
+Server: waitress
+
+<!doctype html>
+<html lang=en>
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+
+--- POST /api/notes
+HTTP/1.1 405 METHOD NOT ALLOWED
+Allow: GET, OPTIONS, HEAD
+Content-Length: 153
+Content-Type: text/html; charset=utf-8
+Date: Thu, 21 Aug 2025 23:41:04 GMT
+Server: waitress
+
+<!doctype html>
+<html lang=en>
+<title>405 Method Not Allowed</title>
+<h1>Method Not Allowed</h1>
+<p>The method is not allowed for the requested URL.</p>
+
+=== SMOKE RENDER ===
+--- GET https://paste12-rmsk.onrender.com/api/notes?page=1
+HTTP/2 404 
+date: Thu, 21 Aug 2025 23:41:05 GMT
+content-type: text/html; charset=utf-8
+rndr-id: f423615e-843e-4a5f
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 972dfaacb83eba71-EZE
+alt-svc: h3=":443"; ma=86400
+
+<!doctype html>
+<html lang=en>
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+
+--- POST https://paste12-rmsk.onrender.com/api/notes
+HTTP/2 405 
+date: Thu, 21 Aug 2025 23:41:06 GMT
+content-type: text/html; charset=utf-8
+allow: GET, HEAD, OPTIONS
+rndr-id: ac770204-b55d-4d0e
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 972dfaaf1a7aba71-EZE
+alt-svc: h3=":443"; ma=86400
+
+<!doctype html>
+<html lang=en>
+<title>405 Method Not Allowed</title>
+<h1>Method Not Allowed</h1>
+<p>The method is not allowed for the requested URL.</p>
+

@@ -102,7 +102,7 @@ def health():
 @bp.post("/notes")
 @limiter.limit("1 per 10 seconds", key_func=_rate_key)
 @limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
-@app.route("/api/notes", methods=["POST"])
+@bp.route('/api/notes', methods=["POST"])
 @bp.post("/notes/<int:note_id>/like")
 def like_note(note_id: int):
     n = Note.query.get_or_404(note_id)
@@ -648,8 +648,7 @@ def admin_force_viewlog_unique_v2():
 
     db.session.commit()
     return jsonify(out), 200
-
-@app.route('/api/notes', methods=['GET'])
+@bp.route('/api/notes', methods=['GET'])
 def list_notes():
     from flask import request, jsonify
     try:
@@ -664,8 +663,7 @@ def list_notes():
         return jsonify([_note_json(n, now) for n in items]), 200
     except Exception as e:
         return jsonify({"error":"list_failed","detail":str(e)}), 500
-
-@app.route('/api/notes', methods=['POST'])
+@bp.route('/api/notes', methods=['POST'])
 def create_note():
     from flask import request, jsonify
     from datetime import timedelta
