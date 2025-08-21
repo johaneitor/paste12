@@ -33,3 +33,8 @@ fix_*.sh
 instance/*.db
 instance/*.sqlite
 *.pyc
+front_clean_index.sh
+front_restore_ui.sh
+patch_backend_views_and_admin.sh
+patch_viewlog_insert_day.sh
+patch_viewlog_unique_v2.sh
