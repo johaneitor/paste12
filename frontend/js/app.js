@@ -1,164 +1,159 @@
+// Ultra-minimal feed (dedupe + infinite scroll gated by has_more)
+// Sin dependencias, robusto ante recargas, evita duplicados por ID.
+
 (function(){
   const state = {
     page: 1,
+    pageSize: 15,
     hasMore: true,
     loading: false,
     rendered: new Set(),
-    token: localStorage.getItem('p12t') || ''
+    io: null
   };
 
-  const list = document.getElementById('feed') ||
-               document.querySelector('main') ||
-               document.body;
+  function el(tag, cls){ const e=document.createElement(tag); if(cls) e.className=cls; return e; }
 
-  // Sentinel para infinite scroll
-  let sentinel = document.getElementById('sentinel');
-  if (!sentinel) {
-    sentinel = document.createElement('div');
-    sentinel.id = 'sentinel';
-    sentinel.style.height = '1px';
-    list.appendChild(sentinel);
+  function ensureList(){
+    let list = document.getElementById('feed');
+    if (!list) {
+      list = el('div','feed');
+      list.id = 'feed';
+      document.body.appendChild(list);
+    }
+    return list;
+  }
+
+  function ensureSentinel(list){
+    let s = document.getElementById('sentinel');
+    if (!s) {
+      s = el('div'); s.id='sentinel'; s.style.height='1px';
+      list.appendChild(s);
+    } else if (!s.parentNode) {
+      list.appendChild(s);
+    }
+    return s;
+  }
+
+  function cardFor(n){
+    const card = el('div','note-card');
+    card.dataset.id = n.id;
+    const text = el('div','note-text'); text.textContent = n.text || '';
+    const meta = el('div','note-meta');
+    const likes = el('span','likes-count'); likes.textContent = (n.likes||0);
+    const views = el('span','views-count'); views.textContent = (n.views||0);
+    const remain = el('span','remaining'); if (typeof n.remaining === 'number') remain.textContent = fmtRemaining(n.remaining);
+
+    const likeBtn = el('button','like-btn'); likeBtn.textContent = '❤️ Like';
+    likeBtn.onclick = async ()=>{
+      try{
+        const r = await fetch(`/api/notes/${n.id}/like`, {method:'POST'});
+        const j = await r.json();
+        likes.textContent = (j && typeof j.likes === 'number') ? j.likes : likes.textContent;
+      }catch{}
+    };
+
+    const actionBar = el('div','counters');
+    actionBar.append(`👍 `, likes, ` · 👁️ `, views, ' · ', remain);
+
+    meta.appendChild(likeBtn);
+    meta.appendChild(actionBar);
+
+    card.appendChild(text);
+    card.appendChild(meta);
+    return card;
   }
 
   function fmtRemaining(sec){
     sec = Math.max(0, parseInt(sec||0,10));
     const d = Math.floor(sec/86400); sec%=86400;
-    const h = Math.floor(sec/3600);  sec%=3600;
+    const h = Math.floor(sec/3600); sec%=3600;
     const m = Math.floor(sec/60);
     if(d>0) return `${d}d ${h}h`;
     if(h>0) return `${h}h ${m}m`;
     return `${m}m`;
   }
 
-  function cardFor(n){
-    const card = document.createElement('div');
-    card.className = 'note-card';
-    card.dataset.id = n.id;
-
-    card.innerHTML = `
-      <div class="note-text"></div>
-      <div class="note-meta">
-        <button type="button" class="like-btn">❤️ Like</button>
-        <span class="counters">
-          👍 <span class="likes-count">${n.likes||0}</span> ·
-          👁️ <span class="views-count">${n.views||0}</span>
-        </span>
-        <span class="remaining"></span>
-        <button class="menu-btn" aria-haspopup="true" aria-expanded="false" title="Opciones">⋮</button>
-        <div class="menu" hidden>
-          <button type="button" class="menu-item report">🚩 Reportar</button>
-          <button type="button" class="menu-item share">🔗 Compartir</button>
-        </div>
-      </div>
-    `;
-
-    card.querySelector('.note-text').textContent = n.text || '';
-    if (n.remaining != null) {
-      card.querySelector('.remaining').textContent = fmtRemaining(n.remaining);
-    }
-
-    // Like
-    card.querySelector('.like-btn').addEventListener('click', async ()=>{
-      try {
-        const r = await fetch(`/api/notes/${n.id}/like`, { method:'POST', headers: { 'X-Client-Token': state.token }});
-        const j = await r.json().catch(()=>({}));
-        const el = card.querySelector('.likes-count');
-        if (j && typeof j.likes === 'number' && el) el.textContent = j.likes;
-      } catch(_) {}
-    });
-
-    // Menu simple (abrir/cerrar)
-    const btn = card.querySelector('.menu-btn');
-    const menu = card.querySelector('.menu');
-    btn.addEventListener('click', ()=>{
-      const vis = !menu.hidden;
-      menu.hidden = vis;
-      btn.setAttribute('aria-expanded', String(!vis));
-    });
-
-    // Report
-    menu.querySelector('.report').addEventListener('click', async ()=>{
-      try {
-        const r = await fetch(`/api/notes/${n.id}/report`, { method:'POST', headers: { 'X-Client-Token': state.token }});
-        const j = await r.json().catch(()=>({}));
-        // Si se borró por 5 reportes, quitar del DOM:
-        if (j && j.deleted) {
-          state.rendered.delete(n.id);
-          card.remove();
-        }
-      } catch(_) {}
-    });
-
-    // Share
-    menu.querySelector('.share').addEventListener('click', async ()=>{
-      const u = location.origin + '/?n=' + n.id;
-      try {
-        if (navigator.share) await navigator.share({title:'Nota', text:n.text||'', url:u});
-        else await navigator.clipboard.writeText(u);
-      } catch(_) {}
-    });
-
-    return card;
-  }
-
-  function render(notes){
-    for (const n of notes) {
-      if (state.rendered.has(n.id)) continue; // DEDUPE
-      state.rendered.add(n.id);
-
-      const card = cardFor(n);
-      list.insertBefore(card, sentinel);
-
-      // Conteo de vista SOLO 1 vez por sesión por nota
-      const key = 'v_' + n.id;
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, '1');
-        fetch(`/api/notes/${n.id}/view`, { method:'POST' }).then(r=>r.json()).then(j=>{
-          const el = card.querySelector('.views-count');
-          if (el && j && typeof j.views === 'number') el.textContent = j.views;
-        }).catch(()=>{});
-      }
-    }
-  }
-
-  async function load(page){
+  async function load(page=1){
     if (state.loading) return;
     state.loading = true;
-    try {
-      const r = await fetch(`/api/notes?page=${page}`);
+    try{
+      const r = await fetch(`/api/notes?page=${page}`, {headers:{'Accept':'application/json'}});
       const d = await r.json();
+      const list = ensureList();
+      const sentinel = ensureSentinel(list);
 
-      if (page === 1) {
-        // Limpiar DOM y el set para evitar duplicados al recargar
-        [...list.querySelectorAll('.note-card')].forEach(x=>x.remove());
+      // page 1 => limpiar DOM y set de IDs
+      if (page === 1){
+        list.innerHTML = '';
+        list.appendChild(sentinel);
         state.rendered.clear();
       }
 
-      render(d.notes || []);
-      state.page = page;
+      const notes = d.notes || [];
+      for (const n of notes){
+        if (state.rendered.has(n.id)) continue; // DEDUPE
+        state.rendered.add(n.id);
+        const card = cardFor(n);
+        list.insertBefore(card, sentinel);
+      }
+
+      state.page = d.page || page;
       state.hasMore = !!d.has_more;
-    } catch (e) {
-      console.error('load fail', e);
-    } finally {
+
+      // (Re)activar IO sólo si hay más páginas
+      if (state.io) {
+        try { state.io.disconnect(); } catch {}
+        state.io = null;
+      }
+      if (state.hasMore){
+        state.io = new IntersectionObserver((entries)=>{
+          for (const e of entries){
+            if (!e.isIntersecting) continue;
+            if (state.loading || !state.hasMore) return;
+            // cargar siguiente página UNA sola vez por intersección
+            const next = (state.page || 1) + 1;
+            state.io && state.io.unobserve(e.target);
+            load(next).then(()=>{
+              if (state.hasMore) state.io && state.io.observe(e.target);
+            });
+          }
+        }, {rootMargin: '200px 0px 200px 0px'});
+        state.io.observe(sentinel);
+      }
+    }catch(e){
+      console.error('load failed', e);
+    }finally{
       state.loading = false;
     }
   }
 
-  const io = new IntersectionObserver((entries)=>{
-    if (!state.hasMore || state.loading) return;
-    for (const e of entries) {
-      if (e.isIntersecting) {
-        io.unobserve(sentinel);
-        load(state.page + 1).finally(()=>{
-          if (state.hasMore) io.observe(sentinel);
+  // Soporte envío de notas si hay <form>
+  function bindForm(){
+    const form = document.querySelector('form');
+    if (!form) return;
+    const ta = form.querySelector('textarea[name="text"], textarea, [data-note-text]');
+
+    form.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const text = (ta && ta.value || '').trim();
+      if (!text) return;
+      try{
+        const r = await fetch('/api/notes', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({text, hours:12})
         });
-      }
-    }
-  }, { rootMargin: '800px' });
+        const j = await r.json();
+        // Prefetch page 1 de nuevo para ver la nueva nota arriba
+        state.page = 1;
+        await load(1);
+        if (ta) ta.value = '';
+      }catch(e){ console.error('submit failed', e); }
+    }, {once:true});
+  }
 
   document.addEventListener('DOMContentLoaded', ()=>{
-    load(1).then(()=>{
-      if (state.hasMore) io.observe(sentinel);
-    });
+    bindForm();
+    load(1);
   });
 })();
