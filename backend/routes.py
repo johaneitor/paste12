@@ -178,8 +178,9 @@ def view_note(note_id: int):
         n.views = int(n.views or 0) + 1
         db.session.commit()
         counted = True
-    except IntegrityError:
+    except IntegrityError as e:
         db.session.rollback()
+        # si ya había vista previa para (note_id, fp, day) no cuenta
     return jsonify({"counted": counted, "views": int(n.views or 0)})
 @bp.errorhandler(Exception)
 def __api_error_handler(e):
