@@ -383,3 +383,20 @@ def admin_ensure_viewlog_fix2():
 
     except Exception as e:
         return jsonify({"ok": False, "error": str(e), **out}), 500
+
+
+@bp.get("/admin/diag_views")
+def diag_views():
+    # requiere token admin por header
+    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN","changeme")):
+        return jsonify({"ok": False, "error": "unauthorized"}), 401
+    try:
+        note_id = int(request.args.get("note_id","0"))
+    except Exception:
+        return jsonify({"ok": False, "error": "note_id required"}), 400
+    today = _now().date()
+    rows = db.session.execute(
+        db.text("SELECT note_id,fingerprint,view_date FROM view_log WHERE note_id=:nid AND view_date=:vd ORDER BY fingerprint LIMIT 50"),
+        {"nid": note_id, "vd": today}
+    ).mappings().all()
+    return jsonify({"ok": True, "today": str(today), "count": len(rows), "rows": list(rows)}), 200
