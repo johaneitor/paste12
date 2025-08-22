@@ -1,111 +1,18 @@
-:root{
-  --bg1:#f9a1a1; --bg2:#f3b6b6; --card:rgba(0,0,0,.18); --text:#fff;
-  --accent:#ff6b81; --accent2:#ff00ff; --shadow:0 10px 30px rgba(0,0,0,.25);
-}
+:root { --bg:#0c0f14; --card:#141922; --muted:#8ea0b5; --fg:#eaf2ff; --accent:#5da5ff; }
 *{box-sizing:border-box}
-body{margin:0;font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;color:var(--text);
-     background:radial-gradient(1200px 800px at 20% -10%,var(--bg2),var(--bg1));min-height:100vh;}
-.hero{text-align:center;padding:24px 16px 8px}
-.logo-img{width:120px;image-rendering:pixelated;filter:drop-shadow(0 0 10px #30eaff) drop-shadow(0 0 5px #ff00ff)}
-h1{font-size:2.6rem;margin:.2rem 0 .5rem;letter-spacing:.5px}
-.playline{font-weight:600;opacity:.9;margin:-.2rem 0 1.2rem;text-shadow:0 0 8px #30eaff,0 0 4px #ff00ff}
-.container{max-width:860px;margin:0 auto;padding:16px}
-.card{background:var(--card);backdrop-filter:blur(8px);border-radius:20px;padding:14px;box-shadow:var(--shadow)}
-textarea{width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;font:inherit;outline:none}
-textarea::placeholder{color:#eee;opacity:.65}
-.form-row{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:10px}
-select{border-radius:12px;padding:8px 12px;border:none;font:inherit}
-.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border:none;padding:10px 16px;border-radius:12px;cursor:pointer;font-weight:700;box-shadow:0 6px 18px rgba(255,0,255,.35)}
-.notes{list-style:none;padding:0;margin:18px 0 10px}
-.note{background:var(--card);border-radius:18px;padding:12px 14px;margin:10px 0;box-shadow:var(--shadow)}
-.note-text{white-space:pre-wrap;word-break:break-word}
-.note-meta{display:flex;justify-content:space-between;align-items:center;margin-top:.4rem}
-.like-btn{background:#ff00ff;color:#fff;border:none;border-radius:10px;padding:.35rem .7rem;cursor:pointer}
-.pagination{display:flex;gap:6px;justify-content:center;margin:10px 0 40px}
-.pagination button{border:none;padding:.4rem .7rem;border-radius:8px;cursor:pointer}
-.pagination button[disabled]{opacity:.6}
-footer.legal{margin:3rem auto 1rem;text-align:center;font-size:.9rem;opacity:.85}
-
-/* --- Opciones por nota (3 puntos) --- */
-.note{ position: relative; }
-.note-actions{ position:absolute; top:8px; right:8px; }
-.menu-btn{
-  background: rgba(255,255,255,.15); color:#fff; border:none; border-radius:10px;
-  width:32px; height:32px; cursor:pointer;
-}
-.menu{
-  position:absolute; top:36px; right:0; min-width:160px;
-  background: rgba(0,0,0,.85); color:#fff; border:1px solid rgba(255,255,255,.15);
-  border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.35); padding:6px;
-  backdrop-filter: blur(8px);
-}
-.menu-item{
-  width:100%; text-align:left; background:transparent; color:#fff; border:none;
-  padding:8px 10px; border-radius:8px; cursor:pointer; display:block;
-}
-.menu-item:hover{ background: rgba(255,255,255,.1); }
-.menu-item.disabled{ opacity:.6; cursor:not-allowed; }
-
-/* anuncios */
-.ad-slot{ margin: 14px 0; display:block; }
-.ad-slot.infeed{ margin: 10px 0 18px; }
-.legal{ text-align:center; font-size:.85rem; opacity:.8; padding:12px 0 18px; }
-.legal a{ color: #a0e7ff; text-decoration: none; }
-.legal a:hover{ text-decoration: underline; }
-
-.story-tools{ margin-top:8px; display:flex; align-items:center; gap:10px; }
-.story-tools .hint{ opacity:.7; }
-.btn.ghost{ background:transparent; border:2px dashed rgba(255,255,255,.7); color:#fff; }
-.btn.ghost:hover{ border-style:solid; }
-
-/* Botón Historias IG */
-.btn-ig-story{
-  margin-left:.5rem; margin-top:.25rem;
-  padding:.45rem .7rem; border-radius:10px;
-  border:none; background:#e11d48; color:#fff;
-  box-shadow:0 6px 18px rgba(225,29,72,.35);
-  font-weight:700; letter-spacing:.2px;
-}
-.btn-ig-story:active{ transform:translateY(1px); }
-
-
-/* Badge de cuenta regresiva */
-.note-meta{display:flex;gap:.6rem;align-items:center;margin-top:.35rem;flex-wrap:wrap}
-.countdown{background:#0ea5e9;color:#001024;font-weight:800;padding:.22rem .5rem;border-radius:.6rem;box-shadow:0 6px 18px rgba(14,165,233,.35);font-size:.85rem}
-.note-expired{opacity:.6;filter:saturate(.7)}
-
-/* --- hotfix tarjetas --- */
-.note-card{
-  background:#0b1020; border:1px solid #243055; border-radius:14px;
-  padding:14px; margin:10px 0; box-shadow:0 4px 18px rgba(0,0,0,.25);
-}
-.note-body{ white-space:pre-wrap; line-height:1.4; font-size:16px; color:#e9ecff; }
-.note-meta{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12px; color:#b9c1ff; }
-.note-meta .spacer{ flex:1 }
-.btn-like{ border:0; background:#1f2a4a; color:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
-.btn-like:hover{ filter:brightness(1.1) }
-.countdown{ background:#223361; padding:2px 8px; border-radius:999px; }
-.countdown.warn{ background:#f59e0b; color:#1a0f00; }
-.countdown.danger{ background:#ef4444; color:#fff; }
-
-/* Botón Compartir (fallback) */
-.btn-share{ border:0; background:#17325b; color:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
-.btn-share:hover{ filter:brightness(1.1) }
-
-/* --- Menú ⋯ en cada tarjeta --- */
-.p12-menu-wrap{ position:absolute; top:8px; right:8px; }
-.p12-menu-btn{ border:0; background:#13233f; color:#fff; width:28px; height:28px; border-radius:8px; cursor:pointer; line-height:1; font-size:18px; }
-.p12-menu-btn:hover{ filter:brightness(1.1); }
-.p12-menu{ position:absolute; top:34px; right:0; background:#0b1530; color:#fff; border:1px solid #2a3c68; border-radius:10px; overflow:hidden; min-width:160px; box-shadow:0 6px 20px #0007; }
-.p12-menu button{ display:block; width:100%; text-align:left; padding:10px 12px; background:transparent; border:0; color:#fff; cursor:pointer; }
-.p12-menu button:hover{ background:#17325b; }
-
-/* --- Métricas (vistas) en tarjeta --- */
-.p12-metrics{
-  position:absolute; bottom:8px; right:8px;
-  background:#0b1530cc; color:#cfe3ff;
-  padding:6px 8px; border-radius:8px;
-  font-size:12px; display:flex; gap:10px;
-  align-items:center; border:1px solid #274a8a66;
-}
-.p12-metrics .p12-views{ opacity:0.9; }
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji"}
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1f2632;background:#0e1218;position:sticky;top:0}
+.topbar h1{margin:0;font-size:18px}
+.status{color:var(--muted);font-size:12px}
+.container{max-width:800px;margin:24px auto;padding:0 16px}
+.new-note{background:var(--card);padding:12px;border-radius:12px;border:1px solid #1e2633;margin-bottom:20px}
+.new-note h2{margin:0 0 8px 0;font-size:16px}
+#noteForm{display:flex;gap:8px;flex-wrap:wrap}
+#noteForm input[type="text"]{flex:1;min-width:240px;padding:10px;border-radius:10px;border:1px solid #243144;background:#121722;color:var(--fg)}
+#noteForm input[type="number"]{width:96px;padding:10px;border-radius:10px;border:1px solid #243144;background:#121722;color:var(--fg)}
+#noteForm button{padding:10px 14px;border-radius:10px;background:var(--accent);color:#001129;border:none;cursor:pointer}
+.hint{color:var(--muted);font-size:12px;margin-top:6px}
+.notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.note{background:var(--card);padding:12px;border-radius:12px;border:1px solid #1e2633}
+.note .txt{white-space:pre-wrap}
+.note .meta{color:var(--muted);font-size:12px;margin-top:6px}

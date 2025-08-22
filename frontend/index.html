@@ -2,68 +2,33 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Paste12</title>
-  <link rel="preload" href="/css/styles.css" as="style">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>paste12</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <header class="site-header"><h1>Paste12</h1></header>
-  <section class="composer">
-    <form id="composer">
-      <textarea id="note-text" rows="3" maxlength="300" placeholder="Escribe tu nota…"></textarea>
-      <div class="row">
-        <label>Duración:
-          <select id="note-hours">
-            <option value="12" selected>12 h</option>
-            <option value="24">24 h</option>
-            <option value="168">7 días</option>
-          </select>
-        </label>
-        <button id="note-send" type="submit">Publicar</button>
-      </div>
-    </form>
-    <p id="composer-msg" style="display:none"></p>
-  </section>
-  <main>
-  <ul id="feed"></ul>
-</main>
-  <script>
-  (function () {
-    const form = document.getElementById('composer');
-    const txt  = document.getElementById('note-text');
-    const hrs  = document.getElementById('note-hours');
-    const msg  = document.getElementById('composer-msg');
-    if (!form) return;
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const text  = (txt.value || '').trim();
-      const hours = parseInt(hrs.value || '12', 10);
-      if (!text) return;
-      try {
-        const r = await fetch('/api/notes', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json','Accept':'application/json'},
-          body: JSON.stringify({ text, hours })
-        });
-        const j = await r.json();
-        if (r.ok && j && j.id) {
-          msg.style.display = 'block';
-          msg.textContent = '¡Publicada! (id ' + j.id + ')';
-          txt.value = '';
-          if (window.P12 && typeof P12.load === 'function') P12.load(1);
-          else location.href = '/?v=' + Date.now();
-        } else {
-          msg.style.display = 'block';
-          msg.textContent = 'Error al publicar';
-        }
-      } catch {
-        msg.style.display = 'block';
-        msg.textContent = 'Error de red';
-      }
-    });
-  })();
-  </script>
-    <script defer src="/js/app.js?v=1755782666"></script>
+  <header class="topbar">
+    <h1>paste12</h1>
+    <span class="status" id="status">cargando…</span>
+  </header>
+
+  <main class="container">
+    <section class="new-note">
+      <h2>Crear nota</h2>
+      <form id="noteForm">
+        <input type="text" id="text" name="text" placeholder="Escribe tu nota…" required />
+        <input type="number" id="hours" name="hours" min="1" max="720" value="24" />
+        <button type="submit">Publicar</button>
+      </form>
+      <p class="hint">Acepta JSON, form-data o urlencoded. Aquí usamos form-data (navegador).</p>
+    </section>
+
+    <section>
+      <h2>Notas</h2>
+      <ul id="notes" class="notes"></ul>
+    </section>
+  </main>
+
+  <script src="/js/app.js?v=1"></script>
 </body>
 </html>
