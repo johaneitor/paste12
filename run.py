@@ -7,8 +7,11 @@ from backend import db
 def _db_uri() -> str:
     uri = os.getenv("DATABASE_URL")
     if uri:
-        # Normalizar esquema postgres -> postgresql+psycopg
+        # postgres -> postgresql+psycopg
         uri = re.sub(r'^postgres://', 'postgresql+psycopg://', uri)
+        # postgresql:// -> postgresql+psycopg:// si no trae driver
+        if uri.startswith('postgresql://') and '+psycopg://' not in uri:
+            uri = uri.replace('postgresql://', 'postgresql+psycopg://', 1)
         return uri
     # Fallback SQLite local
     db_path = pathlib.Path('data/app.db').resolve()
