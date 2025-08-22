@@ -202,6 +202,54 @@
       setTimeout(()=>{ const el = document.getElementById('note-'+id); if (el) el.scrollIntoView({behavior:'smooth', block:'center'}); }, 150);
     }
   }catch(_){}
-
-  fetchNotes();
+/* fetchNotes() -> reemplazado por paginación */
 })();
+
+
+/* === Paginación por cursor (after_id + limit) === */
+(() => {
+  const $list = document.getElementById('notes');
+  const $btn  = document.getElementById('loadMore');
+  if (!$list || !$btn) return;
+
+  let after = null;
+  const LIMIT = 10;
+
+  async function fetchPage(opts = { append: false }) {
+    try {
+      const qs = new URLSearchParams({ limit: String(LIMIT) });
+      if (after) qs.set('after_id', after);
+
+      const res = await fetch('/api/notes?' + qs.toString());
+      const data = await res.json();
+
+      if (!opts.append) $list.innerHTML = '';
+      data.forEach(n => $list.appendChild(renderNote(n)));
+
+      const next = res.headers.get('X-Next-After');
+      after = next && next.trim() ? next.trim() : null;
+      $btn.hidden = !after;
+      $btn.style.display = after ? 'block' : 'none';
+    } catch (e) {
+      console.error('pagination fetchPage failed:', e);
+    }
+  }
+
+  // Primera carga
+  fetchPage({ append: false });
+
+  // Botón cargar más
+  $btn.addEventListener('click', () => fetchPage({ append: true }));
+
+  // Al publicar una nota, recargar primera página (si existe el form)
+  try {
+    const $form = document.getElementById('noteForm');
+    if ($form) {
+      $form.addEventListener('submit', () => {
+        after = null;
+        setTimeout(() => fetchPage({ append: false }), 200);
+      });
+    }
+  } catch (_) {}
+})();
+
