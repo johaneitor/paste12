@@ -5,7 +5,7 @@ from hashlib import sha256
 from datetime import datetime, timedelta
 
 from backend import db
-from backend.models import Note
+from backend.models import Note, ReportLog
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
@@ -107,11 +107,51 @@ def like_note(note_id: int):
     db.session.commit()
     return jsonify({"ok": True, "likes": n.likes})
 
+
 @api.route("/notes/<int:note_id>/report", methods=["POST"])
 def report_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
         return jsonify({"error": "not_found"}), 404
-    n.reports = (n.reports or 0) + 1
-    db.session.commit()
-    return jsonify({"ok": True, "reports": n.reports})
+
+    fp = _fingerprint_from_request(request)
+    # ¿ya reportó?
+    already = db.session.query(ReportLog.id).filter_by(note_id=note_id, fingerprint=fp).first()
+    if already:
+        # No incrementar; devolver estado actual
+        return jsonify({"ok": True, "reports": n.reports or 0, "already_reported": True}), 200
+
+    try:
+        # Registrar log único y subir contador
+        rl = ReportLog(note_id=note_id, fingerprint=fp)
+        db.session.add(rl)
+        n.reports = (n.reports or 0) + 1
+
+        # Si llegó a 5, borrar la nota
+        if n.reports >= 5:
+            db.session.delete(n)  # FK con ondelete=CASCADE limpia report_log en PG
+            db.session.commit()
+            return jsonify({"ok": True, "deleted": True, "reports": 5}), 200
+
+        db.session.commit()
+        return jsonify({"ok": True, "reports": n.reports}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "report_failed", "detail": str(e)}), 500
+
+@api.route("/notes/<int:note_id>", methods=["GET"])
+def get_note(note_id: int):
+    n = db.session.get(Note, note_id)
+    if not n:
+        return jsonify({"error": "not_found"}), 404
+    def _to_dict(n):
+        return {
+            "id": n.id,
+            "text": n.text,
+            "timestamp": n.timestamp.isoformat() if getattr(n, 'timestamp', None) else None,
+            "expires_at": n.expires_at.isoformat() if getattr(n, 'expires_at', None) else None,
+            "likes": getattr(n, 'likes', 0) or 0,
+            "views": getattr(n, 'views', 0) or 0,
+            "reports": getattr(n, 'reports', 0) or 0,
+        }
+    return jsonify(_to_dict(n)), 200

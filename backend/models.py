@@ -4,15 +4,14 @@ from datetime import datetime
 from sqlalchemy import Index
 from backend import db
 
-class Note(db.Model):
-    __tablename__ = "notes"
-    id         = db.Column(db.Integer, primary_key=True)
-    text       = db.Column(db.Text, nullable=False)
-    timestamp  = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    expires_at = db.Column(db.DateTime, nullable=True, index=True)
-    likes      = db.Column(db.Integer, default=0, nullable=False)
-    views      = db.Column(db.Integer, default=0, nullable=False)
-    reports    = db.Column(db.Integer, default=0, nullable=False)
-    author_fp  = db.Column(db.String(128), index=True, nullable=True)
+\1
 
-# índice explícito (por si SQLite ignora el de la columna)
+class ReportLog(db.Model):
+    __tablename__ = "report_log"
+    id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer, db.ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    fingerprint = db.Column(db.String(128), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_report_note_fp"),)
+
+\2
