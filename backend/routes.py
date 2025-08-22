@@ -1,18 +1,24 @@
 from __future__ import annotations
 from flask import Blueprint, request, jsonify, send_from_directory
 from hashlib import sha256
+import os
 from datetime import datetime, timedelta, date
 from pathlib import Path
 
-from backend import db
+from backend import db, limiter
 from backend.models import Note, ReportLog, LikeLog, ViewLog
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
 def _fingerprint_from_request(req):
-    ip = (req.headers.get("X-Forwarded-For") or getattr(req, "remote_addr", "") or "").split(",")[0].strip()
-    ua = req.headers.get("User-Agent", "")
-    return sha256(f"{ip}|{ua}".encode("utf-8")).hexdigest()
+    uid = req.cookies.get('uid')
+    if uid and len(uid) >= 8:
+        base = f"uid:{uid}"
+    else:
+        ip = (req.headers.get("X-Forwarded-For") or getattr(req, "remote_addr", "") or "").split(",")[0].strip()
+        ua = req.headers.get("User-Agent", "")
+        base = f"{ip}|{ua}"
+    return sha256(base.encode("utf-8")).hexdigest()
 
 def _to_dict(n: Note):
     return {
@@ -41,6 +47,7 @@ def list_notes():
     items = q.limit(20).offset((page - 1) * 20).all()
     return jsonify([_to_dict(n) for n in items]), 200
 
+@limiter.limit("5/minute")
 @api.route("/notes", methods=["POST"])
 def create_note():
     raw_json = request.get_json(silent=True) or {}
@@ -95,6 +102,7 @@ def get_note(note_id: int):
         return jsonify({"error": "not_found"}), 404
     return jsonify(_to_dict(n)), 200
 
+@limiter.limit("30/minute")
 @api.route("/notes/<int:note_id>/like", methods=["POST"])
 def like_note(note_id: int):
     n = db.session.get(Note, note_id)
@@ -113,6 +121,7 @@ def like_note(note_id: int):
         db.session.rollback()
         return jsonify({"error": "like_failed", "detail": str(e)}), 500
 
+@limiter.limit("30/minute")
 @api.route("/notes/<int:note_id>/view", methods=["POST"])
 def view_note(note_id: int):
     n = db.session.get(Note, note_id)
@@ -132,6 +141,7 @@ def view_note(note_id: int):
         db.session.rollback()
         return jsonify({"error": "view_failed", "detail": str(e)}), 500
 
+@limiter.limit("30/minute")
 @api.route("/notes/<int:note_id>/report", methods=["POST"])
 def report_note(note_id: int):
     n = db.session.get(Note, note_id)
@@ -153,3 +163,18 @@ def report_note(note_id: int):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "report_failed", "detail": str(e)}), 500
+
+
+@api.route("/admin/cleanup", methods=["POST","GET"])
+def admin_cleanup():
+    token = os.getenv("ADMIN_TOKEN","")
+    provided = (request.args.get("token") or request.headers.get("X-Admin-Token") or "")
+    if not token or provided != token:
+        return jsonify({"error":"forbidden"}), 403
+    try:
+        from flask import current_app
+        from backend.__init__ import _cleanup_once
+        _cleanup_once(current_app)
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        return jsonify({"error": "cleanup_failed", "detail": str(e)}), 500

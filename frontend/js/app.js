@@ -1,4 +1,12 @@
 (function(){
+  // UID para unicidad de like/view
+  (function ensureUid(){
+    try{
+      if(document.cookie.includes('uid=')) return;
+      const rnd = (crypto && crypto.getRandomValues) ? Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('') : String(Math.random()).slice(2);
+      document.cookie = "uid="+rnd+"; Max-Age="+(3600*24*365)+"; Path=/; SameSite=Lax";
+    }catch(_){}
+  })();
   const $status = document.getElementById('status') || { textContent: '' };
   const $list   = document.getElementById('notes');
   const $form   = document.getElementById('noteForm');
