@@ -121,3 +121,31 @@ def create_app() -> Flask:
 
     _maybe_schedule_cleanup(app)
     return app
+
+
+# === Static frontend routes (index & JS) ===
+try:
+    from flask import send_from_directory
+    from pathlib import Path as _Path
+    FRONT_DIR = _Path("frontend").resolve()
+
+    @app.route("/", methods=["GET"])
+    def root_index():
+        # Sirve frontend/index.html
+        return send_from_directory(FRONT_DIR, "index.html")
+
+    @app.route("/js/<path:fname>", methods=["GET"])
+    def static_js(fname):
+        # Sirve archivos JS de frontend/js/
+        return send_from_directory(FRONT_DIR / "js", fname)
+
+    @app.route("/favicon.ico", methods=["GET"])
+    def favicon_ico():
+        p = FRONT_DIR / "favicon.ico"
+        if p.exists():
+            return send_from_directory(FRONT_DIR, "favicon.ico")
+        return ("", 204)
+except Exception as _e:
+    # No fatal: si falta el frontend, el API sigue vivo
+    pass
+
