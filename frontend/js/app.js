@@ -1,7 +1,7 @@
 (function(){
-  const $status = document.getElementById('status') || (()=>{const s=document.createElement('span');s.id='status';document.body.appendChild(s);return s;})();
-  const $list = document.getElementById('notes') || (()=>{const u=document.createElement('ul');u.id='notes';document.body.appendChild(u);return u;})();
-  const $form = document.getElementById('noteForm');
+  const $status = document.getElementById('status') || { textContent: '' };
+  const $list   = document.getElementById('notes');
+  const $form   = document.getElementById('noteForm');
 
   function fmtISO(s){ try{ return new Date(s).toLocaleString(); }catch(_){ return s||''; } }
   function toast(msg){
@@ -12,142 +12,171 @@
       t.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111a;color:#eaf2ff;padding:10px 14px;border-radius:10px;border:1px solid #253044;z-index:9999;transition:opacity .25s ease';
       document.body.appendChild(t);
     }
-    t.textContent = msg; t.style.opacity='1';
-    setTimeout(()=>{ t.style.opacity='0'; }, 1800);
+    t.textContent = msg; t.style.opacity='1'; setTimeout(()=>t.style.opacity='0', 1500);
   }
-  function noteLink(id){ try{ return location.origin + '/?note=' + id; }catch(_){ return '/?note='+id; } }
+  function noteLink(id){ try{return location.origin+'/?note='+id;}catch(_){return '/?note='+id;} }
 
-  async function reportNote(id){
-    try{
-      const res = await fetch('/api/notes/'+id+'/report', { method: 'POST' });
-      const data = await res.json();
-      if(data.deleted){
-        const el = document.getElementById('note-'+id); if(el) el.remove();
-        toast('Nota eliminada por reportes (5/5)');
-      }else if(data.already_reported){
-        toast('Ya reportaste esta nota');
-      }else if(data.ok){
-        toast('Reporte registrado ('+(data.reports||0)+'/5)');
-      }else{
-        alert('No se pudo reportar: '+(data.detail||''));}
-    }catch(e){ alert('Error de red al reportar'); }
+  async function apiLike(id){
+    const r = await fetch(`/api/notes/${id}/like`, { method:'POST' });
+    return r.json();
   }
-
-  async function likeNote(id, $likes){
-    try{
-      const res = await fetch('/api/notes/'+id+'/like', { method:'POST' });
-      const data = await res.json();
-      if(data.ok && typeof data.likes === 'number'){
-        $likes.textContent = String(data.likes);
-      }
-    }catch(e){ console.error(e); }
-  }
-
-  async function viewNoteOncePerDay(id){
-    try{
-      const key = 'viewed_'+id+'_'+new Date().toISOString().slice(0,10);
-      if(localStorage.getItem(key)) return;
-      const res = await fetch('/api/notes/'+id+'/view', { method:'POST' });
-      if(res.ok) localStorage.setItem(key,'1');
-    }catch(e){}
+  async function apiView(id){
+    const r = await fetch(`/api/notes/${id}/view`, { method:'POST' });
+    return r.json();
   }
 
   function renderNote(n){
-    const li = document.createElement('li'); li.className='note'; li.id='note-'+n.id;
+    const li = document.createElement('li');
+    li.className = 'note';
+    li.id = 'note-'+n.id;
+    li.dataset.id = n.id;
 
-    const row = document.createElement('div'); row.className='row';
-    const txt = document.createElement('div'); txt.className='txt'; txt.textContent=String(n.text ?? '');
+    const row = document.createElement('div');
+    row.className = 'row';
 
-    const more = document.createElement('button'); more.className='more'; more.setAttribute('aria-label','Más opciones'); more.textContent='⋯';
-    const menu = document.createElement('div'); menu.className='menu';
+    const txt = document.createElement('div');
+    txt.className = 'txt';
+    txt.textContent = String(n.text ?? '');
 
-    const btnReport = document.createElement('button'); btnReport.textContent = 'Reportar';
-    btnReport.addEventListener('click', ev=>{ ev.stopPropagation(); menu.classList.remove('open'); reportNote(n.id); });
+    const more = document.createElement('button');
+    more.className = 'more';
+    more.setAttribute('aria-label','Más opciones');
+    more.textContent = '⋯';
 
-    const btnShare = document.createElement('button'); btnShare.textContent = 'Compartir';
-    btnShare.addEventListener('click', ev=>{
+    const menu = document.createElement('div');
+    menu.className = 'menu';
+    const btnReport = document.createElement('button');
+    btnReport.textContent = 'Reportar';
+    btnReport.addEventListener('click', async (ev)=>{
+      ev.stopPropagation(); menu.classList.remove('open');
+      try{
+        const res = await fetch(`/api/notes/${n.id}/report`, {method:'POST'});
+        const data = await res.json();
+        if (data.deleted){ li.remove(); toast('Nota eliminada por reportes (5/5)'); }
+        else if (data.already_reported){ toast('Ya reportaste'); }
+        else if (data.ok){ toast(`Reporte (${data.reports||0}/5)`); }
+      }catch(_){ toast('No se pudo reportar'); }
+    });
+    const btnShare = document.createElement('button');
+    btnShare.textContent = 'Compartir';
+    btnShare.addEventListener('click', async (ev)=>{
       ev.stopPropagation(); menu.classList.remove('open');
       const url = noteLink(n.id);
-      if(navigator.share){ navigator.share({title:'Nota #'+n.id, url}).catch(()=>{}); return; }
-      navigator.clipboard?.writeText(url).then(()=>toast('Enlace copiado')).catch(()=>{ prompt('Copia este enlace:', url); });
+      if (navigator.share){ try{ await navigator.share({title:'Nota #'+n.id, url}); return; }catch(_){ } }
+      try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+      catch(_){ window.prompt('Copia este enlace:', url); }
     });
+    menu.appendChild(btnReport);
+    menu.appendChild(btnShare);
 
-    menu.appendChild(btnReport); menu.appendChild(btnShare);
-    more.addEventListener('click', ev=>{ ev.stopPropagation(); menu.classList.toggle('open'); });
-
-    const meta = document.createElement('div'); meta.className='meta';
-    const spanId = document.createElement('span'); spanId.textContent = 'id #'+n.id;
-    const sep1 = document.createElement('span'); sep1.textContent = ' · ';
-    const spanTs = document.createElement('span'); spanTs.textContent = fmtISO(n.timestamp);
-    const sep2 = document.createElement('span'); sep2.textContent = ' · expira: ';
-    const spanExp = document.createElement('span'); spanExp.textContent = fmtISO(n.expires_at);
-
-    // likes & views
-    const bar = document.createElement('div'); bar.className='bar';
-    const likeBtn = document.createElement('button'); likeBtn.className='like'; likeBtn.textContent='♥ Like';
-    const likesCount = document.createElement('strong'); likesCount.className='likes'; likesCount.textContent=String(n.likes||0);
-    const viewsIcon = document.createElement('span'); viewsIcon.textContent='· 👁 ';
-    const viewsCount = document.createElement('strong'); viewsCount.className='views'; viewsCount.textContent=String(n.views||0);
-
-    likeBtn.addEventListener('click', ()=>likeNote(n.id, likesCount));
-
-    bar.appendChild(likeBtn);
-    bar.appendChild(likesCount);
-    bar.appendChild(viewsIcon);
-    bar.appendChild(viewsCount);
+    more.addEventListener('click', (ev)=>{ ev.stopPropagation(); menu.classList.toggle('open'); });
 
     row.appendChild(txt); row.appendChild(more); row.appendChild(menu);
-    li.appendChild(row);
-    li.appendChild(meta);
-    meta.appendChild(spanId); meta.appendChild(sep1); meta.appendChild(spanTs); meta.appendChild(sep2); meta.appendChild(spanExp);
-    li.appendChild(bar);
 
-    // observer para contar vista única por día
-    const obs = new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{
-        if(e.isIntersecting){
-          viewNoteOncePerDay(n.id);
-          obs.disconnect();
+    // barra de acciones
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+
+    const likeBtn = document.createElement('button');
+    likeBtn.className = 'btn-like';
+    likeBtn.innerHTML = '♥ Like <span class="like-count">'+(n.likes||0)+'</span>';
+    likeBtn.addEventListener('click', async ()=>{
+      if (likeBtn.dataset.locked==='1') return; // bloqueo local
+      likeBtn.dataset.locked='1';
+      try{
+        const data = await apiLike(n.id);
+        if (data.already_liked){ toast('Ya te gusta'); }
+        if (typeof data.likes === 'number'){
+          likeBtn.querySelector('.like-count').textContent = data.likes;
         }
-      });
-    }, { threshold: 0.3 });
-    obs.observe(li);
+      }catch(_){ likeBtn.dataset.locked='0'; toast('Error al dar like'); }
+    });
+
+    const views = document.createElement('span');
+    views.className = 'views';
+    views.innerHTML = '👁 <span class="view-count">'+(n.views||0)+'</span>';
+
+    bar.appendChild(likeBtn);
+    bar.appendChild(views);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = `id #${n.id} · ${fmtISO(n.timestamp)} · expira: ${fmtISO(n.expires_at)}`;
+
+    li.appendChild(row);
+    li.appendChild(bar);
+    li.appendChild(meta);
+
+    // Observador de vistas (una vez)
+    if ('IntersectionObserver' in window){
+      const io = new IntersectionObserver(async entries=>{
+        for (const e of entries){
+          if (e.isIntersecting && !li.dataset.viewed){
+            li.dataset.viewed='1';
+            try{
+              const data = await apiView(n.id);
+              if (typeof data.views === 'number'){
+                const vc = li.querySelector('.view-count');
+                if (vc) vc.textContent = data.views;
+              }
+            }catch(_){}
+            io.disconnect();
+          }
+        }
+      }, {threshold: 0.5});
+      io.observe(li);
+    }else{
+      // Fallback: marcar vista al crear
+      apiView(n.id).then(data=>{
+        if (typeof data.views === 'number'){
+          const vc = li.querySelector('.view-count');
+          if (vc) vc.textContent = data.views;
+        }
+      }).catch(()=>{});
+    }
 
     return li;
   }
 
   async function fetchNotes(){
-    $status.textContent='cargando…';
+    $status.textContent = 'cargando…';
     try{
       const res = await fetch('/api/notes?page=1');
       const data = await res.json();
-      $list.innerHTML=''; data.forEach(n=> $list.appendChild(renderNote(n)));
-      $status.textContent='ok';
-    }catch(e){ console.error(e); $status.textContent='error cargando'; }
+      $list.innerHTML = '';
+      data.forEach(n => $list.appendChild(renderNote(n)));
+      $status.textContent = 'ok';
+    }catch(e){
+      console.error(e);
+      $status.textContent = 'error cargando';
+    }
   }
 
-  // cerrar menús al clickear fuera
+  if ($form){
+    $form.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const fd = new FormData($form);
+      try{
+        const r = await fetch('/api/notes', { method:'POST', body: fd });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        await fetchNotes();
+        $form.reset();
+        const h = document.getElementById('hours'); if (h) h.value = 24;
+      }catch(e){ alert('No se pudo publicar: '+e.message); }
+    });
+  }
+
+  // cierra menús al click fuera
   document.addEventListener('click', ()=> {
     document.querySelectorAll('.note .menu.open').forEach(el => el.classList.remove('open'));
   });
 
-  if($form){
-    $form.addEventListener('submit', async ev=>{
-      ev.preventDefault();
-      const fd = new FormData($form);
-      try{
-        const res = await fetch('/api/notes', { method:'POST', body: fd });
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        await fetchNotes(); $form.reset(); const h=document.getElementById('hours'); if(h) h.value=24;
-      }catch(e){ alert('No se pudo publicar la nota: '+e.message); }
-    });
-  }
-
-  // jump a ?note=ID
+  // scroll a ?note=ID
   try{
-    const params = new URLSearchParams(location.search);
-    const id = params.get('note');
-    if(id){ setTimeout(()=>{ const el=document.getElementById('note-'+id); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); }, 150); }
+    const id = new URLSearchParams(location.search).get('note');
+    if (id){
+      setTimeout(()=>{ const el = document.getElementById('note-'+id); if (el) el.scrollIntoView({behavior:'smooth', block:'center'}); }, 150);
+    }
   }catch(_){}
 
   fetchNotes();

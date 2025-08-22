@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 
 from backend import db
-from backend.models import Note, ReportLog, ViewLog
+from backend.models import Note, ReportLog, LikeLog, ViewLog, ViewLog
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
@@ -100,9 +100,18 @@ def like_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
         return jsonify({"error": "not_found"}), 404
-    n.likes = (n.likes or 0) + 1
-    db.session.commit()
-    return jsonify({"ok": True, "likes": n.likes}), 200
+    fp = _fingerprint_from_request(request)
+    already = db.session.query(LikeLog.id).filter_by(note_id=note_id, fingerprint=fp).first()
+    if already:
+        return jsonify({"ok": True, "likes": n.likes or 0, "already_liked": True}), 200
+    try:
+        db.session.add(LikeLog(note_id=note_id, fingerprint=fp))
+        n.likes = (n.likes or 0) + 1
+        db.session.commit()
+        return jsonify({"ok": True, "likes": n.likes}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "like_failed", "detail": str(e)}), 500
 
 @api.route("/notes/<int:note_id>/view", methods=["POST"])
 def view_note(note_id: int):
@@ -110,7 +119,7 @@ def view_note(note_id: int):
     if not n:
         return jsonify({"error": "not_found"}), 404
     fp = _fingerprint_from_request(request)
-    today = date.today()
+    today = datetime.utcnow().date()
     already = db.session.query(ViewLog.id).filter_by(note_id=note_id, fingerprint=fp, view_date=today).first()
     if already:
         return jsonify({"ok": True, "views": n.views or 0, "already_viewed": True}), 200
