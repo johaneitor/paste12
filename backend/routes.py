@@ -184,13 +184,13 @@ def list_notes():
             except Exception:
                 pass
 
-        # Traer limit+1 para saber si hay otra página
+        # Traemos limit+1 para saber si hay próxima página
         items = q.limit(limit + 1).all()
         page = items[:limit]
 
         def to_dict(n):
             try:
-                return _note_to_dict(n)  # si existe helper
+                return _note_to_dict(n)  # si existiera helper
             except Exception:
                 return {
                     "id": n.id,
@@ -202,9 +202,11 @@ def list_notes():
                     "reports": getattr(n, "reports", 0) or 0,
                 }
 
+        from flask import jsonify
         resp = jsonify([to_dict(n) for n in page])
         if len(items) > limit and page:
             resp.headers["X-Next-After"] = str(page[-1].id)
         return resp, 200
     except Exception as e:
+        from flask import jsonify
         return jsonify({"error": "list_failed", "detail": str(e)}), 500
