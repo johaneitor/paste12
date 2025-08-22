@@ -1,675 +1,52 @@
 from __future__ import annotations
-
-from backend.utils.fingerprint import client_fingerprint
-
-import os
-os.environ.setdefault("ENABLE_VIEWS","1")
-from datetime import datetime, timezone, timedelta
+def _fp() -> str:
+    return 'noctx'
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from flask import Blueprint, current_app, jsonify, request
-from sqlalchemy.exc import IntegrityError
-from werkzeug.exceptions import HTTPException, MethodNotAllowed, NotFound, BadRequest
-
-from . import db, limiter
-from .models import Note, LikeLog, ReportLog, ViewLog
-
-# Blueprint único (se registra en create_app con url_prefix="/api")
+from flask import Blueprint, jsonify, request
+from backend.models import db, Note
 bp = Blueprint("api", __name__)
 
-# ===== Helpers =====
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
-def _aware(dt: Optional[datetime]) -> Optional[datetime]:
-    if dt is None:
-        return None
-    return dt if getattr(dt, "tzinfo", None) else dt.replace(tzinfo=timezone.utc)
-
-def _real_ip():
-    h = request.headers
-    xff = (h.get("X-Forwarded-For") or "").strip()
-    if xff:
-        return xff.split(",")[0].strip()
-    cip = h.get("CF-Connecting-IP")
-    if cip:
-        return cip.strip()
-    return request.remote_addr or "anon"
-
-def _views_enabled():
-    import os
-    # por defecto on (1). Sólo se apaga con ENABLE_VIEWS="0"
-    return (os.getenv("ENABLE_VIEWS","1") != "0")
-
-def _fp() -> str:
-    return (
-        request.headers.get("X-Client-Fingerprint")
-        or request.headers.get("X-User-Token")
-        or request.cookies.get("p12_fp")
-        or request.headers.get("CF-Connecting-IP")
-        or (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
-        or request.cookies.get("fp")
-        or request.remote_addr
-        or "anon"
-    )
-
-def _rate_key() -> str:
-    return _fp()
-
-def _per_page() -> int:
-    try:
-        v = int(os.getenv("PAGE_SIZE", "15"))
-    except Exception:
-        v = 15
-    if v < 10:
-        v = 10
-    if v > 100:
-        v = 100
-    return v
-
 def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
-    now = _aware(now) or _now()
-    ts = _aware(getattr(n, "timestamp", None))
-    exp = _aware(getattr(n, "expires_at", None))
-    remaining = max(0, int((exp - now).total_seconds())) if exp else None
+    if now is None:
+        now = _now()
     return {
         "id": n.id,
         "text": n.text,
-        "timestamp": ts.isoformat() if ts else None,
-        "expires_at": exp.isoformat() if exp else None,
-        "remaining": remaining,
-        "likes": int(n.likes or 0),
-        "views": int(n.views or 0),
-        "reports": int(n.reports or 0),
+        "timestamp": n.timestamp.isoformat() if getattr(n, "timestamp", None) else None,
+        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+        "likes": getattr(n, "likes", 0),
+        "views": getattr(n, "views", 0),
+        "reports": getattr(n, "reports", 0),
     }
 
-# ===== Error handler JSON a nivel app (cubre 500 con HTML) =====
-@bp.app_errorhandler(Exception)
-def _api_error(e):
-    try:
-        current_app.logger.exception("API error: %s", e)
-    except Exception:
-        pass
-    return jsonify({"ok": False, "error": str(e)}), 500
-
-# ===== Endpoints =====
-@bp.get("/health")
+@bp.route("/health", methods=["GET"])
 def health():
-    return jsonify({"ok": True, "now": _now().isoformat()}), 200
+    return jsonify({"ok": True}), 200
 
-@bp.get("/notes")
-
-@bp.post("/notes")
-@limiter.limit("1 per 10 seconds", key_func=_rate_key)
-@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
-@bp.post("/notes/<int:note_id>/like")
-def like_note(note_id: int):
-    n = Note.query.get_or_404(note_id)
-    fp = _fp()
-    try:
-        db.session.add(LikeLog(note_id=note_id, fingerprint=fp))
-        db.session.flush()
-        n.likes = int(n.likes or 0) + 1
-        db.session.commit()
-        return jsonify({"likes": int(n.likes or 0), "already_liked": False})
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({"likes": int(n.likes or 0), "already_liked": True})
-
-@bp.post("/notes/<int:note_id>/report")
-def report_note(note_id: int):
-    n = Note.query.get_or_404(note_id)
-    fp = _fp()
-    try:
-        db.session.add(ReportLog(note_id=note_id, fingerprint=fp))
-        db.session.flush()
-        n.reports = int(n.reports or 0) + 1
-        if n.reports >= 5:
-            db.session.delete(n)
-            db.session.commit()
-            return jsonify({"deleted": True, "reports": 0, "already_reported": False})
-        db.session.commit()
-        return jsonify({"deleted": False, "reports": int(n.reports or 0), "already_reported": False})
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({"deleted": False, "reports": int(n.reports or 0), "already_reported": True})
-
-@bp.post("/notes/<int:note_id>/view")
-def view_note(note_id: int):
-    from flask import jsonify, current_app, request
-    n = Note.query.get_or_404(note_id)
-    if not _views_enabled():
-        return jsonify({"counted": False, "views": int(n.views or 0)})
-    fp = _fp() or "anon"
-    today = _now().date()
-    counted = False
-    try:
-        dialect = (db.session.get_bind() or db.engine).dialect.name
-        if dialect == "postgresql":
-            # IMPORTANTE: insertar 'day' (NOT NULL) y 'view_date' (se usa para el UNIQUE)
-            res = db.session.execute(db.text("""
-                INSERT INTO public.view_log (note_id, fingerprint, view_date, day, created_at)
-                VALUES (:nid, :fp, :vd, :vd, (NOW() AT TIME ZONE 'UTC'))
-                ON CONFLICT ON CONSTRAINT uq_viewlog_note_fp_day_v2 DO NOTHING
-            """), {"nid": note_id, "fp": fp, "vd": today})
-            if getattr(res, "rowcount", 0) == 1:
-                db.session.execute(db.text("UPDATE public.note SET views = COALESCE(views,0)+1 WHERE id=:nid"), {"nid": note_id})
-                counted = True
-            v = db.session.execute(db.text("SELECT COALESCE(views,0) FROM public.note WHERE id=:nid"), {"nid": note_id}).scalar() or 0
-            db.session.commit()
-            return jsonify({"counted": counted, "views": int(v)})
-        else:
-            try:
-                # Para SQLite/otros, intenta setear 'day' si existe en el modelo:
-                try:
-                    db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today, day=today))
-                except TypeError:
-                    # si el modelo no tiene 'day', inserta sin esa columna
-                    db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
-                db.session.flush()
-                n.views = int(n.views or 0) + 1
-                counted = True
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-            return jsonify({"counted": counted, "views": int(n.views or 0)})
-    except Exception as e:
-        current_app.logger.exception("view_note error: %s", e)
-        db.session.rollback()
-        import os
-        tok = request.headers.get("X-Admin-Token") or ""
-        if tok == (os.getenv("ADMIN_TOKEN") or "changeme"):
-            return jsonify({"ok": False, "error": "view insert failed", "detail": str(e)}), 500
-        return jsonify({"ok": False, "error": "view insert failed"}), 500
-
-@bp.errorhandler(Exception)
-def __api_error_handler(e):
-    from flask import current_app, jsonify
-    try:
-        if isinstance(e, HTTPException):
-            return jsonify({"ok": False, "error": e.description}), e.code
-        current_app.logger.exception("API error: %s", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
-    except Exception:  # fallback
-        return ("", 500)
-
-@bp.post("/notes/report")
-def __report_missing():
-    from flask import jsonify
-    return jsonify({"ok": False, "error": "note_id required"}), 400
-
-@bp.post("/notes/like")
-def __like_missing():
-    from flask import jsonify
-    return jsonify({"ok": False, "error": "note_id required"}), 400
-
-@bp.post("/notes/view")
-def __view_missing():
-    from flask import jsonify
-    return jsonify({"ok": False, "error": "note_id required"}), 400
-
-# --- Admin: asegurar esquema de ViewLog en producción (usa la DB ya conectada) ---
-@bp.post("/admin/ensure_viewlog")
-def admin_ensure_viewlog():
-    import os
-    from sqlalchemy import text
-    tok = request.headers.get("X-Admin-Token") or ""
-    expected = os.getenv("ADMIN_TOKEN") or "changeme"
-    if tok != expected:
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-
-    dialect = db.session.get_bind().dialect.name
-    out = {"dialect": dialect, "steps": []}
-    def step(s): out["steps"].append(s)
-    try:
-        if dialect == "postgresql":
-            db.session.execute(text("ALTER TABLE view_log ADD COLUMN IF NOT EXISTS view_date date"))
-            step("ADD COLUMN view_date (pg)")
-            db.session.execute(text("UPDATE view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
-            step("BACKFILL view_date")
-            # eliminar UNIQUE antiguo si existiera
-            try:
-                db.session.execute(text('ALTER TABLE view_log DROP CONSTRAINT "uq_view_note_fp"'))
-                step("DROP UNIQUE uq_view_note_fp")
-            except Exception:
-                pass
-            # crear UNIQUE nuevo (nota+fp+día)
-            try:
-                db.session.execute(text('ALTER TABLE view_log ADD CONSTRAINT "uq_view_note_fp_day" UNIQUE (note_id, fingerprint, view_date)'))
-                step("ADD UNIQUE uq_view_note_fp_day")
-            except Exception:
-                step("UNIQUE uq_view_note_fp_day exists")
-        else:
-            db.session.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
-            step("ADD COLUMN view_date (sqlite)")
-            db.session.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
-            step("BACKFILL view_date (sqlite)")
-            db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_view_note_fp_day ON view_log(note_id, fingerprint, view_date)"))
-            step("CREATE UNIQUE INDEX uq_view_note_fp_day (sqlite)")
-
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-        db.session.commit()
-        return jsonify({"ok": True, **out})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"ok": False, "error": str(e), **out}), 500
-
-# --- Admin: asegurar esquema de ViewLog (usa db.engine.begin) ---
-@bp.post("/admin/ensure_viewlog_fix")
-def admin_ensure_viewlog_fix():
-    import os
-    from sqlalchemy import text
-
-    tok = request.headers.get("X-Admin-Token") or ""
-    expected = os.getenv("ADMIN_TOKEN") or "changeme"
-    if tok != expected:
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-
-    out = {"steps": []}
-    try:
-        # Usar engine directamente, no db.session.bind
-        with db.engine.begin() as conn:
-            dialect = conn.dialect.name
-            out["dialect"] = dialect
-
-            if dialect == "postgresql":
-                conn.execute(text("ALTER TABLE view_log ADD COLUMN IF NOT EXISTS view_date date"))
-                out["steps"].append("ADD COLUMN view_date (pg)")
-                conn.execute(text("UPDATE view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
-                out["steps"].append("BACKFILL view_date")
-                # borrar UNIQUE viejo si existe
-                try:
-                    conn.execute(text('ALTER TABLE view_log DROP CONSTRAINT "uq_view_note_fp"'))
-                    out["steps"].append("DROP UNIQUE uq_view_note_fp")
-                except Exception:
-                    pass
-                # crear UNIQUE nuevo
-                try:
-                    conn.execute(text('ALTER TABLE view_log ADD CONSTRAINT "uq_view_note_fp_day" UNIQUE (note_id, fingerprint, view_date)'))
-                    out["steps"].append("ADD UNIQUE uq_view_note_fp_day")
-                except Exception:
-                    out["steps"].append("UNIQUE uq_view_note_fp_day exists")
-            else:
-                # SQLite
-                conn.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
-                out["steps"].append("ADD COLUMN view_date (sqlite)")
-                conn.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
-                out["steps"].append("BACKFILL view_date (sqlite)")
-                conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_view_note_fp_day ON view_log(note_id, fingerprint, view_date)"))
-                out["steps"].append("CREATE UNIQUE INDEX uq_view_note_fp_day (sqlite)")
-
-            # índices útiles
-            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-
-        return jsonify({"ok": True, **out})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e), **out}), 500
-
-# --- Admin: migración robusta de ViewLog (PG/SQLite, transacciones separadas) ---
-@bp.post("/admin/ensure_viewlog_fix2")
-def admin_ensure_viewlog_fix2():
-    import os
-    from sqlalchemy import text
-
-    tok = request.headers.get("X-Admin-Token") or ""
-    expected = os.getenv("ADMIN_TOKEN") or "changeme"
-    if tok != expected:
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-
-    out = {"steps": []}
-
-    try:
-        # Detectar dialecto con una conexión corta
-        with db.engine.begin() as conn:
-            dialect = conn.dialect.name
-        out["dialect"] = dialect
-
-        if dialect == "postgresql":
-            # 1) Columna view_date (sin romper si ya existe)
-            with db.engine.begin() as conn:
-                conn.execute(text("ALTER TABLE view_log ADD COLUMN IF NOT EXISTS view_date date"))
-                out["steps"].append("ADD COLUMN view_date (pg)")
-            # 2) Backfill
-            with db.engine.begin() as conn:
-                conn.execute(text("UPDATE view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
-                out["steps"].append("BACKFILL view_date")
-            # 3) Drop UNIQUE viejo si existiera
-            with db.engine.begin() as conn:
-                conn.execute(text('ALTER TABLE view_log DROP CONSTRAINT IF EXISTS "uq_view_note_fp"'))
-                out["steps"].append("DROP UNIQUE uq_view_note_fp IF EXISTS")
-            # 4) Crear UNIQUE nuevo solo si no existe
-            with db.engine.begin() as conn:
-                exists = conn.execute(text("""
-                    SELECT 1
-                    FROM pg_constraint
-                    WHERE conrelid = 'view_log'::regclass
-                      AND conname = 'uq_view_note_fp_day'
-                      AND contype='u'
-                """)).first()
-                if not exists:
-                    conn.execute(text('ALTER TABLE view_log ADD CONSTRAINT "uq_view_note_fp_day" UNIQUE (note_id, fingerprint, view_date)'))
-                    out["steps"].append("ADD UNIQUE uq_view_note_fp_day")
-                else:
-                    out["steps"].append("UNIQUE uq_view_note_fp_day exists")
-            # 5) Índices (idempotentes)
-            with db.engine.begin() as conn:
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-                out["steps"].append("INDEXES ensured")
-
-        else:
-            # SQLite
-            with db.engine.begin() as conn:
-                # ADD COLUMN en SQLite falla si ya existe; probamos lectura primero
-                try:
-                    conn.execute(text("SELECT view_date FROM view_log LIMIT 0"))
-                    out["steps"].append("COLUMN view_date already present (sqlite)")
-                except Exception:
-                    conn.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
-                    out["steps"].append("ADD COLUMN view_date (sqlite)")
-            with db.engine.begin() as conn:
-                conn.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
-                out["steps"].append("BACKFILL view_date (sqlite)")
-            with db.engine.begin() as conn:
-                conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_view_note_fp_day ON view_log(note_id, fingerprint, view_date)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-                out["steps"].append("INDEXES ensured (sqlite)")
-
-        return jsonify({"ok": True, **out}), 200
-
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e), **out}), 500
-
-@bp.get("/admin/diag_views")
-def diag_views():
-    # requiere token admin por header
-    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN","changeme")):
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-    try:
-        note_id = int(request.args.get("note_id","0"))
-    except Exception:
-        return jsonify({"ok": False, "error": "note_id required"}), 400
-    today = _now().date()
-    rows = db.session.execute(
-        db.text("SELECT note_id,fingerprint,view_date FROM view_log WHERE note_id=:nid AND view_date=:vd ORDER BY fingerprint LIMIT 50"),
-        {"nid": note_id, "vd": today}
-    ).mappings().all()
-    return jsonify({"ok": True, "today": str(today), "count": len(rows), "rows": list(rows)}), 200
-
-@bp.post("/admin/fix_viewlog_uniques")
-def admin_fix_viewlog_uniques():
-    """
-    - Requiere X-Admin-Token == ADMIN_TOKEN (por defecto 'changeme')
-    - Postgres: elimina cualquier UNIQUE/índice único sobre (note_id,fingerprint) que NO incluya view_date.
-    - Asegura:
-        * columna view_date
-        * UNIQUE (note_id,fingerprint,view_date)
-        * índices ix_view_log_note_id, ix_view_log_view_date
-    """
-    import os
-    from sqlalchemy import text
-    tok = request.headers.get("X-Admin-Token") or ""
-    expected = os.getenv("ADMIN_TOKEN") or "changeme"
-    if tok != expected:
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-
-    out = {"ok": True, "dialect": db.session.get_bind().dialect.name, "dropped": [], "created": [], "info": []}
-    dialect = out["dialect"]
-
-    def info(msg): out["info"].append(msg)
-
-    # 0) columna view_date idempotente
-    if dialect == "postgresql":
-        db.session.execute(text("ALTER TABLE view_log ADD COLUMN IF NOT EXISTS view_date date"))
-        db.session.execute(text("UPDATE view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
-        info("view_date ensured/backfilled (pg)")
-    else:
-        try:
-            db.session.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
-        except Exception:
-            pass
-        db.session.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
-        info("view_date ensured/backfilled (sqlite/other)")
-
-    if dialect == "postgresql":
-        # 1) buscar constraints únicos sobre view_log
-        cons = db.session.execute(text("""
-            SELECT conname, pg_get_constraintdef(c.oid) AS def
-            FROM pg_constraint c
-            JOIN pg_class t ON c.conrelid=t.oid
-            WHERE t.relname='view_log' AND c.contype='u'
-        """)).mappings().all()
-
-        # dropear los que sean EXACTAMENTE únicos sobre (note_id, fingerprint) sin view_date
-        for row in cons:
-            name = row["conname"]
-            defi = (row["def"] or "").lower()
-            # ejemplo de def: 'UNIQUE (note_id, fingerprint)'
-            if "unique" in defi and "view_date" not in defi:
-                # comprobamos que solo estén note_id y fingerprint
-                cols = defi.split("(")[1].split(")")[0].replace(" ", "")
-                if cols in {"note_id,fingerprint", '"note_id","fingerprint"'}:
-                    db.session.execute(text(f'ALTER TABLE view_log DROP CONSTRAINT "{name}"'))
-                    out["dropped"].append(f'constraint:{name}')
-
-        # 2) buscar índices únicos
-        idxs = db.session.execute(text("""
-            SELECT indexname, indexdef
-            FROM pg_indexes
-            WHERE tablename='view_log'
-        """)).mappings().all()
-        for row in idxs:
-            name = row["indexname"]
-            defi = (row["indexdef"] or "").lower()
-            # ejemplo: 'CREATE UNIQUE INDEX ... ON public.view_log USING btree (note_id, fingerprint)'
-            if "unique index" in defi and "view_date" not in defi:
-                # columnas entre paréntesis
-                try:
-                    cols = defi.split("(")[1].split(")")[0].replace(" ", "")
-                except Exception:
-                    cols = ""
-                if cols in {"note_id,fingerprint", '"note_id","fingerprint"'}:
-                    db.session.execute(text(f'DROP INDEX IF EXISTS "{name}"'))
-                    out["dropped"].append(f'index:{name}')
-
-        # 3) asegurar UNIQUE correcto (note_id,fingerprint,view_date)
-        exists = db.session.execute(text("""
-            SELECT conname
-            FROM pg_constraint
-            WHERE conrelid='view_log'::regclass AND contype='u'
-              AND pg_get_constraintdef(oid) ILIKE '%unique%view_date%'
-        """)).first()
-        if not exists:
-            db.session.execute(text('ALTER TABLE view_log ADD CONSTRAINT "uq_view_note_fp_day" UNIQUE (note_id, fingerprint, view_date)'))
-            out["created"].append('constraint:uq_view_note_fp_day')
-
-        # 4) índices
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-        out["created"] += ["index:ix_view_log_note_id", "index:ix_view_log_view_date"]
-
-    else:
-        # sqlite: índice único de 3 columnas
-        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_view_note_fp_day ON view_log(note_id, fingerprint, view_date)"))
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-        out["created"] += ["index:uq_view_note_fp_day","index:ix_view_log_note_id","index:ix_view_log_view_date"]
-
-    db.session.commit()
-    out["columns"] = [dict(r) for r in out.get("columns", [])] if isinstance(out.get("columns"), list) else out.get("columns")
-    out["uniques"] = [dict(r) for r in out.get("uniques", [])] if isinstance(out.get("uniques"), list) else out.get("uniques")
-    out["indexes"] = [dict(r) for r in out.get("indexes", [])] if isinstance(out.get("indexes"), list) else out.get("indexes")
-    return jsonify(out), 200
-
-@bp.get("/admin/diag_viewlog_rows")
-def admin_diag_viewlog_rows():
-    import os
-    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN","changeme")):
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-    try:
-        note_id = int(request.args.get("note_id","0"))
-    except Exception:
-        return jsonify({"ok": False, "error": "note_id required"}), 400
-    fp = request.args.get("fp")
-    q = "SELECT id,note_id,fingerprint,view_date,created_at FROM view_log WHERE note_id=:nid"
-    params = {"nid": note_id}
-    if fp:
-        q += " AND fingerprint=:fp"
-        params["fp"] = fp
-    q += " ORDER BY created_at DESC LIMIT 100"
-    rows = db.session.execute(db.text(q), params).mappings().all()
-    return jsonify({"ok": True, "count": len(rows), "rows": list(rows)}), 200
-
-@bp.get("/admin/routes")
-def admin_list_routes():
-    import os
-    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-    rules = []
-    for r in current_app.url_map.iter_rules():
-        rules.append({"rule": str(r), "methods": sorted(m for m in r.methods if m not in {"HEAD","OPTIONS"})})
-    return jsonify({"ok": True, "rules": rules}), 200
-
-@bp.get("/admin/diag_viewlog_schema")
-def admin_diag_viewlog_schema():
-    import os
-    from sqlalchemy import text
-    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-    out = {"ok": True, "dialect": (db.session.get_bind() or db.engine).dialect.name}
-    if out["dialect"] == "postgresql":
-        cols = db.session.execute(text("""
-            SELECT column_name, data_type, is_nullable
-            FROM information_schema.columns
-            WHERE table_name='view_log'
-            ORDER BY ordinal_position
-        """)).mappings().all()
-        uniques = db.session.execute(text("""
-            SELECT conname, pg_get_constraintdef(oid) AS def
-            FROM pg_constraint
-            WHERE conrelid='view_log'::regclass AND contype='u'
-        """)).mappings().all()
-        idxs = db.session.execute(text("""
-            SELECT indexname, indexdef
-            FROM pg_indexes
-            WHERE tablename='view_log'
-        """)).mappings().all()
-        out["columns"] = list(cols)
-        out["uniques"] = list(uniques)
-        out["indexes"] = list(idxs)
-    out["columns"] = [dict(r) for r in out.get("columns", [])] if isinstance(out.get("columns"), list) else out.get("columns")
-    out["uniques"] = [dict(r) for r in out.get("uniques", [])] if isinstance(out.get("uniques"), list) else out.get("uniques")
-    out["indexes"] = [dict(r) for r in out.get("indexes", [])] if isinstance(out.get("indexes"), list) else out.get("indexes")
-    return jsonify(out), 200
-
-@bp.post("/admin/diag_try_insert")
-def admin_diag_try_insert():
-    import os
-    from sqlalchemy import text
-    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-    data = request.get_json(silent=True) or {}
-    try:
-        nid = int(data.get("note_id") or request.args.get("note_id") or 0)
-        fp  = (data.get("fp") or request.args.get("fp") or "diag-fp").strip() or "diag-fp"
-        vd  = _now().date()
-    except Exception as e:
-        return jsonify({"ok": False, "error": f"bad args: {e}"}), 400
-    try:
-        if (db.session.get_bind() or db.engine).dialect.name != "postgresql":
-            return jsonify({"ok": False, "error": "only for postgres"}), 400
-        res = db.session.execute(db.text("""
-            INSERT INTO public.view_log (note_id, fingerprint, view_date, created_at)
-            VALUES (:nid, :fp, :vd, (NOW() AT TIME ZONE 'UTC'))
-            ON CONFLICT (note_id, fingerprint, view_date) DO NOTHING
-        """), {"nid": nid, "fp": fp, "vd": vd})
-        rc = int(getattr(res, "rowcount", 0))
-        db.session.commit()
-        return jsonify({"ok": True, "rowcount": rc}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-@bp.post("/admin/force_viewlog_unique_v2")
-def admin_force_viewlog_unique_v2():
-    import os
-    from sqlalchemy import text
-    if request.headers.get("X-Admin-Token") != (os.getenv("ADMIN_TOKEN") or "changeme"):
-        return jsonify({"ok": False, "error": "unauthorized"}), 401
-    out = {"ok": True, "dialect": (db.session.get_bind() or db.engine).dialect.name, "dropped": [], "created": [], "info": []}
-    dialect = out["dialect"]
-    # 0) columna view_date
-    if dialect == "postgresql":
-        db.session.execute(text("ALTER TABLE public.view_log ADD COLUMN IF NOT EXISTS view_date date"))
-        db.session.execute(text("UPDATE public.view_log SET view_date = (created_at AT TIME ZONE 'UTC')::date WHERE view_date IS NULL"))
-    else:
-        try:
-            db.session.execute(text("ALTER TABLE view_log ADD COLUMN view_date DATE"))
-        except Exception:
-            pass
-        db.session.execute(text("UPDATE view_log SET view_date = date(created_at) WHERE view_date IS NULL"))
-    # 1) PG: dropear constraints viejos que no incluyan view_date
-    if dialect == "postgresql":
-        cons = db.session.execute(text("""
-            SELECT conname, pg_get_constraintdef(oid) AS def
-            FROM pg_constraint
-            WHERE conrelid='public.view_log'::regclass AND contype='u'
-        """)).mappings().all()
-        for r in cons:
-            name = r["conname"]; defi = (r["def"] or "").lower()
-            if "unique" in defi and "view_date" not in defi:
-                db.session.execute(text(f'ALTER TABLE public.view_log DROP CONSTRAINT "{name}"'))
-                out["dropped"].append(f'constraint:{name}')
-        # dropear índice con nombre viejo si existe
-        db.session.execute(text('DROP INDEX IF EXISTS "uq_view_note_fp_day"'))
-        out["dropped"].append('index:uq_view_note_fp_day')
-
-        # dropear constraint v2 si existe (para recrear limpio)
-        db.session.execute(text('ALTER TABLE public.view_log DROP CONSTRAINT IF EXISTS "uq_viewlog_note_fp_day_v2"'))
-
-        # 2) crear constraint v2 correcto
-        db.session.execute(text('ALTER TABLE public.view_log ADD CONSTRAINT "uq_viewlog_note_fp_day_v2" UNIQUE (note_id, fingerprint, view_date)'))
-        out["created"].append('constraint:uq_viewlog_note_fp_day_v2')
-
-        # 3) índices útiles
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON public.view_log (note_id)"))
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON public.view_log (view_date)"))
-        out["created"] += ["index:ix_view_log_note_id","index:ix_view_log_view_date"]
-    else:
-        # sqlite/otros
-        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_viewlog_note_fp_day_v2 ON view_log(note_id, fingerprint, view_date)"))
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-        out["created"] += ["index:uq_viewlog_note_fp_day_v2","index:ix_view_log_note_id","index:ix_view_log_view_date"]
-
-    db.session.commit()
-    return jsonify(out), 200
-@bp.route('/api/notes', methods=['GET'], endpoint="list_notes__L651")
+@bp.route("/notes", methods=["GET"])
 def list_notes():
-    from flask import request, jsonify
     try:
-        page = int(request.args.get('page', 1))
+        page = int(request.args.get("page", 1))
     except Exception:
         page = 1
     page = max(1, page)
-    try:
-        q = Note.query.order_by(Note.timestamp.desc())
-        items = q.limit(20).offset((page-1)*20).all()
-        now = _now()
-        return jsonify([_note_json(n, now) for n in items]), 200
-    except Exception as e:
-        return jsonify({"error":"list_failed","detail":str(e)}), 500
-@bp.route('/api/notes', methods=['POST'], endpoint="create_note__L666")
+    q = Note.query.order_by(Note.timestamp.desc())
+    items = q.limit(20).offset((page - 1) * 20).all()
+    return jsonify([_note_json(n, _now()) for n in items]), 200
+
+@bp.route("/notes", methods=["POST"])
 def create_note():
     from flask import request, jsonify
     from datetime import timedelta
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
     if not text:
-        return jsonify({"error":"text required"}), 400
+        return jsonify({'error':'text required'}), 400
     try:
         hours = int(data.get('hours', 24))
     except Exception:
@@ -677,16 +54,44 @@ def create_note():
     hours = min(168, max(1, hours))
     now = _now()
     try:
-        n = Note(
-            text=text,
-            timestamp=now,
-            expires_at=now + timedelta(hours=hours),
-            author_fp=client_fingerprint(),
-        )
+        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours),
+            author_fp=_fp(),)
+        try:
+            # Fallback si el hook no setea author_fp
+            if not getattr(n, 'author_fp', None):
+                n.author_fp = _fp()
+        except Exception:
+            pass
         db.session.add(n)
         db.session.commit()
         return jsonify(_note_json(n, now)), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error":"create_failed","detail":str(e)}), 500
+        import traceback
+        tb = traceback.format_exc()
+        try:
+            from flask import current_app
+            current_app.logger.error('create_note failed: %s', tb)
+        except Exception:
+            pass
+        return jsonify({'error':'create_failed','detail':str(e),'trace':tb}), 500
+@bp.route("/notes/<int:note_id>/like", methods=["POST"])
+def like_note(note_id: int):
+    n = Note.query.get_or_404(note_id)
+    n.likes = (n.likes or 0) + 1
+    db.session.commit()
+    return jsonify({"ok": True, "likes": n.likes}), 200
 
+@bp.route("/notes/<int:note_id>/report", methods=["POST"])
+def report_note(note_id: int):
+    n = Note.query.get_or_404(note_id)
+    n.reports = (n.reports or 0) + 1
+    db.session.commit()
+    return jsonify({"ok": True, "reports": n.reports}), 200
+
+@bp.route("/notes/<int:note_id>/view", methods=["POST"])
+def view_note(note_id: int):
+    n = Note.query.get_or_404(note_id)
+    n.views = (n.views or 0) + 1
+    db.session.commit()
+    return jsonify({"ok": True, "views": n.views}), 200

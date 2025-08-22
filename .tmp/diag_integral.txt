@@ -1,0 +1,137 @@
+=== DIAGNÓSTICO PASTE12 ===
+Fecha: 2025-08-21T21:19:29-03:00
+Repositorio: /data/data/com.termux/files/home/paste12
+Rama: main
+HEAD: 0e9143e
+
+---- Blueprint(s) definidos ----
+18:bp = Blueprint("api", __name__)
+
+---- Decoradores & defs ----
+21:def _now() -> datetime:
+24:def _aware(dt: Optional[datetime]) -> Optional[datetime]:
+29:def _real_ip():
+39:def _views_enabled():
+44:def _fp() -> str:
+56:def _rate_key() -> str:
+59:def _per_page() -> int:
+70:def _note_json(n: Note, now: Optional[datetime] = None) -> dict:
+88:def _api_error(e):
+97:def health():
+106:def like_note(note_id: int):
+120:def report_note(note_id: int):
+138:def view_note(note_id: int):
+186:def __api_error_handler(e):
+197:def __report_missing():
+202:def __like_missing():
+207:def __view_missing():
+213:def admin_ensure_viewlog():
+223:    def step(s): out["steps"].append(s)
+260:def admin_ensure_viewlog_fix():
+312:def admin_ensure_viewlog_fix2():
+387:def diag_views():
+403:def admin_fix_viewlog_uniques():
+422:    def info(msg): out["info"].append(msg)
+508:def admin_diag_viewlog_rows():
+527:def admin_list_routes():
+537:def admin_diag_viewlog_schema():
+569:def admin_diag_try_insert():
+597:def admin_force_viewlog_unique_v2():
+650:@bp.route('/api/notes', methods=['GET'], endpoint="list_notes__L651")
+651:def list_notes():
+665:@bp.route('/api/notes', methods=['POST'], endpoint="create_note__L666")
+666:def create_note():
+/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask_limiter/extension.py:316: UserWarning: Using the in-memory storage for tracking rate limits as no storage was explicitly specified. This is not recommended for production use. See: https://flask-limiter.readthedocs.io#configuring-a-storage-backend for documentation about configuring the storage backend.
+  warnings.warn(
+[2025-08-21 21:19:31,865] ERROR in __init__: No se pudo registrar blueprint API: View function mapping is overwriting an existing endpoint function: api.like_note
+=== URL MAP (reglas) ===
+/                                    GET         endpoint=static_root
+/<path:filename>                     GET         endpoint=static
+/<path:path>                         GET         endpoint=static_any
+/ads.txt                             GET         endpoint=static_ads
+/api/health                          GET         endpoint=api.health
+/api/notes                           POST        endpoint=api.like_note
+/api/notes/<int:note_id>/like        POST        endpoint=api.like_note
+/favicon.ico                         GET         endpoint=static_favicon
+
+=== Endpoints duplicados (si hay) ===
+- api.like_note:
+    /api/notes/<int:note_id>/like  POST
+    /api/notes  POST
+
+/api/notes GET: False | POST: True
+PRAGMA table_info(note);
+
+¿Tiene columna author_fp?
+NO
+/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask_limiter/extension.py:316: UserWarning: Using the in-memory storage for tracking rate limits as no storage was explicitly specified. This is not recommended for production use. See: https://flask-limiter.readthedocs.io#configuring-a-storage-backend for documentation about configuring the storage backend.
+  warnings.warn(
+[2025-08-21 21:19:33,276] ERROR in __init__: No se pudo registrar blueprint API: View function mapping is overwriting an existing endpoint function: api.like_note
+    PORT_LOCAL=8000
+--- GET local
+HTTP/1.1 500 INTERNAL SERVER ERROR
+Content-Length: 159
+Content-Type: application/json
+Date: Fri, 22 Aug 2025 00:19:34 GMT
+Server: waitress
+
+{"error":"404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.","ok":false}
+
+--- OPTIONS local
+HTTP/1.1 200 OK
+Allow: POST, OPTIONS, HEAD, GET
+Content-Length: 0
+Content-Type: text/html; charset=utf-8
+Date: Fri, 22 Aug 2025 00:19:34 GMT
+Server: waitress
+
+
+--- POST local
+HTTP/1.1 500 INTERNAL SERVER ERROR
+Content-Length: 85
+Content-Type: application/json
+Date: Fri, 22 Aug 2025 00:19:34 GMT
+Server: waitress
+
+{"error":"like_note() missing 1 required positional argument: 'note_id'","ok":false}
+--- GET remote
+HTTP/2 500 
+date: Fri, 22 Aug 2025 00:19:41 GMT
+content-type: application/json
+rndr-id: 945c9b92-01ac-4c3e
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 972e33354c45ba74-EZE
+alt-svc: h3=":443"; ma=86400
+
+{"error":"404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.","ok":false}
+
+--- OPTIONS remote
+HTTP/2 200 
+date: Fri, 22 Aug 2025 00:19:42 GMT
+content-type: text/html; charset=utf-8
+allow: POST, HEAD, OPTIONS, GET
+rndr-id: 962b847a-89dc-4bae
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 972e33399a35ba6d-EZE
+alt-svc: h3=":443"; ma=86400
+
+
+--- POST remote
+HTTP/2 500 
+date: Fri, 22 Aug 2025 00:19:42 GMT
+content-type: application/json
+rndr-id: 573cf816-21eb-41cd
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 972e333f8e01ba73-EZE
+alt-svc: h3=":443"; ma=86400
+
+{"error":"like_note() missing 1 required positional argument: 'note_id'","ok":false}
