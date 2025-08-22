@@ -43,14 +43,36 @@ def list_notes():
 
 @api.route("/notes", methods=["POST"])
 def create_note():
-    data = request.get_json(silent=True) or {}
-    text = (data.get("text") or "").strip()
+    # Aceptar JSON, form-data, x-www-form-urlencoded y querystring
+    raw_json = request.get_json(silent=True) or {}
+    data = raw_json if isinstance(raw_json, dict) else {}
+
+    def pick(*vals):
+        for v in vals:
+            if v is not None and str(v).strip() != "":
+                return str(v)
+        return ""
+
+    text = pick(
+        data.get("text") if isinstance(data, dict) else None,
+        request.form.get("text"),
+        request.values.get("text"),  # incluye querystring y form
+    ).strip()
+
+    hours_raw = pick(
+        (data.get("hours") if isinstance(data, dict) else None),
+        request.form.get("hours"),
+        request.values.get("hours"),
+        "24",
+    )
     try:
-        hours = int(data.get("hours") or 24)
+        hours = int(hours_raw)
     except Exception:
         hours = 24
+
     if not text:
         return jsonify({"error": "text_required"}), 400
+
     hours = max(1, min(hours, 720))
     now = datetime.utcnow()
     try:
