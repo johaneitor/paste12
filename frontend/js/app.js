@@ -1,4 +1,20 @@
 (function(){
+  function loadAdsenseOnce(){
+    try{
+      const meta = document.querySelector('meta[name="ads-client"]');
+      const client = meta && meta.content || '';
+      if(!client || client.includes('XXXX')) return; // placeholder => no carga
+      if(document.getElementById('adsbygoogle-lib')) return;
+      const sc = document.createElement('script');
+      sc.id='adsbygoogle-lib';
+      sc.async = true;
+      sc.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client="+encodeURIComponent(client);
+      sc.crossOrigin = "anonymous";
+      document.head.appendChild(sc);
+      setTimeout(()=>{ try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(_){ } }, 1200);
+    }catch(_){}
+  }
+  loadAdsenseOnce();
   // UID para unicidad de like/view
   (function ensureUid(){
     try{

@@ -88,6 +88,16 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 280}
 
     db.init_app(app)
+    # Sentry opcional
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        dsn = os.getenv('SENTRY_DSN')
+        if dsn:
+            sentry_sdk.init(dsn=dsn, integrations=[FlaskIntegration(), SqlalchemyIntegration()], traces_sample_rate=float(os.getenv('SENTRY_TRACES','0')))
+    except Exception as _e:
+        app.logger.warning(f'Sentry init: {_e}')
     try: limiter.init_app(app)
     except Exception as e: app.logger.warning(f"Limiter init: {e}")
 
