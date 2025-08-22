@@ -199,9 +199,11 @@ def list_notes():
                 "reports": getattr(n, "reports", 0) or 0,
             }
 
+        from flask import jsonify
         resp = jsonify([_to(n) for n in page])
         if len(items) > limit and page:
             resp.headers["X-Next-After"] = str(page[-1].id)
         return resp, 200
     except Exception as e:
+        from flask import jsonify
         return jsonify({"error": "list_failed", "detail": str(e)}), 500
