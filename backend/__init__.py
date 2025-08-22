@@ -139,6 +139,12 @@ def create_app(*args, **kwargs):
         app.register_blueprint(webui)
     except Exception:
         pass
+    # -- register webui blueprint --
+    try:
+        from .webui import webui
+        app.register_blueprint(webui)
+    except Exception:
+        pass
     return app
 
 # === Fallback defensivo: registrar webui si no quedó registrado ===
@@ -178,3 +184,5 @@ except Exception:
     # No romper el API si falta frontend
     pass
 
+# Export WSGI app for gunicorn (backend:app)
+app = create_app()
