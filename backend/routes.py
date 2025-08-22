@@ -35,35 +35,6 @@ def _to_dict(n: Note):
 def health():
     return jsonify({"ok": True}), 200
 
-@api.route("/notes", methods=["GET"])
-def list_notes():
-    try:
-        after_id = request.args.get("after_id")
-        limit = max(1, min(int(request.args.get("limit", "20")), 50))
-        q = db.session.query(Note).order_by(Note.id.desc())
-        if after_id:
-            try:
-                aid = int(after_id)
-                q = q.filter(Note.id < aid)
-            except Exception:
-                pass
-        items = q.limit(limit).all()
-        def _to(n):
-            return {
-                "id": n.id,
-                "text": getattr(n,"text",None),
-                "timestamp": n.timestamp.isoformat() if getattr(n,"timestamp",None) else None,
-                "expires_at": n.expires_at.isoformat() if getattr(n,"expires_at",None) else None,
-                "likes": getattr(n,"likes",0) or 0,
-                "views": getattr(n,"views",0) or 0,
-                "reports": getattr(n,"reports",0) or 0,
-            }
-        resp = jsonify([_to(n) for n in items])
-        if items:
-            resp.headers["X-Next-After"] = str(items[-1].id)
-        return resp, 200
-    except Exception as e:
-        return jsonify({"error":"list_failed","detail":str(e)}), 500
 
 @api.route("/notes", methods=["POST"])
 def create_note():
@@ -195,3 +166,39 @@ def admin_cleanup():
         return jsonify({"ok": True}), 200
     except Exception as e:
         return jsonify({"error": "cleanup_failed", "detail": str(e)}), 500
+@api.route("/notes", methods=["GET"])
+def list_notes():
+    try:
+        after_id = request.args.get("after_id")
+        try:
+            limit = max(1, min(int(request.args.get("limit", "20")), 50))
+        except Exception:
+            limit = 20
+
+        q = db.session.query(Note).order_by(Note.id.desc())
+        if after_id:
+            try:
+                aid = int(after_id)
+                q = q.filter(Note.id < aid)
+            except Exception:
+                pass
+
+        items = q.limit(limit).all()
+
+        def _to(n):
+            return {
+                "id": n.id,
+                "text": getattr(n, "text", None),
+                "timestamp": n.timestamp.isoformat() if getattr(n, "timestamp", None) else None,
+                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+                "likes": getattr(n, "likes", 0) or 0,
+                "views": getattr(n, "views", 0) or 0,
+                "reports": getattr(n, "reports", 0) or 0,
+            }
+
+        resp = jsonify([_to(n) for n in items])
+        if items:
+            resp.headers["X-Next-After"] = str(items[-1].id)
+        return resp, 200
+    except Exception as e:
+        return jsonify({"error": "list_failed", "detail": str(e)}), 500
