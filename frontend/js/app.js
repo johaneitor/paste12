@@ -16,6 +16,7 @@
     setTimeout(()=>{ t.style.opacity='0'; }, 1800);
   }
   function noteLink(id){ try{ return location.origin + '/?note=' + id; }catch(_){ return '/?note='+id; } }
+
   async function reportNote(id){
     try{
       const res = await fetch('/api/notes/'+id+'/report', { method: 'POST' });
@@ -28,33 +29,93 @@
       }else if(data.ok){
         toast('Reporte registrado ('+(data.reports||0)+'/5)');
       }else{
-        alert('No se pudo reportar: '+(data.detail||'')); }
+        alert('No se pudo reportar: '+(data.detail||''));}
     }catch(e){ alert('Error de red al reportar'); }
   }
-  async function shareNote(id){
-    const url = noteLink(id);
-    if(navigator.share){ try{ await navigator.share({ title: 'Nota #'+id, url }); return; }catch(_){ } }
-    try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
-    catch(_){ window.prompt('Copia este enlace', url); }
+
+  async function likeNote(id, $likes){
+    try{
+      const res = await fetch('/api/notes/'+id+'/like', { method:'POST' });
+      const data = await res.json();
+      if(data.ok && typeof data.likes === 'number'){
+        $likes.textContent = String(data.likes);
+      }
+    }catch(e){ console.error(e); }
   }
+
+  async function viewNoteOncePerDay(id){
+    try{
+      const key = 'viewed_'+id+'_'+new Date().toISOString().slice(0,10);
+      if(localStorage.getItem(key)) return;
+      const res = await fetch('/api/notes/'+id+'/view', { method:'POST' });
+      if(res.ok) localStorage.setItem(key,'1');
+    }catch(e){}
+  }
+
   function renderNote(n){
     const li = document.createElement('li'); li.className='note'; li.id='note-'+n.id;
+
     const row = document.createElement('div'); row.className='row';
     const txt = document.createElement('div'); txt.className='txt'; txt.textContent=String(n.text ?? '');
+
     const more = document.createElement('button'); more.className='more'; more.setAttribute('aria-label','Más opciones'); more.textContent='⋯';
     const menu = document.createElement('div'); menu.className='menu';
-    const btnReport = document.createElement('button'); btnReport.textContent='Reportar';
+
+    const btnReport = document.createElement('button'); btnReport.textContent = 'Reportar';
     btnReport.addEventListener('click', ev=>{ ev.stopPropagation(); menu.classList.remove('open'); reportNote(n.id); });
-    const btnShare = document.createElement('button'); btnShare.textContent='Compartir';
-    btnShare.addEventListener('click', ev=>{ ev.stopPropagation(); menu.classList.remove('open'); shareNote(n.id); });
+
+    const btnShare = document.createElement('button'); btnShare.textContent = 'Compartir';
+    btnShare.addEventListener('click', ev=>{
+      ev.stopPropagation(); menu.classList.remove('open');
+      const url = noteLink(n.id);
+      if(navigator.share){ navigator.share({title:'Nota #'+n.id, url}).catch(()=>{}); return; }
+      navigator.clipboard?.writeText(url).then(()=>toast('Enlace copiado')).catch(()=>{ prompt('Copia este enlace:', url); });
+    });
+
     menu.appendChild(btnReport); menu.appendChild(btnShare);
     more.addEventListener('click', ev=>{ ev.stopPropagation(); menu.classList.toggle('open'); });
-    row.appendChild(txt); row.appendChild(more); row.appendChild(menu);
+
     const meta = document.createElement('div'); meta.className='meta';
-    meta.appendChild(document.createTextNode('id #'+n.id+' · '+fmtISO(n.timestamp)+' · expira: '+fmtISO(n.expires_at)));
-    li.appendChild(row); li.appendChild(meta);
+    const spanId = document.createElement('span'); spanId.textContent = 'id #'+n.id;
+    const sep1 = document.createElement('span'); sep1.textContent = ' · ';
+    const spanTs = document.createElement('span'); spanTs.textContent = fmtISO(n.timestamp);
+    const sep2 = document.createElement('span'); sep2.textContent = ' · expira: ';
+    const spanExp = document.createElement('span'); spanExp.textContent = fmtISO(n.expires_at);
+
+    // likes & views
+    const bar = document.createElement('div'); bar.className='bar';
+    const likeBtn = document.createElement('button'); likeBtn.className='like'; likeBtn.textContent='♥ Like';
+    const likesCount = document.createElement('strong'); likesCount.className='likes'; likesCount.textContent=String(n.likes||0);
+    const viewsIcon = document.createElement('span'); viewsIcon.textContent='· 👁 ';
+    const viewsCount = document.createElement('strong'); viewsCount.className='views'; viewsCount.textContent=String(n.views||0);
+
+    likeBtn.addEventListener('click', ()=>likeNote(n.id, likesCount));
+
+    bar.appendChild(likeBtn);
+    bar.appendChild(likesCount);
+    bar.appendChild(viewsIcon);
+    bar.appendChild(viewsCount);
+
+    row.appendChild(txt); row.appendChild(more); row.appendChild(menu);
+    li.appendChild(row);
+    li.appendChild(meta);
+    meta.appendChild(spanId); meta.appendChild(sep1); meta.appendChild(spanTs); meta.appendChild(sep2); meta.appendChild(spanExp);
+    li.appendChild(bar);
+
+    // observer para contar vista única por día
+    const obs = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          viewNoteOncePerDay(n.id);
+          obs.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    obs.observe(li);
+
     return li;
   }
+
   async function fetchNotes(){
     $status.textContent='cargando…';
     try{
@@ -64,10 +125,12 @@
       $status.textContent='ok';
     }catch(e){ console.error(e); $status.textContent='error cargando'; }
   }
+
   // cerrar menús al clickear fuera
   document.addEventListener('click', ()=> {
     document.querySelectorAll('.note .menu.open').forEach(el => el.classList.remove('open'));
   });
+
   if($form){
     $form.addEventListener('submit', async ev=>{
       ev.preventDefault();
@@ -79,11 +142,13 @@
       }catch(e){ alert('No se pudo publicar la nota: '+e.message); }
     });
   }
+
   // jump a ?note=ID
   try{
     const params = new URLSearchParams(location.search);
     const id = params.get('note');
     if(id){ setTimeout(()=>{ const el=document.getElementById('note-'+id); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); }, 150); }
   }catch(_){}
+
   fetchNotes();
 })();

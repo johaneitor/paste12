@@ -1,34 +1,65 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>paste12</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <!-- AdSense: reemplaza ca-pub-XXXXXXXXXXXXXXXX por tu ID real -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
 </head>
 <body>
   <header class="topbar">
-    <h1>paste12</h1>
-    <span class="status" id="status">cargando…</span>
+    <h1>Notas</h1>
+    <nav class="links">
+      <a href="/terms.html">Términos</a>
+      <a href="/privacy.html">Privacidad</a>
+    </nav>
   </header>
 
-  <main class="container">
-    <section class="new-note">
-      <h2>Crear nota</h2>
-      <form id="noteForm">
-        <input type="text" id="text" name="text" placeholder="Escribe tu nota…" required />
-        <input type="number" id="hours" name="hours" min="1" max="720" value="24" />
-        <button type="submit">Publicar</button>
-      </form>
-      <p class="hint">Acepta JSON, form-data o urlencoded. Aquí usamos form-data (navegador).</p>
-    </section>
+  <!-- Bloque de anuncio responsivo -->
+  <section class="adwrap">
+    <!-- Reemplaza data-ad-client y data-ad-slot con los tuyos -->
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="1234567890"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </section>
 
-    <section>
-      <h2>Notas</h2>
-      <ul id="notes" class="notes"></ul>
-    </section>
+  <main class="container">
+    <form id="noteForm">
+      <textarea name="text" placeholder="Escribe tu nota…" required></textarea>
+      <input type="number" id="hours" name="hours" value="24" min="1" max="720">
+      <button type="submit">Publicar</button>
+      <span id="status"></span>
+    </form>
+    <ul id="notes"></ul>
   </main>
 
-  <script src="/js/app.js?v=3"></script>
+  <!-- Consentimiento simple -->
+  <div id="consent" class="consent" hidden>
+    Usamos cookies/localStorage (por ejemplo, para contar vistas y mostrar anuncios). Al continuar, aceptás nuestros
+    <a href="/terms.html">Términos</a> y <a href="/privacy.html">Política de Privacidad</a>.
+    <button id="consentAccept">Aceptar</button>
+  </div>
+
+  <script src="/js/app.js?v=4"></script>
+  <script>
+    // Banner de consentimiento muy simple
+    (function(){
+      try{
+        if(!localStorage.getItem('consent')){
+          var c=document.getElementById('consent');
+          c.hidden=false;
+          document.getElementById('consentAccept').onclick=function(){
+            localStorage.setItem('consent','1'); c.hidden=true;
+          };
+        }
+      }catch(e){}
+    })();
+  </script>
 </body>
 </html>

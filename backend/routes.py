@@ -1,10 +1,11 @@
 from __future__ import annotations
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory
 from hashlib import sha256
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from pathlib import Path
 
 from backend import db
-from backend.models import Note, ReportLog
+from backend.models import Note, ReportLog, ViewLog
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
@@ -36,14 +37,12 @@ def list_notes():
         page = 1
     if page < 1:
         page = 1
-
     q = db.session.query(Note).order_by(Note.id.desc())
     items = q.limit(20).offset((page - 1) * 20).all()
     return jsonify([_to_dict(n) for n in items]), 200
 
 @api.route("/notes", methods=["POST"])
 def create_note():
-    # Aceptar JSON, form-data, x-www-form-urlencoded y querystring
     raw_json = request.get_json(silent=True) or {}
     data = raw_json if isinstance(raw_json, dict) else {}
 
@@ -56,7 +55,7 @@ def create_note():
     text = pick(
         data.get("text") if isinstance(data, dict) else None,
         request.form.get("text"),
-        request.values.get("text"),  # incluye querystring y form
+        request.values.get("text"),
     ).strip()
 
     hours_raw = pick(
@@ -89,14 +88,12 @@ def create_note():
         db.session.rollback()
         return jsonify({"error": "create_failed", "detail": str(e)}), 500
 
-@api.route("/notes/<int:note_id>/view", methods=["POST"])
-def view_note(note_id: int):
+@api.route("/notes/<int:note_id>", methods=["GET"])
+def get_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
         return jsonify({"error": "not_found"}), 404
-    n.views = (n.views or 0) + 1
-    db.session.commit()
-    return jsonify({"ok": True, "views": n.views})
+    return jsonify(_to_dict(n)), 200
 
 @api.route("/notes/<int:note_id>/like", methods=["POST"])
 def like_note(note_id: int):
@@ -105,38 +102,45 @@ def like_note(note_id: int):
         return jsonify({"error": "not_found"}), 404
     n.likes = (n.likes or 0) + 1
     db.session.commit()
-    return jsonify({"ok": True, "likes": n.likes})
+    return jsonify({"ok": True, "likes": n.likes}), 200
+
+@api.route("/notes/<int:note_id>/view", methods=["POST"])
+def view_note(note_id: int):
+    n = db.session.get(Note, note_id)
+    if not n:
+        return jsonify({"error": "not_found"}), 404
+    fp = _fingerprint_from_request(request)
+    today = date.today()
+    already = db.session.query(ViewLog.id).filter_by(note_id=note_id, fingerprint=fp, view_date=today).first()
+    if already:
+        return jsonify({"ok": True, "views": n.views or 0, "already_viewed": True}), 200
+    try:
+        db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
+        n.views = (n.views or 0) + 1
+        db.session.commit()
+        return jsonify({"ok": True, "views": n.views}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "view_failed", "detail": str(e)}), 500
 
 @api.route("/notes/<int:note_id>/report", methods=["POST"])
 def report_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
         return jsonify({"error": "not_found"}), 404
-
     fp = _fingerprint_from_request(request)
     already = db.session.query(ReportLog.id).filter_by(note_id=note_id, fingerprint=fp).first()
     if already:
         return jsonify({"ok": True, "reports": n.reports or 0, "already_reported": True}), 200
-
     try:
-        rl = ReportLog(note_id=note_id, fingerprint=fp)
-        db.session.add(rl)
+        db.session.add(ReportLog(note_id=note_id, fingerprint=fp))
         n.reports = (n.reports or 0) + 1
-
         if n.reports >= 5:
             db.session.delete(n)
             db.session.commit()
             return jsonify({"ok": True, "deleted": True, "reports": 5}), 200
-
         db.session.commit()
         return jsonify({"ok": True, "reports": n.reports}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "report_failed", "detail": str(e)}), 500
-
-@api.route("/notes/<int:note_id>", methods=["GET"])
-def get_note(note_id: int):
-    n = db.session.get(Note, note_id)
-    if not n:
-        return jsonify({"error": "not_found"}), 404
-    return jsonify(_to_dict(n)), 200

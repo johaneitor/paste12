@@ -20,3 +20,13 @@ class ReportLog(db.Model):
     fingerprint = db.Column(db.String(128), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_report_note_fp"),)
+
+
+class ViewLog(db.Model):
+    __tablename__ = "view_log"
+    id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer, db.ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    fingerprint = db.Column(db.String(128), nullable=False, index=True)
+    view_date = db.Column(db.Date, nullable=False, index=True)  # 1 vista/día/nota/fp
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", "view_date", name="uq_view_note_fp_day"),)
