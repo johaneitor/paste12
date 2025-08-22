@@ -1,11 +1,10 @@
 from flask import Blueprint, send_from_directory
 from pathlib import Path
 
-# Detecta dónde está el frontend (soporta deploy con root en 'backend')
 PKG_DIR = Path(__file__).resolve().parent  # .../backend
 CANDIDATES = [
-    PKG_DIR / "frontend",            # backend/frontend (deploy subdir)
-    PKG_DIR.parent / "frontend",     # <repo>/frontend (deploy root)
+    PKG_DIR / "frontend",            # backend/frontend
+    PKG_DIR.parent / "frontend",     # <repo>/frontend
     Path.cwd() / "frontend",         # fallback
 ]
 for _cand in CANDIDATES:

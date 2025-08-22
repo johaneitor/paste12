@@ -81,7 +81,7 @@ def _maybe_schedule_cleanup(app: Flask):
     t = threading.Thread(target=loop, daemon=True)
     t.start()
 
-def create_app() -> Flask:
+def _create_app_orig() -> Flask:
     app = Flask(__name__)
 # Registrar blueprint del frontend
 try:
@@ -130,3 +130,13 @@ except Exception:
     return app
 
 
+
+# === Wrapper para registrar frontend en la factory ===
+def create_app(*args, **kwargs):
+    app = _create_app_orig(*args, **kwargs)
+    try:
+        from .webui import webui
+        app.register_blueprint(webui)
+    except Exception:
+        pass
+    return app
