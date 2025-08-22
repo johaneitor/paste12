@@ -5,7 +5,7 @@ PKG_DIR = Path(__file__).resolve().parent
 CANDIDATES = [
     PKG_DIR / "frontend",          # backend/frontend
     PKG_DIR.parent / "frontend",   # <repo>/frontend
-    Path.cwd() / "frontend",
+    Path.cwd() / "frontend",       # fallback
 ]
 FRONT_DIR = None
 for c in CANDIDATES:

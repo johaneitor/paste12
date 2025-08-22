@@ -140,3 +140,41 @@ def create_app(*args, **kwargs):
     except Exception:
         pass
     return app
+
+# === Fallback defensivo: registrar webui si no quedó registrado ===
+try:
+    from .webui import webui
+    if 'webui' not in app.blueprints:
+        app.register_blueprint(webui)
+except Exception:
+    pass
+
+# === Ensure web UI blueprint is registered (global app & factory) ===
+try:
+    from .webui import webui as _webui
+    # Registrar en app global si existe (backend:app)
+    if "app" in globals() and hasattr(globals()["app"], "register_blueprint"):
+        try:
+            globals()["app"].register_blueprint(_webui)
+        except Exception:
+            pass
+    # Envolver factory si existe (backend:create_app)
+    if "create_app" in globals() and callable(create_app):
+        try:
+            _src = inspect.getsource(create_app)
+        except Exception:
+            _src = ""
+        if "register_blueprint(_webui)" not in _src and "register_blueprint(webui)" not in _src:
+            _orig_create_app = create_app
+            def create_app(*a, **kw):
+                app = _orig_create_app(*a, **kw)
+                try:
+                    from .webui import webui as _w
+                    app.register_blueprint(_w)
+                except Exception:
+                    pass
+                return app
+except Exception:
+    # No romper el API si falta frontend
+    pass
+
