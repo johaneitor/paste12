@@ -2,70 +2,69 @@
 PORT_LOCAL=8000
 
 === RUTAS EN routes.py (decoradores y defs relevantes) ===
-105:@app.route("/api/notes", methods=["POST"])
-652:@app.route('/api/notes', methods=['GET'])
-653:def list_notes():
-668:@app.route('/api/notes', methods=['POST'])
-669:def create_note():
+650:@bp.route('/api/notes', methods=['GET'])
+651:def list_notes():
+665:@bp.route('/api/notes', methods=['POST'])
+666:def create_note():
 
 === CONTEXTO ALREDEDOR DE create_note (80 líneas) ===
-   639	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON public.view_log (note_id)"))
-   640	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON public.view_log (view_date)"))
-   641	        out["created"] += ["index:ix_view_log_note_id","index:ix_view_log_view_date"]
-   642	    else:
-   643	        # sqlite/otros
-   644	        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_viewlog_note_fp_day_v2 ON view_log(note_id, fingerprint, view_date)"))
-   645	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
-   646	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
-   647	        out["created"] += ["index:uq_viewlog_note_fp_day_v2","index:ix_view_log_note_id","index:ix_view_log_view_date"]
-   648	
-   649	    db.session.commit()
-   650	    return jsonify(out), 200
-   651	
-   652	@app.route('/api/notes', methods=['GET'])
-   653	def list_notes():
-   654	    from flask import request, jsonify
-   655	    try:
-   656	        page = int(request.args.get('page', 1))
-   657	    except Exception:
-   658	        page = 1
-   659	    page = max(1, page)
-   660	    try:
-   661	        q = Note.query.order_by(Note.timestamp.desc())
-   662	        items = q.limit(20).offset((page-1)*20).all()
-   663	        now = _now()
-   664	        return jsonify([_note_json(n, now) for n in items]), 200
-   665	    except Exception as e:
-   666	        return jsonify({"error":"list_failed","detail":str(e)}), 500
-   667	
-   668	@app.route('/api/notes', methods=['POST'])
-   669	def create_note():
-   670	    from flask import request, jsonify
-   671	    from datetime import timedelta
-   672	    data = request.get_json(silent=True) or {}
-   673	    text = (data.get('text') or '').strip()
-   674	    if not text:
-   675	        return jsonify({"error":"text required"}), 400
-   676	    try:
-   677	        hours = int(data.get('hours', 24))
-   678	    except Exception:
-   679	        hours = 24
-   680	    hours = min(168, max(1, hours))
-   681	    now = _now()
-   682	    try:
-   683	        n = Note(
-   684	            text=text,
-   685	            timestamp=now,
-   686	            expires_at=now + timedelta(hours=hours),
-   687	            author_fp=client_fingerprint(),
-   688	        )
-   689	        db.session.add(n)
-   690	        db.session.commit()
-   691	        return jsonify(_note_json(n, now)), 201
-   692	    except Exception as e:
-   693	        db.session.rollback()
-   694	        return jsonify({"error":"create_failed","detail":str(e)}), 500
-   695	
+   636	
+   637	        # 3) índices útiles
+   638	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON public.view_log (note_id)"))
+   639	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON public.view_log (view_date)"))
+   640	        out["created"] += ["index:ix_view_log_note_id","index:ix_view_log_view_date"]
+   641	    else:
+   642	        # sqlite/otros
+   643	        db.session.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_viewlog_note_fp_day_v2 ON view_log(note_id, fingerprint, view_date)"))
+   644	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_note_id ON view_log (note_id)"))
+   645	        db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_view_log_view_date ON view_log (view_date)"))
+   646	        out["created"] += ["index:uq_viewlog_note_fp_day_v2","index:ix_view_log_note_id","index:ix_view_log_view_date"]
+   647	
+   648	    db.session.commit()
+   649	    return jsonify(out), 200
+   650	@bp.route('/api/notes', methods=['GET'])
+   651	def list_notes():
+   652	    from flask import request, jsonify
+   653	    try:
+   654	        page = int(request.args.get('page', 1))
+   655	    except Exception:
+   656	        page = 1
+   657	    page = max(1, page)
+   658	    try:
+   659	        q = Note.query.order_by(Note.timestamp.desc())
+   660	        items = q.limit(20).offset((page-1)*20).all()
+   661	        now = _now()
+   662	        return jsonify([_note_json(n, now) for n in items]), 200
+   663	    except Exception as e:
+   664	        return jsonify({"error":"list_failed","detail":str(e)}), 500
+   665	@bp.route('/api/notes', methods=['POST'])
+   666	def create_note():
+   667	    from flask import request, jsonify
+   668	    from datetime import timedelta
+   669	    data = request.get_json(silent=True) or {}
+   670	    text = (data.get('text') or '').strip()
+   671	    if not text:
+   672	        return jsonify({"error":"text required"}), 400
+   673	    try:
+   674	        hours = int(data.get('hours', 24))
+   675	    except Exception:
+   676	        hours = 24
+   677	    hours = min(168, max(1, hours))
+   678	    now = _now()
+   679	    try:
+   680	        n = Note(
+   681	            text=text,
+   682	            timestamp=now,
+   683	            expires_at=now + timedelta(hours=hours),
+   684	            author_fp=client_fingerprint(),
+   685	        )
+   686	        db.session.add(n)
+   687	        db.session.commit()
+   688	        return jsonify(_note_json(n, now)), 201
+   689	    except Exception as e:
+   690	        db.session.rollback()
+   691	        return jsonify({"error":"create_failed","detail":str(e)}), 500
+   692	
 
 === ESQUEMA SQLITE (tabla note) ===
 
@@ -74,47 +73,96 @@ PORT_LOCAL=8000
 === LOG APP LOCAL (últimas 120) ===
 /data/data/com.termux/files/usr/lib/python3.12/site-packages/flask_limiter/extension.py:316: UserWarning: Using the in-memory storage for tracking rate limits as no storage was explicitly specified. This is not recommended for production use. See: https://flask-limiter.readthedocs.io#configuring-a-storage-backend for documentation about configuring the storage backend.
   warnings.warn(
-[2025-08-21 20:27:29,273] ERROR in __init__: No se pudo registrar blueprint API: name 'app' is not defined
+[2025-08-21 20:47:08,339] ERROR in __init__: No se pudo registrar blueprint API: View function mapping is overwriting an existing endpoint function: api.like_note
+[2025-08-21 20:47:08,480] ERROR in routes: API error: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 502, in <lambda>
+    view_func=lambda **kw: self_ref().send_static_file(**kw),  # type: ignore # noqa: B950
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/scaffold.py", line 318, in send_static_file
+    return send_from_directory(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/helpers.py", line 557, in send_from_directory
+    return werkzeug.utils.send_from_directory(  # type: ignore[return-value]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/werkzeug/utils.py", line 575, in send_from_directory
+    raise NotFound()
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+ERROR:backend:API error: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 502, in <lambda>
+    view_func=lambda **kw: self_ref().send_static_file(**kw),  # type: ignore # noqa: B950
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/scaffold.py", line 318, in send_static_file
+    return send_from_directory(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/helpers.py", line 557, in send_from_directory
+    return werkzeug.utils.send_from_directory(  # type: ignore[return-value]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/werkzeug/utils.py", line 575, in send_from_directory
+    raise NotFound()
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2025-08-21 20:47:08,519] ERROR in routes: API error: like_note() missing 1 required positional argument: 'note_id'
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: like_note() missing 1 required positional argument: 'note_id'
+ERROR:backend:API error: like_note() missing 1 required positional argument: 'note_id'
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: like_note() missing 1 required positional argument: 'note_id'
 
 === SMOKE LOCAL ===
 --- GET /api/notes?page=1
-HTTP/1.1 404 NOT FOUND
-Content-Length: 207
-Content-Type: text/html; charset=utf-8
-Date: Thu, 21 Aug 2025 23:41:04 GMT
+HTTP/1.1 500 INTERNAL SERVER ERROR
+Content-Length: 159
+Content-Type: application/json
+Date: Thu, 21 Aug 2025 23:47:41 GMT
 Server: waitress
 
-<!doctype html>
-<html lang=en>
-<title>404 Not Found</title>
-<h1>Not Found</h1>
-<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+{"error":"404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.","ok":false}
 
 --- POST /api/notes
-HTTP/1.1 405 METHOD NOT ALLOWED
-Allow: GET, OPTIONS, HEAD
-Content-Length: 153
-Content-Type: text/html; charset=utf-8
-Date: Thu, 21 Aug 2025 23:41:04 GMT
+HTTP/1.1 500 INTERNAL SERVER ERROR
+Content-Length: 85
+Content-Type: application/json
+Date: Thu, 21 Aug 2025 23:47:41 GMT
 Server: waitress
 
-<!doctype html>
-<html lang=en>
-<title>405 Method Not Allowed</title>
-<h1>Method Not Allowed</h1>
-<p>The method is not allowed for the requested URL.</p>
+{"error":"like_note() missing 1 required positional argument: 'note_id'","ok":false}
 
 === SMOKE RENDER ===
 --- GET https://paste12-rmsk.onrender.com/api/notes?page=1
 HTTP/2 404 
-date: Thu, 21 Aug 2025 23:41:05 GMT
+date: Thu, 21 Aug 2025 23:47:43 GMT
 content-type: text/html; charset=utf-8
-rndr-id: f423615e-843e-4a5f
+rndr-id: 3ee6f749-71b1-4086
 vary: Accept-Encoding
 x-render-origin-server: gunicorn
 cf-cache-status: DYNAMIC
 server: cloudflare
-cf-ray: 972dfaacb83eba71-EZE
+cf-ray: 972e04600eccba73-EZE
 alt-svc: h3=":443"; ma=86400
 
 <!doctype html>
@@ -125,15 +173,15 @@ alt-svc: h3=":443"; ma=86400
 
 --- POST https://paste12-rmsk.onrender.com/api/notes
 HTTP/2 405 
-date: Thu, 21 Aug 2025 23:41:06 GMT
+date: Thu, 21 Aug 2025 23:47:43 GMT
 content-type: text/html; charset=utf-8
 allow: GET, HEAD, OPTIONS
-rndr-id: ac770204-b55d-4d0e
+rndr-id: e337e97c-13d0-40ab
 vary: Accept-Encoding
 x-render-origin-server: gunicorn
 cf-cache-status: DYNAMIC
 server: cloudflare
-cf-ray: 972dfaaf1a7aba71-EZE
+cf-ray: 972e04637bdeba65-EZE
 alt-svc: h3=":443"; ma=86400
 
 <!doctype html>
