@@ -14,4 +14,5 @@ class Note(db.Model):
     reports    = db.Column(db.Integer, default=0, nullable=False)
     author_fp  = db.Column(db.String(128), index=True, nullable=True)
 
+# índice explícito (por si SQLite ignora el de la columna)
 Index("ix_notes_author_fp", Note.author_fp)
