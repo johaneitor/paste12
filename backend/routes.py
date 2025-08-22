@@ -184,13 +184,13 @@ def list_notes():
             except Exception:
                 pass
 
-        # Traemos limit+1 para saber si hay próxima página
+        # limit+1 para saber si hay próxima página
         items = q.limit(limit + 1).all()
         page = items[:limit]
 
         def to_dict(n):
             try:
-                return _note_to_dict(n)  # si existiera helper
+                return _note_to_dict(n)
             except Exception:
                 return {
                     "id": n.id,
