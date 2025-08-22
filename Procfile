@@ -1,1 +1,1 @@
-web: gunicorn "backend:create_app()" -w 1 -k gthread --threads 8 -b 0.0.0.0:$PORT --timeout 60
+web: gunicorn run:app --bind 0.0.0.0:$PORT --workers=${WEB_CONCURRENCY:-2} --threads=${WEB_THREADS:-4} --timeout 120
