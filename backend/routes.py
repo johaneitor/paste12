@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from flask import Blueprint, request, jsonify
 from hashlib import sha256
 from datetime import datetime, timedelta
@@ -14,10 +13,10 @@ def _fingerprint_from_request(req):
     ua = req.headers.get("User-Agent", "")
     return sha256(f"{ip}|{ua}".encode("utf-8")).hexdigest()
 
-def _note_to_dict(n: Note):
+def _to_dict(n: Note):
     return {
         "id": n.id,
-        "text": getattr(n, "text", None),
+        "text": n.text,
         "timestamp": n.timestamp.isoformat() if getattr(n, "timestamp", None) else None,
         "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
         "likes": getattr(n, "likes", 0) or 0,
@@ -27,7 +26,7 @@ def _note_to_dict(n: Note):
 
 @api.route("/health", methods=["GET"])
 def health():
-    return jsonify({"ok": True})
+    return jsonify({"ok": True}), 200
 
 @api.route("/notes", methods=["GET"])
 def list_notes():
@@ -37,9 +36,10 @@ def list_notes():
         page = 1
     if page < 1:
         page = 1
+
     q = db.session.query(Note).order_by(Note.id.desc())
     items = q.limit(20).offset((page - 1) * 20).all()
-    return jsonify([_note_to_dict(n) for n in items])
+    return jsonify([_to_dict(n) for n in items]), 200
 
 @api.route("/notes", methods=["POST"])
 def create_note():
@@ -107,7 +107,6 @@ def like_note(note_id: int):
     db.session.commit()
     return jsonify({"ok": True, "likes": n.likes})
 
-
 @api.route("/notes/<int:note_id>/report", methods=["POST"])
 def report_note(note_id: int):
     n = db.session.get(Note, note_id)
@@ -115,21 +114,17 @@ def report_note(note_id: int):
         return jsonify({"error": "not_found"}), 404
 
     fp = _fingerprint_from_request(request)
-    # ¿ya reportó?
     already = db.session.query(ReportLog.id).filter_by(note_id=note_id, fingerprint=fp).first()
     if already:
-        # No incrementar; devolver estado actual
         return jsonify({"ok": True, "reports": n.reports or 0, "already_reported": True}), 200
 
     try:
-        # Registrar log único y subir contador
         rl = ReportLog(note_id=note_id, fingerprint=fp)
         db.session.add(rl)
         n.reports = (n.reports or 0) + 1
 
-        # Si llegó a 5, borrar la nota
         if n.reports >= 5:
-            db.session.delete(n)  # FK con ondelete=CASCADE limpia report_log en PG
+            db.session.delete(n)
             db.session.commit()
             return jsonify({"ok": True, "deleted": True, "reports": 5}), 200
 
@@ -144,14 +139,4 @@ def get_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
         return jsonify({"error": "not_found"}), 404
-    def _to_dict(n):
-        return {
-            "id": n.id,
-            "text": n.text,
-            "timestamp": n.timestamp.isoformat() if getattr(n, 'timestamp', None) else None,
-            "expires_at": n.expires_at.isoformat() if getattr(n, 'expires_at', None) else None,
-            "likes": getattr(n, 'likes', 0) or 0,
-            "views": getattr(n, 'views', 0) or 0,
-            "reports": getattr(n, 'reports', 0) or 0,
-        }
     return jsonify(_to_dict(n)), 200
