@@ -184,29 +184,24 @@ def list_notes():
             except Exception:
                 pass
 
-        # limit+1 para saber si hay próxima página
+        # Traer limit+1 para detectar si hay otra página
         items = q.limit(limit + 1).all()
         page = items[:limit]
 
-        def to_dict(n):
-            try:
-                return _note_to_dict(n)
-            except Exception:
-                return {
-                    "id": n.id,
-                    "text": getattr(n, "text", None),
-                    "timestamp": n.timestamp.isoformat() if getattr(n, "timestamp", None) else None,
-                    "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
-                    "likes": getattr(n, "likes", 0) or 0,
-                    "views": getattr(n, "views", 0) or 0,
-                    "reports": getattr(n, "reports", 0) or 0,
-                }
+        def _to(n):
+            return {
+                "id": n.id,
+                "text": getattr(n, "text", None),
+                "timestamp": n.timestamp.isoformat() if getattr(n, "timestamp", None) else None,
+                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+                "likes": getattr(n, "likes", 0) or 0,
+                "views": getattr(n, "views", 0) or 0,
+                "reports": getattr(n, "reports", 0) or 0,
+            }
 
-        from flask import jsonify
-        resp = jsonify([to_dict(n) for n in page])
+        resp = jsonify([_to(n) for n in page])
         if len(items) > limit and page:
             resp.headers["X-Next-After"] = str(page[-1].id)
         return resp, 200
     except Exception as e:
-        from flask import jsonify
         return jsonify({"error": "list_failed", "detail": str(e)}), 500
