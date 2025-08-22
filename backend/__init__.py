@@ -83,6 +83,13 @@ def _maybe_schedule_cleanup(app: Flask):
 
 def create_app() -> Flask:
     app = Flask(__name__)
+# Registrar blueprint del frontend
+try:
+    from .webui import webui
+    app.register_blueprint(webui)
+except Exception:
+    pass
+
     app.config["SQLALCHEMY_DATABASE_URI"] = _db_uri()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 280}
