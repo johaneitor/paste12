@@ -1,19 +1,21 @@
-# Entry WSGI para Render
-# - Si hay factory: backend.create_app()
-# - Si no, usa backend.app
-# - En ambos casos registra el blueprint del frontend (backend.webui)
-
+# wsgi.py — EntryPoint único para Render/Procfile
+# Crea o toma la app y registra el blueprint del frontend de forma defensiva.
 try:
-    from backend import create_app as _factory
-    app = _factory()
+    # Caso 1: backend expone app global
+    from backend import app as _app
 except Exception:
-    from backend import app  # noqa: F401
+    # Caso 2: backend expone factory create_app
+    from backend import create_app as _factory
+    _app = _factory()
 
-# Registro defensivo del blueprint del frontend
+# Registrar blueprint webui (index, /js, /css, favicon) si no está
 try:
     from backend.webui import webui
-    if 'webui' not in app.blueprints:  # type: ignore
-        app.register_blueprint(webui)  # type: ignore
-        print("[wsgi] webui blueprint registrado", flush=True)
-except Exception as e:
-    print(f"[wsgi] no pude registrar webui: {e}", flush=True)
+    if 'webui' not in _app.blueprints:
+        _app.register_blueprint(webui)
+except Exception:
+    # Si falta el frontend, no romper el API
+    pass
+
+# WSGI target
+app = _app
