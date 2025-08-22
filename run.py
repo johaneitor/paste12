@@ -7,9 +7,9 @@ from backend import db
 def _db_uri() -> str:
     uri = os.getenv("DATABASE_URL")
     if uri:
-        # postgres -> postgresql+psycopg
+        # postgres -> postgresql+psycopg (SQLAlchemy 2.x + Psycopg 3)
         uri = re.sub(r'^postgres://', 'postgresql+psycopg://', uri)
-        # postgresql:// -> postgresql+psycopg:// si no trae driver
+        # postgresql:// -> postgresql+psycopg:// si falta el driver
         if uri.startswith('postgresql://') and '+psycopg://' not in uri:
             uri = uri.replace('postgresql://', 'postgresql+psycopg://', 1)
         return uri
@@ -31,7 +31,6 @@ from backend.routes import api as api_blueprint  # noqa: E402
 app.register_blueprint(api_blueprint)
 
 with app.app_context():
-    # create_all para entornos sin migraciones; en Postgres no hace daño si ya existen
     db.create_all()
 
 if __name__ == "__main__":
