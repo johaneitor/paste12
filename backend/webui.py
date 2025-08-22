@@ -1,8 +1,6 @@
 from flask import Blueprint, send_from_directory
-from pathlib import Path
-
-# FRONT_DIR: <repo>/frontend
-FRONT_DIR = (Path(__file__).resolve().parent.parent / "frontend").resolve()
+from pathlib import Path as _Path
+FRONT_DIR = (_Path(__file__).resolve().parent.parent / "frontend").resolve()
 
 webui = Blueprint("webui", __name__)
 

@@ -5,6 +5,17 @@ from backend import create_app
 app = create_app()
 
 
+
+try:
+
+    from backend.webui import webui
+
+    app.register_blueprint(webui)
+
+except Exception:
+
+    pass
+
 # === Static frontend routes (index & JS) — registrado tras crear app ===
 try:
     from flask import send_from_directory
