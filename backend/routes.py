@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 
 from backend import db
-from backend.models import Note, ReportLog, LikeLog, ViewLog, ViewLog
+from backend.models import Note, ReportLog, LikeLog, ViewLog
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
