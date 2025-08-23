@@ -27,9 +27,12 @@ try:
     from backend.routes import api as api_bp
     app.register_blueprint(api_bp)
 except Exception as e:
+    import traceback
+    _err_msg = f"{e.__class__.__name__}: {e}"
+    _err_tb = traceback.format_exc()
     @app.get("/__api_import_error")
     def __api_import_error():
-        return jsonify({"ok": False, "where": "import backend.routes", "error": str(e)}), 500
+        return jsonify({"ok": False, "where": "import backend.routes", "error": _err_msg, "traceback": _err_tb}), 500
 
 # Frontend
 try:
