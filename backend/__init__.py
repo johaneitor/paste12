@@ -86,7 +86,7 @@ def _create_app_orig() -> Flask:
 # Registrar blueprint del frontend
 try:
     from .webui import webui
-    app.register_blueprint(webui)
+# [autofix]     app.register_blueprint(webui)
 except Exception:
     pass
 
@@ -136,19 +136,25 @@ def create_app(*args, **kwargs):
     app = _create_app_orig(*args, **kwargs)
     try:
         from .webui import webui
-        app.register_blueprint(webui)
+    except Exception:
+        pass
+# [autofix]         app.register_blueprint(webui)
     except Exception:
         pass
     # -- register webui blueprint --
     try:
         from .webui import webui
-        app.register_blueprint(webui)
+    except Exception:
+        pass
+# [autofix]         app.register_blueprint(webui)
     except Exception:
         pass
     # -- register webui blueprint (forced) --
     try:
         from .webui import webui
-        app.register_blueprint(webui)
+    except Exception:
+        pass
+# [autofix]         app.register_blueprint(webui)
     except Exception:
         pass
     # return app  # commented by repair
@@ -158,7 +164,8 @@ def create_app(*args, **kwargs):
 try:
     from .webui import webui
     if 'webui' not in app.blueprints:
-        app.register_blueprint(webui)
+        pass
+# [autofix]         app.register_blueprint(webui)
 except Exception:
     pass
 
@@ -201,7 +208,9 @@ def ensure_webui(app):
         # Si no hay ruta '/', registramos el blueprint aquí también.
         if not any(getattr(r, "rule", None) == "/" for r in app.url_map.iter_rules()):
             from .webui import webui
-            app.register_blueprint(webui)
+    except Exception:
+        pass
+# [autofix]             app.register_blueprint(webui)
     except Exception:
         pass
 
@@ -229,7 +238,8 @@ try:
     # Caso app global (gunicorn backend:app)
     if 'app' in globals():
         try:
-            app.register_blueprint(webui)  # type: ignore[name-defined]
+            pass
+# [autofix]             app.register_blueprint(webui)  # type: ignore[name-defined]
         except Exception:
             pass
     # Caso factory (gunicorn backend:create_app())
@@ -238,7 +248,8 @@ try:
             def _inner(*args, **kwargs):
                 app = _orig(*args, **kwargs)
                 try:
-                    app.register_blueprint(webui)
+                    pass
+# [autofix]                     app.register_blueprint(webui)
                 except Exception:
                     pass
                 return app
