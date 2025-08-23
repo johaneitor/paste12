@@ -1,39 +1,55 @@
 from flask import Flask, jsonify
-
 try:
-    # Importa la app global definida en backend/__init__.py
-    from backend import app as app  # type: ignore
+    from backend import app as app  # usa la app global, evita create_app()
 except Exception as e:
-    # Si fallara, levanta una app mínima con diagnóstico
     app = Flask(__name__)
     @app.get("/__backend_import_error")
     def __backend_import_error():
         return {"ok": False, "where": "import backend", "error": str(e)}, 500
 
-# Adjunta frontend (idempotente)
+def _purge_api_rules(app):
+    # elimina TODAS las reglas /api/* (para quitar fallbacks que se registraron antes)
+    rules = list(app.url_map.iter_rules())
+    for r in rules:
+        if str(r.rule).startswith("/api"):
+            try:
+                app.url_map._rules.remove(r)
+            except ValueError:
+                pass
+            lst = app.url_map._rules_by_endpoint.get(r.endpoint)
+            if lst and r in lst:
+                lst.remove(r)
+            if not app.url_map._rules_by_endpoint.get(r.endpoint):
+                app.view_functions.pop(r.endpoint, None)
+
+# Frontend idempotente
 try:
     from backend.webui import ensure_webui  # type: ignore
     ensure_webui(app)
 except Exception:
     pass
 
-# Adjunta SIEMPRE la API real (sin fallback)
+# Purga rutas /api y registra la API REAL
 try:
+    _purge_api_rules(app)
     from backend.routes import api as api_bp  # type: ignore
-    if "api" in app.blueprints:
-        app.blueprints.pop("api", None)
-    app.register_blueprint(api_bp)  # type: ignore[attr-defined]
+    app.register_blueprint(api_bp)  # ahora las reales quedan activas
 except Exception as e:
     @app.get("/__api_import_error")
     def __api_import_error():
         return {"ok": False, "where": "import backend.routes", "error": str(e)}, 500
 
-# Pequeño whoami para verificar en prod
+# Diag rápido
 @app.get("/__whoami")
 def __whoami():
-    rules = sorted([r.rule for r in app.url_map.iter_rules()])
+    rules = sorted(
+        [{"rule": r.rule, "methods": sorted(r.methods), "endpoint": r.endpoint}
+         for r in app.url_map.iter_rules()],
+        key=lambda x: x["rule"]
+    )
     return {
-        "blueprints": list(app.blueprints.keys()),
-        "has_detail_routes": any(r.startswith("/api/notes/<") for r in rules),
-        "routes_sample": rules[:60],
+        "blueprints": sorted(list(app.blueprints.keys())),
+        "has_detail_routes": any(r["rule"].startswith("/api/notes/<") for r in rules),
+        "routes_sample": rules[:120],
+        "wsgi_file": __file__,
     }
