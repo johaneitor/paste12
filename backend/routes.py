@@ -121,7 +121,7 @@ def view_note(note_id: int):
     if already:
         return jsonify({"ok": True, "views": n.views or 0, "already_viewed": True}), 200
     try:
-        db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today))
+        db.session.add(ViewLog(note_id=note_id, fingerprint=fp, view_date=today, day=today))
         n.views = (n.views or 0) + 1
         db.session.commit()
         return jsonify({"ok": True, "views": n.views}), 200
