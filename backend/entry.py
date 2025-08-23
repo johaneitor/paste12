@@ -60,3 +60,12 @@ try:
             pass
 except Exception:
     pass
+
+
+try:
+    from backend.routes import api as api_bp  # type: ignore
+    if 'api' not in app.blueprints:
+        app.register_blueprint(api_bp)        # type: ignore[attr-defined]
+except Exception:
+    # no fallback de API aquí
+    pass
