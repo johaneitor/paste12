@@ -1,71 +1,42 @@
+from flask import Flask
 from pathlib import Path
 
-app = None
+# 1) Construir app (factory si existe; si no, app global)
 try:
     from backend import create_app as _factory  # type: ignore
 except Exception:
     _factory = None
 
 if _factory:
-    try:
-        app = _factory()
-    except Exception:
-        app = None
-
-if app is None:
+    app: Flask = _factory()  # type: ignore[call-arg]
+else:
     from backend import app as _app  # type: ignore
     app = _app
 
+# 2) Adjuntar frontend (idempotente)
 try:
     from backend.webui import ensure_webui  # type: ignore
-    ensure_webui(app)  # type: ignore
-except Exception:
-    try:
-        from flask import send_from_directory
-        PKG_DIR = Path(__file__).resolve().parent
-        candidates = [PKG_DIR/"frontend", PKG_DIR.parent/"frontend", Path.cwd()/"frontend"]
-        FRONT_DIR = next((c for c in candidates if c.exists()), candidates[0])
-
-        @app.get("/")            # type: ignore
-        def _index(): return send_from_directory(FRONT_DIR, "index.html")
-        @app.get("/js/<path:f>") # type: ignore
-        def _js(f): return send_from_directory(FRONT_DIR/"js", f)
-        @app.get("/css/<path:f>")# type: ignore
-        def _css(f): return send_from_directory(FRONT_DIR/"css", f)
-        @app.get("/robots.txt")  # type: ignore
-        def _robots():
-            p = FRONT_DIR/"robots.txt"
-            return (send_from_directory(FRONT_DIR, "robots.txt") if p.exists() else ("", 204))
-        @app.get("/favicon.ico") # type: ignore
-        def _ico():
-            p = FRONT_DIR/"favicon.ico"
-            return (send_from_directory(FRONT_DIR, "favicon.ico") if p.exists() else ("", 204))
-    except Exception:
-        pass
-
-# --- registrar blueprint de debug (no crítico si falla) ---
-try:
-    from backend.debug_runtime import debug as _debug_bp  # type: ignore
-    app.register_blueprint(_debug_bp)  # type: ignore[attr-defined]
+    ensure_webui(app)  # no rompe si ya estaba
 except Exception:
     pass
 
-# --- ensure SQLAlchemy is bound to the effective app ---
-try:
-    from backend import db  # SQLAlchemy() singleton
-    with app.app_context():
-        try:
-            db.init_app(app)  # idempotente si ya estaba configurado
-        except TypeError:
-            pass
-except Exception:
-    pass
-
-
+# 3) Registrar SIEMPRE el blueprint REAL de API (sin fallback)
 try:
     from backend.routes import api as api_bp  # type: ignore
     if 'api' not in app.blueprints:
-        app.register_blueprint(api_bp)        # type: ignore[attr-defined]
-except Exception:
-    # no fallback de API aquí
-    pass
+        app.register_blueprint(api_bp)  # type: ignore[attr-defined]
+except Exception as e:
+    # Si falla el import, exponer diagnóstico explícito
+    @app.get("/__api_import_error")
+    def __api_import_error():
+        return {"ok": False, "where": "entry import backend.routes", "error": str(e)}, 500
+
+# 4) Endpoint de introspección rápida
+@app.get("/__whoami")
+def __whoami():
+    bp = app.blueprints.get('api')
+    return {
+        "blueprints": list(app.blueprints.keys()),
+        "api_bp_import_name": getattr(bp, "import_name", None),
+        "has_notes_detail_routes": any(r.rule.startswith("/api/notes/<") for r in app.url_map.iter_rules()),
+    }
