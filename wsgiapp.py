@@ -2,10 +2,13 @@ import os
 from flask import Flask, jsonify
 
 def _db_uri():
+    # Render: DATABASE_URL o SQLALCHEMY_DATABASE_URI; si nada, sqlite
     uri = os.getenv("DATABASE_URL") or os.getenv("SQLALCHEMY_DATABASE_URI") or "sqlite:///data.db"
-    # Render suele dar postgres://; SQLAlchemy moderno prefiere postgresql+psycopg2://
+    # Normalizar a psycopg v3 (no psycopg2)
     if uri.startswith("postgres://"):
-        uri = uri.replace("postgres://", "postgresql+psycopg2://", 1)
+        uri = uri.replace("postgres://", "postgresql+psycopg://", 1)
+    elif uri.startswith("postgresql://") and "+psycopg" not in uri and "+psycopg2" not in uri:
+        uri = uri.replace("postgresql://", "postgresql+psycopg://", 1)
     return uri
 
 app = Flask(__name__, static_folder=None)
@@ -15,27 +18,27 @@ app.config.update(
     SECRET_KEY=os.getenv("SECRET_KEY", "dev"),
 )
 
-# 1) DB única del paquete backend
-from backend import db  # instancia global única
+# DB única del paquete backend
+from backend import db
 db.init_app(app)
 
-# 2) API real
+# API real
 try:
-    from backend.routes import api as api_bp  # blueprint real
+    from backend.routes import api as api_bp
     app.register_blueprint(api_bp)
 except Exception as e:
     @app.get("/__api_import_error")
     def __api_import_error():
         return jsonify({"ok": False, "where": "import backend.routes", "error": str(e)}), 500
 
-# 3) Frontend
+# Frontend
 try:
     from backend.webui import ensure_webui
     ensure_webui(app)
 except Exception:
     pass
 
-# 4) Health & diag
+# Health & diag
 @app.get("/api/health")
 def _health():
     return jsonify({"ok": True, "note": "wsgiapp"}), 200

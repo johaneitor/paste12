@@ -6,3 +6,5 @@ gunicorn==22.0.0
 psycopg[binary]>=3.2.2,<3.3
 Flask-Limiter==3.6.0
 sentry-sdk==2.14.0
+
+psycopg[binary]>=3.1
