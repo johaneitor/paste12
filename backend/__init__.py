@@ -127,7 +127,7 @@ except Exception:
         db.create_all()
 
     _maybe_schedule_cleanup(app)
-    return app
+    # return app  # commented by repair
 
 
 
@@ -151,9 +151,10 @@ def create_app(*args, **kwargs):
         app.register_blueprint(webui)
     except Exception:
         pass
-    return app
+    # return app  # commented by repair
 
 # === Fallback defensivo: registrar webui si no quedó registrado ===
+    return app
 try:
     from .webui import webui
     if 'webui' not in app.blueprints:
@@ -185,6 +186,7 @@ try:
                     app.register_blueprint(_w)
                 except Exception:
                     pass
+                # return app  # commented by repair
                 return app
 except Exception:
     # No romper el API si falta frontend
@@ -220,4 +222,28 @@ try:
             return {"error":"routes_dump_failed","detail":str(e)}, 500
 except Exception:
     # Si aún no existe 'app' (p.ej. si create_app no fue llamado), lo exponemos abajo.
+    pass
+# === Adjuntar blueprint del frontend (global y factory) ===
+try:
+    from .webui import webui
+    # Caso app global (gunicorn backend:app)
+    if 'app' in globals():
+        try:
+            app.register_blueprint(webui)  # type: ignore[name-defined]
+        except Exception:
+            pass
+    # Caso factory (gunicorn backend:create_app())
+    if 'create_app' in globals() and callable(create_app):
+        def _wrap_create_app(_orig):
+            def _inner(*args, **kwargs):
+                app = _orig(*args, **kwargs)
+                try:
+                    app.register_blueprint(webui)
+                except Exception:
+                    pass
+                return app
+            return _inner
+        if getattr(create_app, '__name__', '') != '_inner':
+            create_app = _wrap_create_app(create_app)  # type: ignore
+except Exception:
     pass
