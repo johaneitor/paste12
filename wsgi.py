@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 try:
-    from backend import app as app  # usa la app global, evita create_app()
+    # Usa la app GLOBAL de backend; evita llamar create_app() para no enganchar wrappers.
+    from backend import app as app  # type: ignore
 except Exception as e:
     app = Flask(__name__)
     @app.get("/__backend_import_error")
@@ -8,7 +9,7 @@ except Exception as e:
         return {"ok": False, "where": "import backend", "error": str(e)}, 500
 
 def _purge_api_rules(app):
-    # elimina TODAS las reglas /api/* (para quitar fallbacks que se registraron antes)
+    # Quita TODAS las reglas /api/* (fallbacks previos)
     rules = list(app.url_map.iter_rules())
     for r in rules:
         if str(r.rule).startswith("/api"):
@@ -29,17 +30,18 @@ try:
 except Exception:
     pass
 
-# Purga rutas /api y registra la API REAL
+# Purga y registra la API REAL
+_routes_mod = None
 try:
     _purge_api_rules(app)
-    from backend.routes import api as api_bp  # type: ignore
-    app.register_blueprint(api_bp)  # ahora las reales quedan activas
+    import backend.routes as _routes_mod  # type: ignore
+    app.register_blueprint(_routes_mod.api)  # type: ignore[attr-defined]
 except Exception as e:
     @app.get("/__api_import_error")
     def __api_import_error():
-        return {"ok": False, "where": "import backend.routes", "error": str(e)}, 500
+        return {"ok": False, "where": "import/register backend.routes", "error": str(e)}, 500
 
-# Diag rápido
+# Diags
 @app.get("/__whoami")
 def __whoami():
     rules = sorted(
@@ -50,6 +52,15 @@ def __whoami():
     return {
         "blueprints": sorted(list(app.blueprints.keys())),
         "has_detail_routes": any(r["rule"].startswith("/api/notes/<") for r in rules),
-        "routes_sample": rules[:120],
+        "sample": rules[:120],
+        "api_module_file": getattr(_routes_mod, "__file__", None),
         "wsgi_file": __file__,
+    }
+
+@app.get("/__api_where")
+def __api_where():
+    rules = sorted([r.rule for r in app.url_map.iter_rules() if str(r.rule).startswith("/api")])
+    return {
+        "api_rules": rules,
+        "api_module_file": getattr(_routes_mod, "__file__", None),
     }
