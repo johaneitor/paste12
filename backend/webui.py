@@ -1,39 +1,45 @@
 from flask import Blueprint, send_from_directory
 from pathlib import Path
 
-PKG_DIR = Path(__file__).resolve().parent  # .../backend
-CANDIDATES = [
-    PKG_DIR / "frontend",          # backend/frontend (usual en Render)
-    PKG_DIR.parent / "frontend",   # <repo>/frontend
-    Path.cwd() / "frontend",       # fallback
-]
-for c in CANDIDATES:
-    if c.exists():
-        FRONT_DIR = c
-        break
-else:
-    FRONT_DIR = CANDIDATES[0]
+def _discover_front_dir():
+    pkg_dir = Path(__file__).resolve().parent
+    candidates = [
+        pkg_dir / 'frontend',
+        pkg_dir.parent / 'frontend',
+        Path.cwd() / 'frontend',
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[0]
+FRONT_DIR = _discover_front_dir()
+webui = Blueprint('webui', __name__)
 
-webui = Blueprint("webui", __name__)
-
-@webui.get("/")
+@webui.get('/')
 def index():
-    return send_from_directory(FRONT_DIR, "index.html")
+    return send_from_directory(FRONT_DIR, 'index.html')
 
-@webui.get("/js/<path:fname>")
+@webui.get('/js/<path:fname>')
 def js(fname: str):
-    return send_from_directory(FRONT_DIR / "js", fname)
+    return send_from_directory(FRONT_DIR / 'js', fname)
 
-@webui.get("/css/<path:fname>")
+@webui.get('/css/<path:fname>')
 def css(fname: str):
-    return send_from_directory(FRONT_DIR / "css", fname)
+    return send_from_directory(FRONT_DIR / 'css', fname)
 
-@webui.get("/robots.txt")
+@webui.get('/robots.txt')
 def robots():
-    p = FRONT_DIR / "robots.txt"
-    return (send_from_directory(FRONT_DIR, "robots.txt") if p.exists() else ("", 204))
+    p = FRONT_DIR / 'robots.txt'
+    return (send_from_directory(FRONT_DIR, 'robots.txt') if p.exists() else ('', 204))
 
-@webui.get("/favicon.ico")
+@webui.get('/favicon.ico')
 def favicon():
-    p = FRONT_DIR / "favicon.ico"
-    return (send_from_directory(FRONT_DIR, "favicon.ico") if p.exists() else ("", 204))
+    p = FRONT_DIR / 'favicon.ico'
+    return (send_from_directory(FRONT_DIR, 'favicon.ico') if p.exists() else ('', 204))
+
+def ensure_webui(app):
+    try:
+        if 'webui.index' not in app.view_functions:
+            app.register_blueprint(webui)
+    except Exception:
+        pass

@@ -247,3 +247,25 @@ try:
             create_app = _wrap_create_app(create_app)  # type: ignore
 except Exception:
     pass
+
+# === attach webui (idempotente, no-regex) ===
+try:
+    from .webui import ensure_webui  # type: ignore
+    # Wrap factory si existe
+    if 'create_app' in globals() and callable(create_app):
+        _orig_create_app = create_app  # type: ignore
+        def create_app(*args, **kwargs):  # type: ignore[no-redef]
+            app = _orig_create_app(*args, **kwargs)
+            try:
+                ensure_webui(app)
+            except Exception:
+                pass
+            return app
+    # Adjuntar a app global si existe
+    if 'app' in globals():
+        try:
+            ensure_webui(app)  # type: ignore
+        except Exception:
+            pass
+except Exception:
+    pass
