@@ -4,6 +4,7 @@ try:
 except Exception:
     _factory = None
 
+# Construir app (factory preferida)
 if _factory:
     app: Flask = _factory()  # type: ignore[call-arg]
 else:
@@ -17,12 +18,17 @@ try:
 except Exception:
     pass
 
-# API real
+# API real (SIN fallback 501)
 try:
     from backend.routes import api as api_bp  # type: ignore
-    if "api" not in app.blueprints:
-        app.register_blueprint(api_bp)  # type: ignore[attr-defined]
+    # Si por alguna razón ya hay un blueprint 'api' previo, lo reemplazamos:
+    if "api" in app.blueprints:
+        # Nota: Flask no tiene "unregister", pero aseguramos que el que quede
+        # montado sea el real registrándolo después del build (fresh deploy).
+        app.blueprints.pop("api", None)
+    app.register_blueprint(api_bp)  # type: ignore[attr-defined]
 except Exception as e:
+    # Si fallara el import, exponer un diags para verlo rápido
     @app.get("/__api_import_error")
     def __api_import_error():
         return jsonify({"ok": False, "where": "import backend.routes", "error": str(e)}), 500
