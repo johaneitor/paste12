@@ -224,7 +224,7 @@ def api_routes_dump():
 # --- runtime diag ---
 try:
     from flask import current_app, jsonify
-    @api.route("/api/runtime", methods=["GET"])  # type: ignore
+    @api.route("/runtime", methods=["GET"])  # type: ignore
     def runtime():
         import sys
         try:
@@ -245,3 +245,24 @@ try:
         })
 except Exception:
     pass
+
+from pathlib import Path
+from flask import request, jsonify
+
+@api.route("/fs", methods=["GET"])  # /api/fs?path=backend/frontend
+def api_fs():
+    q = request.args.get("path", ".")
+    p = Path(q)
+    info = {
+        "path": str(p.resolve()),
+        "exists": p.exists(),
+        "is_dir": p.is_dir(),
+        "list": None,
+    }
+    if p.exists() and p.is_dir():
+        try:
+            info["list"] = sorted([x for x in p.iterdir() if x.name[:1] != "." and x.is_file() or x.is_dir()])[:200]
+            info["list"] = [str(x.name) for x in info["list"]]
+        except Exception as e:
+            info["list_error"] = str(e)
+    return jsonify(info), 200
