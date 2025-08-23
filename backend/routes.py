@@ -207,3 +207,16 @@ def list_notes():
     except Exception as e:
         from flask import jsonify
         return jsonify({"error": "list_failed", "detail": str(e)}), 500
+
+
+@api.route("/_routes", methods=["GET"])
+def api_routes_dump():
+    from flask import current_app, jsonify
+    info = []
+    for r in current_app.url_map.iter_rules():
+        info.append({
+            "rule": str(r),
+            "methods": sorted(m for m in r.methods if m not in ("HEAD","OPTIONS")),
+            "endpoint": r.endpoint,
+        })
+    return jsonify({"routes": sorted(info, key=lambda x: x["rule"])}), 200
