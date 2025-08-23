@@ -42,3 +42,10 @@ except Exception:
             return (send_from_directory(FRONT_DIR, "favicon.ico") if p.exists() else ("", 204))
     except Exception:
         pass
+
+# --- registrar blueprint de debug (no crítico si falla) ---
+try:
+    from backend.debug_runtime import debug as _debug_bp  # type: ignore
+    app.register_blueprint(_debug_bp)  # type: ignore[attr-defined]
+except Exception:
+    pass
