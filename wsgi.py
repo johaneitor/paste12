@@ -147,3 +147,32 @@ except Exception as _e_import:
     except Exception as _e_fb:
         print("[wsgi] fallback api failed:", _e_fb)
 
+
+# --- DB bind (init_app + create_all) ---
+# Intentar enlazar el SQLAlchemy 'db' al 'app' actual
+_db = None
+try:
+    from backend import db as _db  # tipo: SQLAlchemy
+except Exception:
+    try:
+        from backend.db import db as _db
+    except Exception:
+        _db = None
+
+if _db is not None:
+    try:
+        # Inicializa el objeto db con la app actual (idempotente)
+        _db.init_app(app)
+        # Crea tablas si faltan (asegura modelos importados)
+        with app.app_context():
+            try:
+                import backend.models  # asegura el mapeo de tablas
+            except Exception:
+                pass
+            try:
+                _db.create_all()
+            except Exception as _e:
+                print("[wsgi] create_all skipped:", _e)
+    except Exception as _e:
+        print("[wsgi] db.init_app failed:", _e)
+
