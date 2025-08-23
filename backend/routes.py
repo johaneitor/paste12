@@ -300,7 +300,7 @@ except Exception:
 from flask import current_app, jsonify
 import sqlalchemy as sa
 
-@api.route("/api/dbdiag", methods=["GET"])  # type: ignore
+@api.route("/dbdiag"), methods=["GET"])  # type: ignore
 def dbdiag():
     out = {}
     try:

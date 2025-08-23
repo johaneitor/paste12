@@ -49,3 +49,14 @@ try:
     app.register_blueprint(_debug_bp)  # type: ignore[attr-defined]
 except Exception:
     pass
+
+# --- ensure SQLAlchemy is bound to the effective app ---
+try:
+    from backend import db  # SQLAlchemy() singleton
+    with app.app_context():
+        try:
+            db.init_app(app)  # idempotente si ya estaba configurado
+        except TypeError:
+            pass
+except Exception:
+    pass
