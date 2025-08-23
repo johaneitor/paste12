@@ -1,19 +1,14 @@
 from flask import Blueprint, send_from_directory
 from pathlib import Path
 
-# Detecta carpeta frontend en varios layouts (repo root o dentro de backend/)
 PKG = Path(__file__).resolve().parent
-CANDIDATES = [
-    PKG / "frontend",
-    PKG.parent / "frontend",
-    Path.cwd() / "frontend",
-]
-for _c in CANDIDATES:
-    if _c.exists():
-        FRONT_DIR = _c
+CANDS = [PKG/'frontend', PKG.parent/'frontend', Path.cwd()/'frontend']
+for c in CANDS:
+    if c.exists():
+        FRONT_DIR = c
         break
 else:
-    FRONT_DIR = CANDIDATES[0]
+    FRONT_DIR = CANDS[0]
 
 webui = Blueprint("webui", __name__)
 
@@ -39,11 +34,3 @@ def favicon():
     if p.exists():
         return send_from_directory(FRONT_DIR, "favicon.ico")
     return ("", 204)
-
-@webui.route("/privacy.html", methods=["GET"])
-def privacy():
-    return send_from_directory(FRONT_DIR, "privacy.html")
-
-@webui.route("/terms.html", methods=["GET"])
-def terms():
-    return send_from_directory(FRONT_DIR, "terms.html")

@@ -145,6 +145,12 @@ def create_app(*args, **kwargs):
         app.register_blueprint(webui)
     except Exception:
         pass
+    # -- register webui blueprint (forced) --
+    try:
+        from .webui import webui
+        app.register_blueprint(webui)
+    except Exception:
+        pass
     return app
 
 # === Fallback defensivo: registrar webui si no quedó registrado ===
@@ -186,3 +192,32 @@ except Exception:
 
 # Export WSGI app for gunicorn (backend:app)
 app = create_app()
+
+
+def ensure_webui(app):
+    try:
+        # Si no hay ruta '/', registramos el blueprint aquí también.
+        if not any(getattr(r, "rule", None) == "/" for r in app.url_map.iter_rules()):
+            from .webui import webui
+            app.register_blueprint(webui)
+    except Exception:
+        pass
+
+# Endpoint de diagnóstico: lista reglas (para verificar en Render)
+try:
+    @app.route("/api/_routes", methods=["GET"])
+    def _routes_dump():
+        try:
+            rules = []
+            for r in app.url_map.iter_rules():
+                rules.append({
+                    "rule": r.rule,
+                    "methods": sorted(m for m in (r.methods or []) if m not in ("HEAD","OPTIONS")),
+                    "endpoint": r.endpoint,
+                })
+            return {"routes": sorted(rules, key=lambda x: x["rule"])}, 200
+        except Exception as e:
+            return {"error":"routes_dump_failed","detail":str(e)}, 500
+except Exception:
+    # Si aún no existe 'app' (p.ej. si create_app no fue llamado), lo exponemos abajo.
+    pass
