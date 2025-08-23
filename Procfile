@@ -1,1 +1,1 @@
-web: gunicorn -w 4 -k gthread -b 0.0.0.0:$PORT backend.entry:app
+web: gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT wsgi:app
