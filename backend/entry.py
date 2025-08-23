@@ -1,7 +1,5 @@
-# backend.entry: app
 from pathlib import Path
 
-# Preferimos factory si existe; si no, app global
 app = None
 try:
     from backend import create_app as _factory  # type: ignore
@@ -18,7 +16,6 @@ if app is None:
     from backend import app as _app  # type: ignore
     app = _app
 
-# Adjuntar frontend (blueprint) si existe; sino fallback estático
 try:
     from backend.webui import ensure_webui  # type: ignore
     ensure_webui(app)  # type: ignore

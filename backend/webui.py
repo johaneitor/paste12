@@ -30,7 +30,6 @@ def favicon():
     return (send_from_directory(FRONT_DIR,"favicon.ico") if p.exists() else ("",204))
 
 def ensure_webui(app):
-    """Idempotente: registra el blueprint si no está."""
     try:
         if "webui.index" not in app.view_functions:
             app.register_blueprint(webui)

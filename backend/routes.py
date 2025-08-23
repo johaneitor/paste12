@@ -220,3 +220,28 @@ def api_routes_dump():
             "endpoint": r.endpoint,
         })
     return jsonify({"routes": sorted(info, key=lambda x: x["rule"])}), 200
+
+# --- runtime diag ---
+try:
+    from flask import current_app, jsonify
+    @api.route("/api/runtime", methods=["GET"])  # type: ignore
+    def runtime():
+        import sys
+        try:
+            from backend.webui import FRONT_DIR as _FD  # type: ignore
+            front_dir = str(_FD); front_dir_exists = _FD.exists()
+        except Exception:
+            front_dir, front_dir_exists = None, False
+        rules = sorted(
+            [{"rule": r.rule, "methods": sorted(r.methods)} for r in current_app.url_map.iter_rules()],
+            key=lambda x: x["rule"]
+        )
+        return jsonify({
+            "uses_backend_entry": "backend.entry" in sys.modules,
+            "has_root_route": any(r["rule"]=="/" for r in rules),
+            "front_dir": front_dir,
+            "front_dir_exists": front_dir_exists,
+            "rules_sample": rules[:50],
+        })
+except Exception:
+    pass
