@@ -1,25 +1,12 @@
 services:
-- type: web
-  name: paste12
-  env: python
-  plan: starter
-  buildCommand: pip install -r requirements.txt
-  startCommand: gunicorn "backend:create_app()" -w 4 -k gthread --threads 8 -b 0.0.0.0:$PORT
-  autoDeploy: true
-  envVars:
-  - key: FLASK_ENV
-    value: production
-  - key: SECRET_KEY
-    generateValue: true
-  - key: DISABLE_SCHEDULER
-    value: "0"
-  - key: RATELIMIT_STORAGE_URL
-    value: "memory://"
-  - fromDatabase:
-      name: paste12-db
-      property: connectionString
-    key: DATABASE_URL
-
-databases:
-- name: paste12-db
-  plan: basic-1gb
+  - type: web
+    name: paste12
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 4 -k gthread -b 0.0.0.0:$PORT wsgi:app
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
