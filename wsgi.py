@@ -40,3 +40,11 @@ try:
 except Exception:
     # No romper si no está el webui
     pass
+
+# --- Force-load API routes so endpoints exist in production ---
+try:
+    import backend.routes  # noqa: F401
+except Exception:
+    # Do not crash the app if routes import fails; API health must remain up
+    pass
+
