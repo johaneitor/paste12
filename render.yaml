@@ -4,6 +4,9 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT wsgi:app
+    startCommand: gunicorn -w 4 -k gthread -b 0.0.0.0:$PORT wsgi:app
     healthCheckPath: /api/health
     autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

@@ -1,1 +1,1 @@
-from backend.entry import app
+from backend.entry import app  # reexporta la app real
