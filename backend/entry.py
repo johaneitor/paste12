@@ -18,6 +18,13 @@ if app is None:
     from backend import app as _app  # type: ignore
     app = _app
 
+# Registrar endpoint de depuracion de rutas
+try:
+    from backend.debug_routes import debug_api
+    app.register_blueprint(debug_api)
+except Exception:
+    pass
+
 # Intentar registrar el blueprint webui
 try:
     from backend.webui import webui  # type: ignore
