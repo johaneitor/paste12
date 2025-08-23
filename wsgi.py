@@ -1,7 +1,7 @@
 from typing import Optional
 from flask import Flask, jsonify
 
-# 1) Construir la app: preferir factory si existe
+# 1) Construir la app (preferir factory si existe)
 _app: Optional[Flask] = None
 try:
     from backend import create_app as _factory  # type: ignore
@@ -22,18 +22,18 @@ try:
 except Exception:
     pass
 
-# 3) Registrar SIEMPRE la API real
+# 3) Registrar SIEMPRE la API real (sin fallback 501)
 try:
     from backend.routes import api as api_bp  # type: ignore
     if "api" in app.blueprints:
         app.blueprints.pop("api", None)
     app.register_blueprint(api_bp)  # type: ignore[attr-defined]
 except Exception as e:
-    @app.get("/__api_import_error")
+    @app.get("/__api_import_error")  # si falla el import, exponemos el motivo
     def __api_import_error():
         return jsonify({"ok": False, "where": "import backend.routes", "error": str(e)}), 500
 
-# 4) Pequeño endpoint de diagnóstico
+# 4) Diag de arranque
 @app.get("/__whoami")
 def __whoami():
     rules = sorted([r.rule for r in app.url_map.iter_rules()])
