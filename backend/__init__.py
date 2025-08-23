@@ -160,6 +160,12 @@ def create_app(*args, **kwargs):
     # return app  # commented by repair
 
 # === Fallback defensivo: registrar webui si no quedó registrado ===
+    # -- bind SQLAlchemy --
+    try:
+        from . import db  # type: ignore
+        db.init_app(app)
+    except Exception:
+        pass
     return app
 try:
     from .webui import webui
