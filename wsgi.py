@@ -48,3 +48,13 @@ except Exception:
     # Do not crash the app if routes import fails; API health must remain up
     pass
 
+# --- Ensure API blueprint is attached in prod ---
+try:
+    from backend.routes import api as _api_bp  # type: ignore
+    if hasattr(app, "register_blueprint"):
+        if "api" not in getattr(app, "blueprints", {}):
+            app.register_blueprint(_api_bp)  # type: ignore[attr-defined]
+except Exception as _e:
+    # Log suave (stdout) para ver el motivo en Render si falla
+    print("[wsgi] failed to attach backend.routes.api:", _e)
+
