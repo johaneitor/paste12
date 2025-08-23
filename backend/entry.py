@@ -11,24 +11,22 @@ else:
     from backend import app as _app  # type: ignore
     app = _app
 
-# Frontend
+# Frontend (idempotente)
 try:
     from backend.webui import ensure_webui  # type: ignore
     ensure_webui(app)
 except Exception:
     pass
 
-# API real (SIN fallback 501)
+# API real: registrar SIEMPRE el blueprint de backend.routes
 try:
     from backend.routes import api as api_bp  # type: ignore
-    # Si por alguna razón ya hay un blueprint 'api' previo, lo reemplazamos:
+    # Evitar sombras: si había un blueprint 'api' residual, limpiamos su referencia
     if "api" in app.blueprints:
-        # Nota: Flask no tiene "unregister", pero aseguramos que el que quede
-        # montado sea el real registrándolo después del build (fresh deploy).
         app.blueprints.pop("api", None)
     app.register_blueprint(api_bp)  # type: ignore[attr-defined]
 except Exception as e:
-    # Si fallara el import, exponer un diags para verlo rápido
+    # Si fallara el import, exponer el motivo
     @app.get("/__api_import_error")
     def __api_import_error():
         return jsonify({"ok": False, "where": "import backend.routes", "error": str(e)}), 500
