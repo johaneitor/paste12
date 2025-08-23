@@ -1,11 +1,45 @@
-<!doctype html><html><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>paste12</title>
-<link rel="stylesheet" href="/css/styles.css">
-</head><body>
-<main class="wrap">
-  <h1>paste12</h1>
-  <p>Frontend OK ✅ — API <code>/api/health</code> debería dar 200.</p>
-  <script src="/js/app.js"></script>
-</main>
-</body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>paste12</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>paste12</h1>
+    <p class="subtitle">Notas efímeras con likes, vistas y reports.</p>
+  </header>
+
+  <main>
+    <section class="composer card">
+      <h2>Nueva nota</h2>
+      <form id="note-form">
+        <textarea id="note-text" placeholder="Escribí tu nota…" required></textarea>
+        <div class="row">
+          <label>Expira en (horas): <input id="note-hours" type="number" value="24" min="1" max="168" /></label>
+          <button type="submit">Publicar</button>
+        </div>
+      </form>
+      <div id="form-msg" class="msg"></div>
+    </section>
+
+    <section class="feed card">
+      <h2>Últimas notas</h2>
+      <div id="feed"></div>
+      <div class="row">
+        <button id="load-more" hidden>Cargar más</button>
+      </div>
+      <div id="feed-msg" class="msg"></div>
+    </section>
+  </main>
+
+  <footer>
+    <a href="/terms.html">Términos</a> · <a href="/privacy.html">Privacidad</a>
+  </footer>
+
+  <script src="/js/app.js" defer></script>
+  <noscript>Necesitás habilitar JavaScript.</noscript>
+</body>
+</html>

@@ -1,4 +1,19 @@
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;margin:0;padding:2rem;background:#0b1020;color:#e6ecff}
-.wrap{max-width:720px;margin:0 auto}
-h1{margin:0 0 1rem 0}
-code{background:#111834;padding:.1rem .3rem;border-radius:.3rem}
+:root { --bg:#0b0f14; --fg:#e7edf3; --muted:#9fb3c8; --card:#121822; --accent:#4da3ff; }
+*{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,Roboto,Segoe UI; }
+header,footer{max-width:920px;margin:18px auto;padding:0 14px}
+h1{margin:.2rem 0 0; font-weight:700}
+.subtitle{color:var(--muted); margin:.25rem 0 0}
+main{max-width:920px;margin:12px auto;padding:0 14px; display:grid; gap:12px}
+.card{background:var(--card); border:1px solid #1e2633; border-radius:12px; padding:14px; box-shadow:0 1px 12px rgba(0,0,0,.2)}
+.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+textarea{width:100%; min-height:110px; padding:10px; border-radius:10px; border:1px solid #2a3648; background:#0f141c; color:var(--fg)}
+input[type=number]{width:100px; padding:6px 8px; border-radius:8px; border:1px solid #2a3648; background:#0f141c; color:var(--fg)}
+button{padding:8px 14px; border-radius:10px; border:1px solid #2a3648; background:#152033; color:var(--fg); cursor:pointer}
+button:hover{border-color:var(--accent)}
+.msg{margin-top:8px; color:var(--muted)}
+.note{border-top:1px solid #222c3b; padding:10px 0}
+.note:first-child{border-top:none}
+.note .text{white-space:pre-wrap; margin-bottom:6px}
+.note .meta{color:#9bb2c7; font-size:.9rem; display:flex; gap:10px; flex-wrap:wrap}
+footer a{color:var(--muted); text-decoration:none}
+footer a:hover{color:var(--fg); text-decoration:underline}
