@@ -1,5 +1,6 @@
 from __future__ import annotations
 from flask import Blueprint, request, jsonify, send_from_directory
+api = Blueprint("api", __name__)
 import datetime as _dt
 import sqlalchemy as sa
 from hashlib import sha256
@@ -9,9 +10,6 @@ from pathlib import Path
 
 from backend import db, limiter
 from backend.models import Note, ReportLog, LikeLog, ViewLog
-
-api = Blueprint("api", __name__, url_prefix="/api")
-
 def _fingerprint_from_request(req):
     uid = req.cookies.get('uid')
     if uid and len(uid) >= 8:
@@ -36,7 +34,6 @@ def _to_dict(n: Note):
 @api.route("/health", methods=["GET"])
 def health():
     return jsonify({"ok": True}), 200
-
 
 @api.route("/notes", methods=["POST"])
 def create_note():
@@ -154,7 +151,6 @@ def report_note(note_id: int):
         db.session.rollback()
         return jsonify({"error": "report_failed", "detail": str(e)}), 500
 
-
 @api.route("/admin/cleanup", methods=["POST","GET"])
 def admin_cleanup():
     token = os.getenv("ADMIN_TOKEN","")
@@ -162,7 +158,7 @@ def admin_cleanup():
     if not token or provided != token:
         return jsonify({"error":"forbidden"}), 403
     try:
-        from flask import current_app
+from flask import current_app
         from backend.__init__ import _cleanup_once
         _cleanup_once(current_app)
         return jsonify({"ok": True}), 200
@@ -214,7 +210,8 @@ def list_notes():
             "next_before_id": next_before_id,
         })
     return jsonify(items)
-        def _to(n):
+
+n):
             return {
                 "id": n.id,
                 "text": getattr(n, "text", None),
@@ -224,16 +221,14 @@ def list_notes():
                 "views": getattr(n, "views", 0) or 0,
                 "reports": getattr(n, "reports", 0) or 0,
             }
-
-        from flask import jsonify
+from flask import jsonify
         resp = jsonify([_to(n) for n in page])
         if len(items) > limit and page:
             resp.headers["X-Next-After"] = str(page[-1].id)
         return resp, 200
     except Exception as e:
-        from flask import jsonify
+from flask import jsonify
         return jsonify({"error": "list_failed", "detail": str(e)}), 500
-
 
 @api.route("/_routes", methods=["GET"])
 def api_routes_dump():
@@ -295,7 +290,7 @@ def api_fs():
 
 # --- UI debug mount under /api/ui/* (no depende del blueprint webui) ---
 try:
-    from flask import send_from_directory
+from flask import send_from_directory
     from backend.webui import FRONT_DIR as _FD  # dónde están los archivos del frontend
 
     @api.route("/ui", methods=["GET"])               # -> /api/ui
@@ -355,7 +350,6 @@ def dbdiag():
         out["has_db"] = False
         out["err"] = str(e)
     return jsonify(out), 200
-
 
 # Limpieza oportunista simple, rate-limited en 60s
 _last_cleanup_ts = 0
