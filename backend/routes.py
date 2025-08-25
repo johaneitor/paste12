@@ -1,30 +1,26 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import os
-from datetime import datetime, timedelta
-
-from flask import Blueprint, jsonify, request, current_app
-
+from flask import Blueprint, request, jsonify, current_app
+from datetime import datetime, timedelta, date
+from hashlib import sha256
+from pathlib import Path
 import sqlalchemy as sa
+import os
 
-# DB y modelos
-try:
-    from backend import db
-    from backend.models import Note, LikeLog, ReportLog, ViewLog
-except Exception as e:
-    # Permite que __api_import_error muestre el traceback
-    raise
+# Backend: DB y modelos
+from backend import db, limiter
+from backend.models import Note, LikeLog, ReportLog, ViewLog
 
+# Este blueprint se registra en create_app() con url_prefix='/api'
 api = Blueprint("api", __name__)
 
-# ---------------- Utils ----------------
-
+# ---------------- Utilidades ----------------
 def _fingerprint_from_request(req) -> str:
-    # Huella simple y estable por IP + UA (suficiente para rateos básicos)
     ip = (req.headers.get("X-Forwarded-For") or req.remote_addr or "").split(",")[0].strip()
     ua = req.headers.get("User-Agent", "")
-    return f"{ip}|{ua}"[:255]
+    base = f"{ip}|{ua}"
+    return sha256(base.encode("utf-8")).hexdigest()
 
 def _to_dict(n: Note) -> dict:
     return {
@@ -37,7 +33,7 @@ def _to_dict(n: Note) -> dict:
         "reports": getattr(n, "reports", 0) or 0,
     }
 
-def pick(*vals):
+def _pick(*vals):
     for v in vals:
         if v is None:
             continue
@@ -47,9 +43,8 @@ def pick(*vals):
     return ""
 
 # ---------------- Health & rutas de introspección ----------------
-
 @api.route("/health", methods=["GET"])
-def _health():
+def health():
     return jsonify({"ok": True}), 200
 
 @api.route("/_routes", methods=["GET"])
@@ -65,19 +60,17 @@ def api_routes_dump():
     return jsonify({"routes": info}), 200
 
 # ---------------- CRUD de notas ----------------
-
+@limiter.limit("60/minute")
 @api.route("/notes", methods=["POST"])
 def create_note():
-    raw_json = request.get_json(silent=True)
-    data = raw_json if isinstance(raw_json, dict) else {}
-
-    text = pick(
-        (data.get("text") if isinstance(data, dict) else None),
+    raw = request.get_json(silent=True)
+    data = raw if isinstance(raw, dict) else {}
+    text = _pick(
+        data.get("text") if isinstance(data, dict) else None,
         request.form.get("text"),
         request.values.get("text"),
     ).strip()
-
-    hours_raw = pick(
+    hours_raw = _pick(
         (data.get("hours") if isinstance(data, dict) else None),
         request.form.get("hours"),
         request.values.get("hours"),
@@ -87,10 +80,8 @@ def create_note():
         hours = int(hours_raw)
     except Exception:
         hours = 24
-
     if not text:
         return jsonify({"error": "text_required"}), 400
-
     hours = max(1, min(hours, 720))
     now = datetime.utcnow()
     try:
@@ -114,6 +105,7 @@ def get_note(note_id: int):
         return jsonify({"error": "not_found"}), 404
     return jsonify(_to_dict(n)), 200
 
+@limiter.limit("60/minute")
 @api.route("/notes/<int:note_id>/like", methods=["POST"])
 def like_note(note_id: int):
     n = db.session.get(Note, note_id)
@@ -132,6 +124,7 @@ def like_note(note_id: int):
         db.session.rollback()
         return jsonify({"error": "like_failed", "detail": str(e)}), 500
 
+@limiter.limit("60/minute")
 @api.route("/notes/<int:note_id>/view", methods=["POST"])
 def view_note(note_id: int):
     n = db.session.get(Note, note_id)
@@ -139,9 +132,7 @@ def view_note(note_id: int):
         return jsonify({"error": "not_found"}), 404
     fp = _fingerprint_from_request(request)
     today = datetime.utcnow().date()
-    already = db.session.query(ViewLog.id).filter_by(
-        note_id=note_id, fingerprint=fp, view_date=today
-    ).first()
+    already = db.session.query(ViewLog.id).filter_by(note_id=note_id, fingerprint=fp, view_date=today).first()
     if already:
         return jsonify({"ok": True, "views": n.views or 0, "already_viewed": True}), 200
     try:
@@ -154,6 +145,7 @@ def view_note(note_id: int):
         db.session.rollback()
         return jsonify({"error": "view_failed", "detail": str(e)}), 500
 
+@limiter.limit("30/minute")
 @api.route("/notes/<int:note_id>/report", methods=["POST"])
 def report_note(note_id: int):
     n = db.session.get(Note, note_id)
@@ -166,7 +158,6 @@ def report_note(note_id: int):
     try:
         db.session.add(ReportLog(note_id=note_id, fingerprint=fp))
         n.reports = (n.reports or 0) + 1
-        # opcional: umbral de borrado por reportes
         if (n.reports or 0) >= 5:
             db.session.delete(n)
             db.session.commit()
@@ -205,8 +196,8 @@ def list_notes():
         q = q.filter(Note.expires_at > sa.func.now())
     if before_id:
         q = q.filter(Note.id < before_id)
-
     q = q.order_by(Note.id.desc()).limit(limit)
+
     rows = q.all()
     items = [_to_dict(n) for n in rows]
 
@@ -222,8 +213,7 @@ def list_notes():
 
     return jsonify(items), 200
 
-# ---------------- Admin / diag opcional ----------------
-
+# ---------------- Diag DB opcional ----------------
 @api.route("/dbdiag", methods=["GET"])
 def dbdiag():
     out = {}
