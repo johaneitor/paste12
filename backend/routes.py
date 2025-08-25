@@ -45,8 +45,8 @@ def create_note():
 
 def pick(*vals):
         for v in vals:
-            if v is not None and str(v).strip() != "":
-                return str(v)
+    if v is not None and str(v).strip() != "":
+    return str(v)
         return ""
 
     text = pick(
@@ -73,7 +73,7 @@ def pick(*vals):
     now = datetime.utcnow()
     try:
         n = Note(
-            text=text,
+    text=text,
             timestamp=now,
             expires_at=now + timedelta(hours=hours),
             author_fp=_fingerprint_from_request(request),
@@ -147,7 +147,7 @@ def report_note(note_id: int):
         if n.reports >= 5:
             db.session.delete(n)
             db.session.commit()
-            return jsonify({"ok": True, "deleted": True, "reports": 5}), 200
+    return jsonify({"ok": True, "deleted": True, "reports": 5}), 200
         db.session.commit()
         return jsonify({"ok": True, "reports": n.reports}), 200
     except Exception as e:
@@ -215,7 +215,7 @@ from backend.models import Note
         })
     return jsonify(items)
 def _to(n):
-            return {
+    return {
                 "id": n.id,
                 "text": getattr(n, "text", None),
                 "timestamp": n.timestamp.isoformat() if getattr(n, "timestamp", None) else None,
@@ -343,7 +343,7 @@ from backend import db  # type: ignore
 
         # ¿puedo ejecutar SELECT 1?
         try:
-            with current_app.app_context():
+    with current_app.app_context():
                 conn = db.engine.connect()
                 conn.execute(sa.text("SELECT 1"))
                 conn.close()
@@ -373,7 +373,7 @@ def _maybe_cleanup_expired(db, Note, LikeLog=None, ReportLog=None, ViewLog=None,
         ids=[i for i in ids if i is not None]
         if not ids: return 0
         for Log in (LikeLog, ReportLog, ViewLog):
-            if Log is None: continue
+    if Log is None: continue
             db.session.query(Log).filter(Log.note_id.in_(ids)).delete(synchronize_session=False)
         db.session.query(Note).filter(Note.id.in_(ids)).delete(synchronize_session=False)
         db.session.commit()
