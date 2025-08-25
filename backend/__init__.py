@@ -121,7 +121,7 @@ except Exception:
             return resp
 
     from .routes import api as api_blueprint
-    app.register_blueprint(api_blueprint)
+
 
     with app.app_context():
         db.create_all()
@@ -138,7 +138,7 @@ def create_app(*args, **kwargs):
     app = _create_app_orig(*args, **kwargs)
     try:
         from backend.routes import api as api_bp
-        app.register_blueprint(api_bp, url_prefix='/api')
+
     except Exception as e:
         try:
             app.logger.exception("Failed registering API blueprint: %s", e)
@@ -210,7 +210,7 @@ def create_app(*a, **kw):
                 app = _orig_create_app(*a, **kw)
                 try:
                     from .webui import webui as _w
-                    app.register_blueprint(_w)
+
                 except Exception:
                     pass
                 # return app  # commented by repair
@@ -302,3 +302,30 @@ def create_app(*args, **kwargs):  # type: ignore[no-redef]
             pass
 except Exception:
     pass
+
+# === CANONICAL_CREATE_APP_WRAPPER ===
+try:
+    _orig_create_app
+except NameError:
+    _orig_create_app = create_app
+
+def create_app(*args, **kwargs):
+    app = _orig_create_app(*args, **kwargs)
+    # Registrar API
+    try:
+        from backend.routes import api as api_bp
+        # el blueprint en routes NO tiene prefix; lo ponemos aquí
+        app.register_blueprint(api_bp, url_prefix='/api')
+    except Exception as e:
+        try:
+            app.logger.exception("Failed registering API blueprint: %s", e)
+        except Exception:
+            pass
+    # Registrar webui (no crítico)
+    try:
+        from .webui import webui
+        app.register_blueprint(webui)
+    except Exception:
+        pass
+    return app
+
