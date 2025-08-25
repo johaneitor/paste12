@@ -49,7 +49,7 @@ def pick(*vals):
     return str(v)
         return ""
 
-    text = pick(
+text = pick(
         data.get("text") if isinstance(data, dict) else None,
         request.form.get("text"),
         request.values.get("text"),
