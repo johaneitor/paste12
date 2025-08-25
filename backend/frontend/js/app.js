@@ -82,6 +82,13 @@
     }
   }
 
+  function deriveId(noteEl){
+    const ds = noteEl?.dataset || {};
+    if (ds.noteId) return parseInt(ds.noteId,10);
+    if (noteEl?.id){ const m = noteEl.id.match(/(\d+)/); if (m) return parseInt(m[1],10); }
+    return null;
+  }
+
   function render(list) {
     const ul = ensureListContainer();
     ul.innerHTML = '';
@@ -98,7 +105,17 @@
       li.id = 'note-' + n.id;
       li.innerHTML = `
         <div class="note-text">${esc(n.text)}</div>
-        <div class="meta">#${n.id} &nbsp;•&nbsp; ♥ ${n.likes} &nbsp;👁 ${n.views} &nbsp;🚩 ${n.reports}</div>`;
+        <div class="meta">
+          <span class="sep">#${n.id}</span>
+          <button class="like-btn" data-act="like" aria-label="Me gusta">
+            <span class="heart" aria-hidden="true">♥</span>
+            <span class="count">${n.likes}</span>
+          </button>
+          <span class="sep">·</span>
+          <span class="views">👁 <span class="count">${n.views}</span></span>
+          <span class="sep">·</span>
+          <span class="reports">🚩 <span class="count">${n.reports}</span></span>
+        </div>`;
       ul.appendChild(li);
     }
   }
@@ -108,9 +125,39 @@
     render(list);
   }
 
+  // Delegación para clicks de like
+  async function onNotesClick(e){
+    const btn = e.target.closest?.('.like-btn');
+    if (!btn) return;
+    const note = btn.closest('.note');
+    const id = deriveId(note);
+    if (!id) return;
+
+    // estado UI
+    btn.classList.add('liking');
+    try{
+      const r = await fetch(`/api/notes/${id}/like`, { method:'POST' });
+      const j = await r.json().catch(()=>({}));
+      if (!r.ok) throw new Error('like failed');
+      const newCount = (j && typeof j.likes === 'number') ? j.likes :
+                       (parseInt(btn.querySelector('.count')?.textContent || '0',10)+1);
+      const countEl = btn.querySelector('.count');
+      if (countEl) countEl.textContent = String(newCount);
+      btn.classList.add('liked');
+    }catch(err){
+      console.error(err);
+      uiError('No se pudo poner like.');
+    }finally{
+      btn.classList.remove('liking');
+    }
+  }
+
   async function boot() {
     try {
       ensureComposer();
+      const ul = ensureListContainer();
+      // engancho una sola vez
+      if (!ul._p12LikeBound) { ul.addEventListener('click', onNotesClick); ul._p12LikeBound = true; }
       await loadAndRender();
       window.p12Enhance?.();
     } catch (e) {

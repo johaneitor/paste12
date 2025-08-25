@@ -30,3 +30,18 @@
   border-radius: 10px; font-size: 14px; z-index: 9999;
   box-shadow: 0 10px 22px rgba(0,0,0,.25);
 }
+
+/* --- Like button -------------------------------------------------- */
+.note .meta{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+.like-btn{
+  display:inline-flex; align-items:center; gap:.35rem;
+  border:0; background:transparent; color:inherit; cursor:pointer;
+  padding:4px 8px; border-radius:999px; font:inherit;
+}
+.like-btn:hover{ background:rgba(255,255,255,.08); }
+.like-btn:focus{ outline:2px solid rgba(255,255,255,.25); outline-offset:2px; }
+.like-btn.liking{ opacity:.6; pointer-events:none; }
+.like-btn .heart{ font-size:1rem; line-height:1; transform-origin:center; }
+.like-btn.liked{ color:#ff5d8f; }
+.like-btn.liked .heart{ transform:scale(1.1); }
+.meta .sep{ opacity:.5; }
