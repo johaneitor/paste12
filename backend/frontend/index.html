@@ -1,47 +1,26 @@
 <!doctype html>
-<html lang="es">
+<html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>paste12</title>
-  <link rel="stylesheet" href="/css/styles.css" />
-  <link rel="stylesheet" href="/css/actions.css?v=1">
+  <link rel="stylesheet" href="/css/styles.css?v=3" />
+  <link rel="stylesheet" href="/css/actions.css?v=3">
 </head>
 <body>
   <header>
     <h1>paste12</h1>
-    <p class="subtitle">Notas efímeras con likes, vistas y reports.</p>
   </header>
 
   <main>
-    <section class="composer card">
-      <h2>Nueva nota</h2>
-      <form id="note-form">
-        <textarea id="note-text" placeholder="Escribí tu nota…" required></textarea>
-        <div class="row">
-          <label>Expira en (horas): <input id="note-hours" type="number" value="24" min="1" max="168" /></label>
-          <button type="submit">Publicar</button>
-        </div>
-      </form>
-      <div id="form-msg" class="msg"></div>
-    </section>
-
-    <section class="feed card">
+    <section>
       <h2>Últimas notas</h2>
-      <div id="feed"></div>
-      <div class="row">
-        <button id="load-more" hidden>Cargar más</button>
-      </div>
-      <div id="feed-msg" class="msg"></div>
+      <ul id="notes-list"></ul>
     </section>
   </main>
 
-  <footer>
-    <a href="/terms.html">Términos</a> · <a href="/privacy.html">Privacidad</a>
-  </footer>
-
-  <script src="/js/app.js" defer></script>
+  <script src="/js/app.js?v=3" defer></script>
   <noscript>Necesitás habilitar JavaScript.</noscript>
-  <script src="/js/actions.js?v=1" defer></script>
+  <script src="/js/actions.js?v=3"></script>
 </body>
 </html>
