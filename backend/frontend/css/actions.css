@@ -45,3 +45,6 @@
 .like-btn.liked{ color:#ff5d8f; }
 .like-btn.liked .heart{ transform:scale(1.1); }
 .meta .sep{ opacity:.5; }
+/* --- ads --- */
+.ad-wrap { margin: 16px 0; display:block; }
+.ad-wrap .adsbygoogle { display:block; min-height: 60px; }

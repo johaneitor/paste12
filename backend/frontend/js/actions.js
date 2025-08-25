@@ -186,3 +186,11 @@
   window.p12Enhance = ensureMenus;
   window.p12TagByOrder = tagDomByOrder;
 })();
+
+// --- AdSense bootstrap (sin inline) ---
+window.p12AdsInit = function() {
+  try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+};
+window.addEventListener('DOMContentLoaded', function() {
+  if (document.querySelector('ins.adsbygoogle')) { window.p12AdsInit(); }
+});
