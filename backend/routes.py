@@ -15,6 +15,16 @@ from backend.models import Note, LikeLog, ReportLog, ViewLog
 # Este blueprint se registra en create_app() con url_prefix='/api'
 api = Blueprint("api", __name__)
 
+def _pick(*vals):
+    for v in vals:
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s:
+            return s
+    return ""
+
+
 # ---------------- Utilidades ----------------
 def _fingerprint_from_request(req) -> str:
     ip = (req.headers.get("X-Forwarded-For") or req.remote_addr or "").split(",")[0].strip()
@@ -33,14 +43,6 @@ def _to_dict(n: Note) -> dict:
         "reports": getattr(n, "reports", 0) or 0,
     }
 
-def __pick(*vals):
-    for v in vals:
-        if v is None:
-            continue
-        s = str(v).strip()
-        if s != "":
-            return s
-    return ""
 
 # ---------------- Health & rutas de introspección ----------------
 @api.route("/health", methods=["GET"])
