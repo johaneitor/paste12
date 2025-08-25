@@ -132,6 +132,8 @@ except Exception:
 
 
 # === Wrapper para registrar frontend en la factory ===
+_create_app_orig = create_app
+
 def create_app(*args, **kwargs):
     app = _create_app_orig(*args, **kwargs)
     try:
@@ -143,8 +145,7 @@ def create_app(*args, **kwargs):
         except Exception:
             pass
     return app
-app.register_blueprint(api_bp, url_prefix='/api')
-    app = _create_app_orig(*args, **kwargs)
+app = _create_app_orig(*args, **kwargs)
     try:
         from .webui import webui
     except Exception:
@@ -203,7 +204,9 @@ try:
             _src = ""
         if "register_blueprint(_webui)" not in _src and "register_blueprint(webui)" not in _src:
             _orig_create_app = create_app
-            def create_app(*a, **kw):
+            _create_app_orig = create_app
+
+def create_app(*a, **kw):
                 app = _orig_create_app(*a, **kw)
                 try:
                     from .webui import webui as _w
@@ -282,7 +285,9 @@ try:
     # Wrap factory si existe
     if 'create_app' in globals() and callable(create_app):
         _orig_create_app = create_app  # type: ignore
-        def create_app(*args, **kwargs):  # type: ignore[no-redef]
+        _create_app_orig = create_app
+
+def create_app(*args, **kwargs):  # type: ignore[no-redef]
             app = _orig_create_app(*args, **kwargs)
             try:
                 ensure_webui(app)
