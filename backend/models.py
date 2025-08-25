@@ -33,6 +33,8 @@ class LikeLog(db.Model):
     __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_like_note_fp"),)
 
 class ViewLog(db.Model):
+    day = db.Column(db.Date, nullable=False, default=sa.func.current_date())
+
     __tablename__ = "view_log"
     id = db.Column(db.Integer, primary_key=True)
     note_id = db.Column(db.Integer, db.ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
