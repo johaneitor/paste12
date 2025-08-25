@@ -33,7 +33,7 @@ def _to_dict(n: Note) -> dict:
         "reports": getattr(n, "reports", 0) or 0,
     }
 
-def _pick(*vals):
+def __pick(*vals):
     for v in vals:
         if v is None:
             continue
@@ -65,12 +65,12 @@ def api_routes_dump():
 def create_note():
     raw = request.get_json(silent=True)
     data = raw if isinstance(raw, dict) else {}
-    text = _pick(
+    text = __pick(
         data.get("text") if isinstance(data, dict) else None,
         request.form.get("text"),
         request.values.get("text"),
     ).strip()
-    hours_raw = _pick(
+    hours_raw = __pick(
         (data.get("hours") if isinstance(data, dict) else None),
         request.form.get("hours"),
         request.values.get("hours"),
