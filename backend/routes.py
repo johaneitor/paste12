@@ -1,5 +1,7 @@
 from __future__ import annotations
 from flask import Blueprint, request, jsonify, send_from_directory
+import datetime as _dt
+import sqlalchemy as sa
 from hashlib import sha256
 import os
 from datetime import datetime, timedelta, date
@@ -329,3 +331,29 @@ def dbdiag():
         out["has_db"] = False
         out["err"] = str(e)
     return jsonify(out), 200
+
+
+# Limpieza oportunista simple, rate-limited en 60s
+_last_cleanup_ts = 0
+def _maybe_cleanup_expired(db, Note, LikeLog=None, ReportLog=None, ViewLog=None, max_batch=200):
+    global _last_cleanup_ts
+    import time
+    now=time.time()
+    if now - _last_cleanup_ts < 60:
+        return 0
+    _last_cleanup_ts = now
+    cutoff = _dt.datetime.utcnow()
+    try:
+        exp = db.session.query(Note.id).filter(Note.expires_at != None, Note.expires_at <= cutoff).limit(max_batch).all()
+        ids=[x[0] if isinstance(x,tuple) else getattr(x,'id',None) for x in exp]
+        ids=[i for i in ids if i is not None]
+        if not ids: return 0
+        for Log in (LikeLog, ReportLog, ViewLog):
+            if Log is None: continue
+            db.session.query(Log).filter(Log.note_id.in_(ids)).delete(synchronize_session=False)
+        db.session.query(Note).filter(Note.id.in_(ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return len(ids)
+    except Exception:
+        db.session.rollback()
+        return 0

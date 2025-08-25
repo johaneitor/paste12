@@ -274,3 +274,80 @@ window.addEventListener('DOMContentLoaded', function() {
   window.p12InitRemaining = hydrate;
   document.addEventListener('DOMContentLoaded', hydrate);
 })();
+
+// ====== Load More (paginación por before_id) ======
+(function(){
+  const state = {pageSize: 20, loading:false, done:false};
+  function $(s, r=document){ return r.querySelector(s); }
+  function $all(s, r=document){ return [...r.querySelectorAll(s)]; }
+
+  function deriveId(el){
+    if (!el) return null;
+    const d = el.dataset||{};
+    if (d.noteId) return +d.noteId;
+    if (d.id) return +d.id;
+    if (el.id){
+      const m = el.id.match(/(?:^|-)note-(\d+)$/i) || el.id.match(/(?:^|-)n-(\d+)$/i);
+      if (m) return +m[1];
+    }
+    const inner = el.querySelector?.('[data-note-id],[data-id]');
+    if (inner) return deriveId(inner);
+    return null;
+  }
+  function listRoot(){
+    return $('#notes-list') || $('ul.notes') || $('main ul') || $('section ul') || $('ol') || $('ul');
+  }
+  function lastShownId(){
+    let min = null;
+    $all('[data-note-id], .note, .note-card, li', listRoot()).forEach(el=>{
+      const id = deriveId(el);
+      if (id) min = (min===null) ? id : Math.min(min, id);
+    });
+    return min;
+  }
+  function escapeHtml(s){return (s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
+  function makeLi(n){
+    const li = document.createElement('li');
+    li.className='note';
+    li.dataset.noteId = n.id;
+    li.id = 'note-'+n.id;
+    li.innerHTML = `
+      <div class="note-text">${escapeHtml(n.text)}</div>
+      <div class="note-stats stats">
+        <small>#${n.id}&nbsp;ts: ${String(n.timestamp||'').replace('T',' ')}&nbsp;&nbsp;expira: ${String(n.expires_at||'').replace('T',' ')}</small>
+        <span class="stat like">❤ ${n.likes||0}</span>
+        <span class="stat view">👁 ${n.views||0}</span>
+        <span class="stat flag">🚩 ${n.reports||0}</span>
+      </div>`;
+    return li;
+  }
+  async function loadMore(){
+    if (state.loading || state.done) return;
+    state.loading = true;
+    const root = listRoot(); if (!root) { state.loading=false; return; }
+    const last = lastShownId();
+    const url = `/api/notes?wrap=1&active_only=1&limit=${state.pageSize}` + (last?`&before_id=${last}`:'');
+    try{
+      const r = await fetch(url);
+      const j = await r.json();
+      const items = j.items || (Array.isArray(j)? j : []);
+      items.forEach(n => root.appendChild(makeLi(n)));
+      window.p12Enhance?.();              // menucito ⋮
+      window.p12InitRemaining?.();        // ⏳ restante
+      state.done = !j.has_more || items.length < state.pageSize;
+      if (state.done) $('#load-more-btn')?.setAttribute('disabled','true');
+    }catch(e){ /* noop */ }
+    state.loading = false;
+  }
+  function ensureButton(){
+    if ($('#load-more-btn')) return;
+    const container = document.createElement('div');
+    container.style.textAlign='center'; container.style.margin='16px 0 32px';
+    container.innerHTML = `<button id="load-more-btn" class="btn" type="button">Cargar más</button>`;
+    (listRoot()?.parentElement || document.body).appendChild(container);
+    $('#load-more-btn').addEventListener('click', loadMore);
+  }
+  function init(){ ensureButton(); }
+  window.p12InitLoadMore = init;
+  document.addEventListener('DOMContentLoaded', init);
+})();
