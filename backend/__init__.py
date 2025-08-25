@@ -132,9 +132,18 @@ except Exception:
 
 
 # === Wrapper para registrar frontend en la factory ===
-from backend.routes import api as api_bp
 def create_app(*args, **kwargs):
-    app.register_blueprint(api_bp, url_prefix='/api')
+    app = _create_app_orig(*args, **kwargs)
+    try:
+        from backend.routes import api as api_bp
+        app.register_blueprint(api_bp, url_prefix='/api')
+    except Exception as e:
+        try:
+            app.logger.exception("Failed registering API blueprint: %s", e)
+        except Exception:
+            pass
+    return app
+app.register_blueprint(api_bp, url_prefix='/api')
     app = _create_app_orig(*args, **kwargs)
     try:
         from .webui import webui
