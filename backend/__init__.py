@@ -121,7 +121,7 @@ except Exception:
             return resp
 
     from .routes import api as api_blueprint
-
+    app.register_blueprint(api_blueprint)
 
     with app.app_context():
         db.create_all()
@@ -132,20 +132,8 @@ except Exception:
 
 
 # === Wrapper para registrar frontend en la factory ===
-_create_app_orig = create_app
-
 def create_app(*args, **kwargs):
     app = _create_app_orig(*args, **kwargs)
-    try:
-        from backend.routes import api as api_bp
-
-    except Exception as e:
-        try:
-            app.logger.exception("Failed registering API blueprint: %s", e)
-        except Exception:
-            pass
-    return app
-app = _create_app_orig(*args, **kwargs)
     try:
         from .webui import webui
     except Exception:
@@ -204,13 +192,11 @@ try:
             _src = ""
         if "register_blueprint(_webui)" not in _src and "register_blueprint(webui)" not in _src:
             _orig_create_app = create_app
-            _create_app_orig = create_app
-
-def create_app(*a, **kw):
+            def create_app(*a, **kw):
                 app = _orig_create_app(*a, **kw)
                 try:
                     from .webui import webui as _w
-
+                    app.register_blueprint(_w)
                 except Exception:
                     pass
                 # return app  # commented by repair
@@ -285,9 +271,7 @@ try:
     # Wrap factory si existe
     if 'create_app' in globals() and callable(create_app):
         _orig_create_app = create_app  # type: ignore
-        _create_app_orig = create_app
-
-def create_app(*args, **kwargs):  # type: ignore[no-redef]
+        def create_app(*args, **kwargs):  # type: ignore[no-redef]
             app = _orig_create_app(*args, **kwargs)
             try:
                 ensure_webui(app)
@@ -302,30 +286,3 @@ def create_app(*args, **kwargs):  # type: ignore[no-redef]
             pass
 except Exception:
     pass
-
-# === CANONICAL_CREATE_APP_WRAPPER ===
-try:
-    _orig_create_app
-except NameError:
-    _orig_create_app = create_app
-
-def create_app(*args, **kwargs):
-    app = _orig_create_app(*args, **kwargs)
-    # Registrar API
-    try:
-        from backend.routes import api as api_bp
-        # el blueprint en routes NO tiene prefix; lo ponemos aquí
-        app.register_blueprint(api_bp, url_prefix='/api')
-    except Exception as e:
-        try:
-            app.logger.exception("Failed registering API blueprint: %s", e)
-        except Exception:
-            pass
-    # Registrar webui (no crítico)
-    try:
-        from .webui import webui
-        app.register_blueprint(webui)
-    except Exception:
-        pass
-    return app
-
