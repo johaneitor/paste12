@@ -162,7 +162,7 @@ def admin_cleanup():
     if not token or provided != token:
         return jsonify({"error":"forbidden"}), 403
     try:
-        from flask import current_app
+from flask import current_app
         from backend.__init__ import _cleanup_once
         _cleanup_once(current_app)
         return jsonify({"ok": True}), 200
@@ -170,8 +170,8 @@ def admin_cleanup():
         return jsonify({"error": "cleanup_failed", "detail": str(e)}), 500
 @api.route("/notes", methods=["GET", "HEAD"])
 def list_notes():
-    from flask import request, jsonify
-    from backend.models import Note
+from flask import request, jsonify
+from backend.models import Note
 
     # active_only: por defecto true
     raw_active = (request.args.get("active_only", "1") or "").lower()
@@ -225,19 +225,19 @@ def _to(n):
                 "reports": getattr(n, "reports", 0) or 0,
             }
 
-        from flask import jsonify
+from flask import jsonify
         resp = jsonify([_to(n) for n in page])
         if len(items) > limit and page:
             resp.headers["X-Next-After"] = str(page[-1].id)
         return resp, 200
     except Exception as e:
-        from flask import jsonify
+from flask import jsonify
         return jsonify({"error": "list_failed", "detail": str(e)}), 500
 
 
 @api.route("/_routes", methods=["GET"])
 def api_routes_dump():
-    from flask import current_app, jsonify
+from flask import current_app, jsonify
     info = []
     for r in current_app.url_map.iter_rules():
         info.append({
@@ -249,8 +249,8 @@ def api_routes_dump():
 
 # --- runtime diag ---
 try:
-    from flask import current_app, jsonify
-    @api.route("/runtime", methods=["GET"])  # type: ignore
+from flask import current_app, jsonify
+@api.route("/runtime", methods=["GET"])  # type: ignore
     def runtime():
         import sys
         try:
@@ -295,27 +295,27 @@ def api_fs():
 
 # --- UI debug mount under /api/ui/* (no depende del blueprint webui) ---
 try:
-    from flask import send_from_directory
+from flask import send_from_directory
     from backend.webui import FRONT_DIR as _FD  # dónde están los archivos del frontend
 
-    @api.route("/ui", methods=["GET"])               # -> /api/ui
+@api.route("/ui", methods=["GET"])               # -> /api/ui
     def ui_index():
         return send_from_directory(_FD, "index.html")
 
-    @api.route("/ui/js/<path:fname>", methods=["GET"])
+@api.route("/ui/js/<path:fname>", methods=["GET"])
     def ui_js(fname):
         return send_from_directory(_FD / "js", fname)
 
-    @api.route("/ui/css/<path:fname>", methods=["GET"])
+@api.route("/ui/css/<path:fname>", methods=["GET"])
     def ui_css(fname):
         return send_from_directory(_FD / "css", fname)
 
-    @api.route("/ui/robots.txt", methods=["GET"])
+@api.route("/ui/robots.txt", methods=["GET"])
     def ui_robots():
         p = _FD / "robots.txt"
         return (send_from_directory(_FD, "robots.txt") if p.exists() else ("", 204))
 
-    @api.route("/ui/favicon.ico", methods=["GET"])
+@api.route("/ui/favicon.ico", methods=["GET"])
     def ui_favicon():
         p = _FD / "favicon.ico"
         return (send_from_directory(_FD, "favicon.ico") if p.exists() else ("", 204))
@@ -330,7 +330,7 @@ import sqlalchemy as sa
 def dbdiag():
     out = {}
     try:
-        from backend import db  # type: ignore
+from backend import db  # type: ignore
         out["has_db"] = True
         # ¿la session tiene bind?
         try:
