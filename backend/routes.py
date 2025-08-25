@@ -214,7 +214,7 @@ def list_notes():
             "next_before_id": next_before_id,
         })
     return jsonify(items)
-        def _to(n):
+def _to(n):
             return {
                 "id": n.id,
                 "text": getattr(n, "text", None),
