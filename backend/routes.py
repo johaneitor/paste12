@@ -158,12 +158,13 @@ def admin_cleanup():
     if not token or provided != token:
         return jsonify({"error":"forbidden"}), 403
     try:
-from flask import current_app
+        from flask import current_app
         from backend.__init__ import _cleanup_once
         _cleanup_once(current_app)
         return jsonify({"ok": True}), 200
     except Exception as e:
         return jsonify({"error": "cleanup_failed", "detail": str(e)}), 500
+
 @api.route("/notes", methods=["GET", "HEAD"])
 def list_notes():
     from flask import request, jsonify
