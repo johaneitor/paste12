@@ -48,3 +48,14 @@
 /* --- ads --- */
 .ad-wrap { margin: 16px 0; display:block; }
 .ad-wrap .adsbygoogle { display:block; min-height: 60px; }
+/* === paste12: botón "Cargar más" ===================== */
+.load-more{ display:flex; justify-content:center; margin:12px 0 24px; }
+.load-more .btn-more{
+  padding:10px 14px; border-radius:10px; border:1px solid #ddd;
+  background:#fff; cursor:pointer;
+}
+.load-more .btn-more:hover{ background:#f3f3f3; }
+@media (prefers-color-scheme: dark){
+  .load-more .btn-more{ border-color:#2b2f3a; background:#19202a; color:#e7ecf3; }
+  .load-more .btn-more:hover{ background:#1e2631; }
+}
