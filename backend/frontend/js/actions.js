@@ -145,7 +145,7 @@
     }
   });
 
-  window.addEventListener('DOMContentLoaded', () => {
+  const __init=() => {
     enhanceAll();
     obs.observe(document.body, { childList: true, subtree: true });
     // Deep link ?id=123 -> desplazar a la nota
@@ -158,5 +158,6 @@
         document.querySelector(`.note-card[id$="-${deeplink}"]`);
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  });
+  };
+if(document.readyState==='loading'){window.addEventListener('DOMContentLoaded', __init);}else{__init();}
 })();
