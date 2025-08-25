@@ -170,26 +170,50 @@ def admin_cleanup():
         return jsonify({"error": "cleanup_failed", "detail": str(e)}), 500
 @api.route("/notes", methods=["GET", "HEAD"])
 def list_notes():
+    from flask import request, jsonify
+    from backend.models import Note
+
+    # active_only: por defecto true
+    raw_active = (request.args.get("active_only", "1") or "").lower()
+    active_only = raw_active in ("1","true","on","yes","y")
+
+    # before_id como cursor estricto (id < before_id)
+    raw_before = (request.args.get("before_id")
+                  or request.args.get("before")
+                  or request.args.get("max_id")
+                  or request.args.get("cursor"))
     try:
-        after_id = request.args.get("after_id")
-        try:
-            limit = int((request.args.get("limit") or "20").strip() or "20")
-        except Exception:
-            limit = 20
-        limit = max(1, min(limit, 50))
+        before_id = int(raw_before) if raw_before is not None else None
+    except Exception:
+        before_id = None
 
-        q = db.session.query(Note).order_by(Note.id.desc())
-        if after_id:
-            try:
-                aid = int(after_id)
-                q = q.filter(Note.id < aid)
-            except Exception:
-                pass
+    # limit acotado
+    try:
+        limit = int(request.args.get("limit", 20))
+    except Exception:
+        limit = 20
+    limit = max(1, min(100, limit))
 
-        # Traer limit+1 para detectar si hay otra página
-        items = q.limit(limit + 1).all()
-        page = items[:limit]
+    q = Note.query
+    if active_only:
+        q = q.filter(Note.expires_at > sa.func.now())
+    if before_id:
+        q = q.filter(Note.id < before_id)
+    q = q.order_by(Note.id.desc()).limit(limit)
 
+    rows = q.all()
+    items = [n.as_dict() for n in rows]
+
+    # wrap opcional
+    raw_wrap = (request.args.get("wrap", "0") or "").lower()
+    if raw_wrap in ("1","true","on","yes","y"):
+        next_before_id = items[-1]["id"] if len(items) == limit else None
+        return jsonify({
+            "items": items,
+            "has_more": next_before_id is not None,
+            "next_before_id": next_before_id,
+        })
+    return jsonify(items)
         def _to(n):
             return {
                 "id": n.id,
