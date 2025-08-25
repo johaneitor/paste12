@@ -17,3 +17,38 @@ button:hover{border-color:var(--accent)}
 .note .meta{color:#9bb2c7; font-size:.9rem; display:flex; gap:10px; flex-wrap:wrap}
 footer a{color:var(--muted); text-decoration:none}
 footer a:hover{color:var(--fg); text-decoration:underline}
+
+/* ====== KRAI palette (dark night + orange/purple) ====== */
+:root{
+  --bg-krai:#0c1222;        /* fondo */
+  --bg-2-krai:#111a2f;      /* panel */
+  --card-krai:#151c2e;      /* tarjetas */
+  --text-krai:#e9eefc;      /* texto */
+  --muted-krai:#9fb0d0;     /* texto secundario */
+  --accent-krai:#ff7b3b;    /* naranja */
+  --accent2-krai:#7b61ff;   /* lila */
+  --border-krai:rgba(255,255,255,.08);
+}
+/* aplica sin romper clases existentes */
+html,body{ background: radial-gradient(1200px 500px at 30% -10%, #1b2545 0%, var(--bg-krai) 55%); color: var(--text-krai); }
+.container, main, .card, .note, .note-card, .panel, section { background-color: transparent; }
+.card, .note, .note-card { background: var(--card-krai); border:1px solid var(--border-krai); border-radius:12px; }
+h1,h2,h3{ color: var(--text-krai); letter-spacing:.2px; }
+a{ color: var(--accent2-krai); }
+.btn, button.primary{
+  background: linear-gradient(180deg, var(--accent-krai), #f25c21);
+  color:#fff; border:0; border-radius:12px; padding:.6rem 1rem; font-weight:600;
+  box-shadow: 0 6px 18px rgba(255,123,59,.25);
+}
+.btn:hover, button.primary:hover{ filter: brightness(1.05); }
+.badge, .counter, .stat{
+  background: rgba(255,255,255,.06); border:1px solid var(--border-krai); color: var(--text-krai);
+  padding:.18rem .45rem; border-radius:999px; font-size:.85rem;
+}
+/* corazon/ojito/bandera más “vivos” */
+.stat.like  { color:#ff8a6b; }
+.stat.view  { color:#e0d3ff; }
+.stat.flag  { color:#ff6b6b; }
+
+/* menú ⋮ (ya lo tenías en actions.css, reforzamos hover) */
+.note-menu .kebab:hover{ background: rgba(255,255,255,.08); }

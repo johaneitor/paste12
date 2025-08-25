@@ -194,3 +194,83 @@ window.p12AdsInit = function() {
 window.addEventListener('DOMContentLoaded', function() {
   if (document.querySelector('ins.adsbygoogle')) { window.p12AdsInit(); }
 });
+
+// ===== Remaining-time enhancer (no intrusivo) =====
+(function(){
+  const seen = new WeakSet();
+  function deriveNoteId(el){
+    if (!el) return null;
+    const ds = el.dataset||{};
+    if (ds.noteId) return +ds.noteId;
+    if (ds.id)     return +ds.id;
+    if (el.id){
+      const m = el.id.match(/(?:^|-)note-(\d+)$/i) || el.id.match(/(?:^|-)n-(\d+)$/i);
+      if (m) return +m[1];
+    }
+    const inner = el.querySelector?.('[data-note-id],[data-id]');
+    if (inner) return deriveNoteId(inner);
+    return null;
+  }
+  function ensureTagByOrder(){
+    // si el render no marca data-note-id, etiqueta por orden usando /api/notes
+    const cards = [...document.querySelectorAll('[data-note-id], .note, .note-card, li')];
+    if (cards.some(c => c.dataset.noteId)) return Promise.resolve();
+    return fetch('/api/notes?limit=' + cards.length)
+      .then(r=>r.ok?r.json():[])
+      .then(list=>{
+        cards.forEach((el,i)=>{ if (list[i]?.id) el.dataset.noteId = String(list[i].id); });
+      }).catch(()=>{});
+  }
+  function formatLeft(ms){
+    if (ms<=0) return 'expirada';
+    const s = Math.floor(ms/1000);
+    const d = Math.floor(s/86400);
+    const h = Math.floor((s%86400)/3600);
+    const m = Math.floor((s%3600)/60);
+    if (d>0) return `${d}d ${h}h`;
+    if (h>0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+  function attach(el, expISO){
+    if (!expISO || seen.has(el)) return;
+    const slot = document.createElement('span');
+    slot.className = 'stat time-left';
+    slot.style.marginLeft = '8px';
+    el.appendChild(slot);
+    function tick(){
+      const left = new Date(expISO).getTime() - Date.now();
+      slot.textContent = '⏳ ' + formatLeft(left);
+      slot.title = new Date(expISO).toLocaleString();
+    }
+    tick(); setInterval(tick, 60000);
+    seen.add(el);
+  }
+
+  async function hydrate(){
+    await ensureTagByOrder();
+    // map id -> element that holds stats line (buscamos línea de “expira” o fila de contadores)
+    const notes = [...document.querySelectorAll('[data-note-id], .note, .note-card, li')];
+    const map = new Map();
+    notes.forEach(el=>{
+      const id = deriveNoteId(el);
+      if (!id) return;
+      // heurística: lugar donde están los contadores
+      const stats = el.querySelector('.stats, .note-stats') || el.querySelector('small, .badge, .counter')?.parentElement || el;
+      map.set(id, stats);
+    });
+    if (map.size===0) return;
+
+    // pedimos expirations para las visibles
+    const ids = [...map.keys()];
+    const limit = Math.max(ids.length, 20);
+    const list = await fetch('/api/notes?limit='+limit).then(r=>r.json()).catch(()=>[]);
+    const byId = new Map(list.map(n=>[n.id, n]));
+    ids.forEach(id=>{
+      const n = byId.get(id);
+      if (n?.expires_at && map.get(id)) attach(map.get(id), n.expires_at);
+    });
+  }
+
+  window.p12InitRemaining = hydrate;
+  document.addEventListener('DOMContentLoaded', hydrate);
+})();
