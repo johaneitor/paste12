@@ -9,6 +9,7 @@ import sqlalchemy as sa
 # Backend
 from backend import db, limiter
 from backend.models import Note, LikeLog, ReportLog, ViewLog
+from flask import jsonify, current_app
 
 # Blueprint sin prefix (el prefix /api lo pone create_app en backend/__init__.py)
 api = Blueprint("api", __name__)
@@ -219,3 +220,20 @@ def api_ping():
 @api.route("/routes", methods=["GET"])
 def api_routes_dump_alias():
     return api_routes_dump()
+@api.record_once
+def _ensure_ping_route(state):
+    app = state.app
+    try:
+        # si ya existe alguna regla que termine exactamente en /api/ping, no hacemos nada
+        for r in app.url_map.iter_rules():
+            if str(r).rstrip("/") == "/api/ping":
+                break
+        else:
+            app.add_url_rule(
+                "/api/ping", endpoint="api_ping_direct",
+                view_func=(lambda: jsonify({"ok": True, "pong": True})), methods=["GET"]
+            )
+    except Exception:
+        # no rompemos el registro del blueprint
+        pass
+
