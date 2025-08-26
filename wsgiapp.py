@@ -20,6 +20,46 @@ app.config.update(
     SECRET_KEY=os.getenv("SECRET_KEY", "dev"),
 )
 
+
+# --- WSGI EARLY PIN: rutas mínimas para diagnóstico ---
+try:
+    from flask import jsonify as _j
+
+    # __version: intento de short SHA
+    try:
+        import subprocess
+        _rev = subprocess.check_output(["git","rev-parse","--short","HEAD"], text=True).strip()
+    except Exception:
+        _rev = None
+    if not any(str(r).rstrip("/") == "/__version" for r in app.url_map.iter_rules()):
+        @app.get("/__version")
+        def __version():
+            return _j({"rev": _rev}), 200
+
+    # /api/ping
+    if not any(str(r).rstrip("/") == "/api/ping" for r in app.url_map.iter_rules()):
+        @app.get("/api/ping")
+        def __ping_wsgi_early():
+            return _j({"ok": True, "pong": True, "src": "wsgi-early"}), 200
+
+    # /api/_routes
+    if not any(str(r).rstrip("/") == "/api/_routes" for r in app.url_map.iter_rules()):
+        @app.get("/api/_routes")
+        def __routes_wsgi_early():
+            info=[]
+            for r in app.url_map.iter_rules():
+                info.append({
+                    "rule": str(r),
+                    "methods": sorted(m for m in r.methods if m not in ("HEAD","OPTIONS")),
+                    "endpoint": r.endpoint,
+                })
+            info.sort(key=lambda x: x["rule"])
+            return _j({"routes": info}), 200
+except Exception:
+    # No rompemos wsgi aunque falle este bloque
+    pass
+# --- /WSGI EARLY PIN ---
+
 # DB única del paquete backend
 from backend import db
 db.init_app(app)
