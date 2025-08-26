@@ -196,3 +196,25 @@ except Exception:
     # no rompemos wsgi aunque falle algo
     pass
 
+
+
+# --- WSGI DIRECT API ENDPOINTS (decorators, no blueprints) ---
+try:
+    from flask import jsonify as _jsonify
+    @app.get("/api/ping")
+    def _api_ping():
+        return _jsonify({"ok": True, "pong": True, "src": "wsgiapp"}), 200
+
+    @app.get("/api/_routes")
+    def _api_routes_dump():
+        info=[]
+        for r in app.url_map.iter_rules():
+            info.append({
+                "rule": str(r),
+                "methods": sorted(m for m in r.methods if m not in ("HEAD","OPTIONS")),
+                "endpoint": r.endpoint
+            })
+        info.sort(key=lambda x: x["rule"])
+        return _jsonify({"routes": info}), 200
+except Exception:
+    pass
