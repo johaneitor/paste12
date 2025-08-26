@@ -293,6 +293,16 @@ try:
         _orig_create_app = create_app  # type: ignore
         def create_app(*args, **kwargs):  # type: ignore[no-redef]
             app = _orig_create_app(*args, **kwargs)
+    # -- fuerza /api/ping desde la factory, sin depender del blueprint --
+    try:
+        def __factory_ping():
+            return jsonify({"ok": True, "pong": True, "src": "factory"}), 200
+        # evita duplicados por si ya existe
+        if not any(str(r).rstrip('/') == '/api/ping' for r in app.url_map.iter_rules()):
+            app.add_url_rule('/api/ping', endpoint='api_ping_factory', view_func=__factory_ping, methods=['GET'])
+    except Exception:
+        pass
+
     # -- garantizar registro del blueprint API con /api --
     try:
         from backend.routes import api as api_bp
