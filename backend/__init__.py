@@ -273,6 +273,12 @@ try:
         _orig_create_app = create_app  # type: ignore
         def create_app(*args, **kwargs):  # type: ignore[no-redef]
             app = _orig_create_app(*args, **kwargs)
+    try:
+        from backend.routes import api as api_bp
+        app.register_blueprint(api_bp, url_prefix='/api')
+    except Exception:
+        pass
+
             try:
                 ensure_webui(app)
             except Exception:
