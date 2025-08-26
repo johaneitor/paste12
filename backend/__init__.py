@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os, re, logging, threading, time, json
 from datetime import datetime, timedelta, date
-from flask import Flask, g, request
+from flask import current_app, jsonify, Flask, g, request
 from flask_sqlalchemy import SQLAlchemy
 
 # Extensiones
@@ -166,6 +166,26 @@ def create_app(*args, **kwargs):
         db.init_app(app)
     except Exception:
         pass
+
+    # -- app-level safety routes (idempotentes) --
+    try:
+        if not any(r.rule == '/api/ping' for r in app.url_map.iter_rules()):
+            from flask import jsonify as _j
+            app.add_url_rule('/api/ping', 'api_ping', lambda: _j({'pong': True}), methods=['GET'])
+        if not any(r.rule == '/api/_routes' for r in app.url_map.iter_rules()):
+            from flask import jsonify as _j
+            def _dump_routes():
+                info=[]
+                for r in app.url_map.iter_rules():
+                    info.append({'rule': str(r),
+                                 'methods': sorted(m for m in r.methods if m not in ('HEAD','OPTIONS')),
+                                 'endpoint': r.endpoint})
+                info.sort(key=lambda x: x['rule'])
+                return _j({'routes': info}), 200
+            app.add_url_rule('/api/_routes', 'api_routes_dump_app', _dump_routes, methods=['GET'])
+    except Exception:
+        pass
+
     return app
 try:
     from .webui import webui
