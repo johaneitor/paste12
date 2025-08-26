@@ -213,3 +213,10 @@ def list_notes():
             "next_before_id": next_before_id,
         }), 200
     return jsonify(items), 200
+@api.route("/ping", methods=["GET"])
+def api_ping():
+    return jsonify({"pong": True}), 200
+
+@api.route("/routes", methods=["GET"])
+def api_routes_dump_alias():
+    return api_routes_dump()
