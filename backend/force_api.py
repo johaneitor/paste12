@@ -24,5 +24,5 @@ def install(app):
                 return jsonify({"routes": info}), 200
             app.add_url_rule('/api/_routes', endpoint='api_routes_dump_wsgi', view_func=_dump, methods=['GET'])
     except Exception:
-        # Nunca romper el arranque por el failsafe
+        # nunca romper el arranque por este failsafe
         pass

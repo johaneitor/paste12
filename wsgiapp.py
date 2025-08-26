@@ -1,5 +1,7 @@
 import os
 from flask import Flask, jsonify
+from backend.force_api import install as _force_api_install
+
 
 def _db_uri():
     # Render: DATABASE_URL o SQLALCHEMY_DATABASE_URI; si nada, sqlite
@@ -56,3 +58,10 @@ def __whoami():
         "has_detail_routes": has_detail,
         "sample": sorted(rules, key=lambda x: x["rule"])[:25],
     })
+
+
+# --- WSGI FAILSAFE: instala /api/ping y /api/_routes si no están ---
+try:
+    _force_api_install(app)  # type: ignore[name-defined]
+except Exception:
+    pass
