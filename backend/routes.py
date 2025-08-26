@@ -48,7 +48,6 @@ def _dto(n: Note) -> dict:
 @api.route("/health", methods=["GET"])
 def health():
     return jsonify({"ok": True}), 200
-
 @api.route("/_routes", methods=["GET"])
 def api_routes_dump():
     info = []
