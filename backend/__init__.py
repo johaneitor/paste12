@@ -354,6 +354,32 @@ try:
     except Exception:
         pass
 
+
+    # === FAILSAFE_API_PING_ROUTES ===
+    try:
+        def __factory_ping():
+            return jsonify({"ok": True, "pong": True, "src": "factory"}), 200
+        rules = list(app.url_map.iter_rules())
+        have_ping = any(str(r).rstrip('/') == '/api/ping' for r in rules)
+        if not have_ping:
+            app.add_url_rule('/api/ping', endpoint='api_ping_factory', view_func=__factory_ping, methods=['GET'])
+
+        def __factory_routes_dump():
+            info=[]
+            for r in app.url_map.iter_rules():
+                info.append({
+                    "rule": str(r),
+                    "methods": sorted(m for m in r.methods if m not in ('HEAD','OPTIONS')),
+                    "endpoint": r.endpoint,
+                })
+            info.sort(key=lambda x: x["rule"])
+            return jsonify({"routes": info}), 200
+        have_routes = any(str(r).rstrip('/') == '/api/_routes' for r in rules)
+        if not have_routes:
+            app.add_url_rule('/api/_routes', endpoint='api_routes_dump_factory', view_func=__factory_routes_dump, methods=['GET'])
+    except Exception:
+        pass
+
 return app
     # Adjuntar a app global si existe
     if 'app' in globals():
