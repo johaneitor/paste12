@@ -291,7 +291,7 @@ def api_fs():
 
 # --- UI debug mount under /api/ui/* (no depende del blueprint webui) ---
 try:
-from flask import send_from_directory
+    from flask import send_from_directory
     from backend.webui import FRONT_DIR as _FD  # dónde están los archivos del frontend
 
     @api.route("/ui", methods=["GET"])               # -> /api/ui
