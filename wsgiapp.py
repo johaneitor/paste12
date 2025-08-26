@@ -27,7 +27,7 @@ db.init_app(app)
 # API real
 try:
     from backend.routes import api as api_bp
-    app.register_blueprint(api_bp)
+    app.register_blueprint(api_bp, url_prefix="/api")
 except Exception as e:
     import traceback
     _err_msg = f"{e.__class__.__name__}: {e}"
@@ -63,5 +63,27 @@ def __whoami():
 # --- WSGI FAILSAFE: instala /api/ping y /api/_routes si no están ---
 try:
     _force_api_install(app)  # type: ignore[name-defined]
+except Exception:
+    pass
+
+
+# --- WSGI_LOCAL_PING_ROUTES (idempotente) ---
+try:
+    from flask import jsonify as _j
+    def _dump_routes_app(app):
+        info=[]
+        for r in app.url_map.iter_rules():
+            info.append({"rule": str(r),
+                         "methods": sorted(m for m in r.methods if m not in ("HEAD","OPTIONS")),
+                         "endpoint": r.endpoint})
+        info.sort(key=lambda x: x["rule"])
+        return _j({"routes": info}), 200
+    if not any(str(r).rstrip("/") == "/api/ping" for r in app.url_map.iter_rules()):
+        app.add_url_rule("/api/ping", endpoint="api_ping_wsgi_local",
+                         view_func=(lambda: _j({"ok": True, "pong": True, "src": "wsgi-local"})),
+                         methods=["GET"])
+    if not any(str(r).rstrip("/") == "/api/_routes" for r in app.url_map.iter_rules()):
+        app.add_url_rule("/api/_routes", endpoint="api_routes_dump_wsgi_local",
+                         view_func=(lambda: _dump_routes_app(app)), methods=["GET"])
 except Exception:
     pass
