@@ -170,3 +170,30 @@ except Exception as e:
     # silent; no romper inicio de app
     pass
 # <<< interactions_module_autoreg
+
+
+# --- bootstrap DB URL normalize (idempotente) ---
+def _normalize_database_url(url: str|None):
+    if not url: return url
+    # Corrige esquema antiguo de Heroku: postgres:// -> postgresql://
+    if url.startswith("postgres://"):
+        return "postgresql://" + url[len("postgres://"):]
+    return url
+
+try:
+    import os
+    if "SQLALCHEMY_DATABASE_URI" in app.config:
+        app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_database_url(app.config.get("SQLALCHEMY_DATABASE_URI"))
+    else:
+        _env = _normalize_database_url(os.environ.get("DATABASE_URL"))
+        if _env:
+            app.config["SQLALCHEMY_DATABASE_URI"] = _env
+    # create_all best-effort
+    try:
+        from backend import db
+        with app.app_context():
+            db.create_all()
+    except Exception:
+        pass
+except Exception:
+    pass
