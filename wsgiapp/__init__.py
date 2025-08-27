@@ -1,3 +1,29 @@
+
+# === import diag: expone el camino de carga y el último error de importación ===
+WSGIAPP_IMPORT_PATH = None
+WSGIAPP_IMPORT_ERROR = None
+
+def _try_import_real_app():
+    global WSGIAPP_IMPORT_PATH, WSGIAPP_IMPORT_ERROR, app
+    try:
+        from render_entry import app as _app
+        app = _app
+        WSGIAPP_IMPORT_PATH = "render_entry:app"
+        return True
+    except Exception as e1:
+        WSGIAPP_IMPORT_ERROR = f"render_entry failed: {e1!r}"
+        try:
+            from wsgi import app as _app2
+            app = _app2
+            WSGIAPP_IMPORT_PATH = "wsgi:app"
+            return True
+        except Exception as e2:
+            WSGIAPP_IMPORT_ERROR = (WSGIAPP_IMPORT_ERROR or "") + f" | wsgi failed: {e2!r}"
+            return False
+
+# Si tu __init__ antes hacía import aquí, sustitúyelo por:
+_loaded = _try_import_real_app()
+
 # wsgiapp bridge V2: /api/debug-urlmap + /api/notes con DB lazy y shim en memoria
 from __future__ import annotations
 import os, hashlib
@@ -299,3 +325,33 @@ except Exception:
     # no rompemos el arranque si falla
     pass
 # --- /interactions ---
+
+try:
+    from flask import Blueprint, jsonify
+    _diag_imp = Blueprint("wsgiapp_diag_import", __name__)
+
+    @_diag_imp.get("/diag/import", endpoint="wsgiapp_diag_import")
+    def _wsgiapp_diag_import():
+        info = {
+            "ok": True,
+            "import_path": WSGIAPP_IMPORT_PATH,
+            "fallback": (WSGIAPP_IMPORT_PATH is None),
+        }
+        if WSGIAPP_IMPORT_ERROR:
+            info["import_error"] = WSGIAPP_IMPORT_ERROR
+        return jsonify(info), 200
+
+    @_diag_imp.get("/diag/urlmap", endpoint="wsgiapp_diag_urlmap")
+    def _wsgiapp_diag_urlmap():
+        rules=[]
+        for r in app.url_map.iter_rules():
+            methods = sorted([m for m in r.methods if m not in ("HEAD","OPTIONS")])
+            rules.append({"rule": str(r), "endpoint": r.endpoint, "methods": methods})
+        return jsonify(ok=True, rules=rules), 200
+
+    try:
+        app.register_blueprint(_diag_imp, url_prefix="/api")
+    except Exception:
+        pass
+except Exception:
+    pass
