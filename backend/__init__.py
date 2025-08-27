@@ -308,10 +308,10 @@ try:
         from backend.routes import api as api_bp
         # evitar doble registro
         if not any(r.rule.startswith('/api') for r in app.url_map.iter_rules()):
-            app.register_blueprint(api_bp, url_prefix='/api')
+            app.register_blueprint(api_bp, url_prefix="/api")
         else:
             # si ya hay rutas del blueprint sin prefijo, registrar igual con prefijo para /api/*
-            app.register_blueprint(api_bp, url_prefix='/api')
+            app.register_blueprint(api_bp, url_prefix="/api")
     except Exception as _e:
         try:
             current_app.logger.exception("Failed registering API blueprint: %s", _e)
@@ -320,7 +320,7 @@ try:
 
     try:
         from backend.routes import api as api_bp
-        app.register_blueprint(api_bp, url_prefix='/api')
+        app.register_blueprint(api_bp, url_prefix="/api")
     except Exception:
         pass
 
