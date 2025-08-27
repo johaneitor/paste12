@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 from __future__ import annotations
-
+# -*- coding: utf-8 -*-
 from flask import Blueprint, request, jsonify, current_app
 from hashlib import sha256
 from datetime import datetime, timedelta
@@ -12,8 +11,7 @@ from backend.models import Note, LikeLog, ReportLog, ViewLog
 from flask import jsonify, current_app
 
 # Blueprint sin prefix (el prefix /api lo pone create_app en backend/__init__.py)
-api = Blueprint("api", __name__)
-
+bp = Blueprint('api', __name__)
 # -------- utilidades --------
 def _pick(*vals):
     for v in vals:
@@ -46,10 +44,10 @@ def _dto(n: Note) -> dict:
     }
 
 # -------- health & routes --------
-@api.route("/health", methods=["GET"])
+@bp.route("/health", methods=["GET"])
 def health():
     return jsonify({"ok": True}), 200
-@api.route("/_routes", methods=["GET"])
+@bp.route("/_routes", methods=["GET"])
 def api_routes_dump():
     info = []
     for r in current_app.url_map.iter_rules():
@@ -63,46 +61,6 @@ def api_routes_dump():
 
 # -------- CRUD --------
 @limiter.limit("60/minute")
-@api.route("/notes", methods=["POST"])
-def create_note():
-    raw = request.get_json(silent=True)
-    data = raw if isinstance(raw, dict) else {}
-    text = _pick(
-        data.get("text") if isinstance(data, dict) else None,
-        request.form.get("text"),
-        request.values.get("text"),
-    )
-    if not text:
-        return jsonify({"error": "text_required"}), 400
-
-    hours_raw = _pick(
-        (data.get("hours") if isinstance(data, dict) else None),
-        request.form.get("hours"),
-        request.values.get("hours"),
-        "24",
-    )
-    try:
-        hours = int(hours_raw)
-    except Exception:
-        hours = 24
-    hours = max(1, min(hours, 720))
-
-    now = datetime.utcnow()
-    try:
-        n = Note(
-            text=text.strip(),
-            timestamp=now,
-            expires_at=now + timedelta(hours=hours),
-            author_fp=_fp(request),
-        )
-        db.session.add(n)
-        db.session.commit()
-        return jsonify({"ok": True, "id": n.id}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "create_failed", "detail": str(e)}), 500
-
-@api.route("/notes/<int:note_id>", methods=["GET"])
 def get_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
@@ -110,7 +68,7 @@ def get_note(note_id: int):
     return jsonify(_dto(n)), 200
 
 @limiter.limit("60/minute")
-@api.route("/notes/<int:note_id>/view", methods=["POST"])
+@bp.route('/api/notes/<int:note_id>/view', methods=['POST'])
 def view_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
@@ -130,7 +88,7 @@ def view_note(note_id: int):
         return jsonify({"error": "view_failed", "detail": str(e)}), 500
 
 @limiter.limit("60/minute")
-@api.route("/notes/<int:note_id>/like", methods=["POST"])
+@bp.route('/api/notes/<int:note_id>/like', methods=['POST'])
 def like_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
@@ -149,7 +107,7 @@ def like_note(note_id: int):
         return jsonify({"error": "like_failed", "detail": str(e)}), 500
 
 @limiter.limit("30/minute")
-@api.route("/notes/<int:note_id>/report", methods=["POST"])
+@bp.route('/api/notes/<int:note_id>/report', methods=['POST'])
 def report_note(note_id: int):
     n = db.session.get(Note, note_id)
     if not n:
@@ -170,54 +128,9 @@ def report_note(note_id: int):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "report_failed", "detail": str(e)}), 500
-
-@api.route("/notes", methods=["GET", "HEAD"])
-def list_notes():
-    # active_only default true
-    raw_active = (request.args.get("active_only", "1") or "").lower()
-    active_only = raw_active in ("1","true","on","yes","y")
-
-    # before_id cursor estricto (id < before_id)
-    raw_before = (request.args.get("before_id")
-                  or request.args.get("before")
-                  or request.args.get("max_id")
-                  or request.args.get("cursor"))
-    try:
-        before_id = int(raw_before) if raw_before is not None else None
-    except Exception:
-        before_id = None
-
-    # limit
-    try:
-        limit = int(request.args.get("limit", 20))
-    except Exception:
-        limit = 20
-    limit = max(1, min(100, limit))
-
-    q = db.session.query(Note)
-    if active_only:
-        q = q.filter(Note.expires_at > sa.func.now())
-    if before_id:
-        q = q.filter(Note.id < before_id)
-    q = q.order_by(Note.id.desc()).limit(limit)
-    rows = q.all()
-    items = [_dto(n) for n in rows]
-
-    # wrap opcional
-    raw_wrap = (request.args.get("wrap", "0") or "").lower()
-    if raw_wrap in ("1","true","on","yes","y"):
-        next_before_id = items[-1]["id"] if len(items) == limit else None
-        return jsonify({
-            "items": items,
-            "has_more": next_before_id is not None,
-            "next_before_id": next_before_id,
-        }), 200
-    return jsonify(items), 200
-@api.route("/ping", methods=["GET"])
 def api_ping():
     return jsonify({"pong": True}), 200
-
-@api.route("/routes", methods=["GET"])
+@bp.route("/routes", methods=["GET"])
 def api_routes_dump_alias():
     return api_routes_dump()
 @api.record_once
@@ -237,3 +150,5 @@ def _ensure_ping_route(state):
         # no rompemos el registro del blueprint
         pass
 
+
+import backend.routes_notes  # registra /api/notes (capsulado)
