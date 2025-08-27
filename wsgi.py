@@ -1,66 +1,72 @@
-from flask import Flask, jsonify
-try:
-    # Usa la app GLOBAL de backend; evita llamar create_app() para no enganchar wrappers.
-    from backend import app as app  # type: ignore
-except Exception as e:
-    app = Flask(__name__)
-    @app.get("/__backend_import_error")
-    def __backend_import_error():
-        return {"ok": False, "where": "import backend", "error": str(e)}, 500
+from __future__ import annotations
+import os
+from flask import Flask, jsonify, send_from_directory
 
-def _purge_api_rules(app):
-    # Quita TODAS las reglas /api/* (fallbacks previos)
-    rules = list(app.url_map.iter_rules())
-    for r in rules:
-        if str(r.rule).startswith("/api"):
+# App base para Render (WSGI)
+app = Flask(__name__, static_folder="public", static_url_path="")
+
+# Config DB (coincidir con tu app)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Inicializar DB si el paquete expone 'db'
+db = None
+try:
+    from backend import db as _db
+    _db.init_app(app)
+    db = _db
+except Exception as e:
+    print("~ wsgi: db.init_app skipped:", e)
+
+def _register_api(app: Flask) -> str|None:
+    # 1) Intentar blueprint ya existente en backend.routes
+    try:
+        from backend.routes import bp as api_bp
+        app.register_blueprint(api_bp, url_prefix="/api")
+        return "backend.routes:bp"
+    except Exception as e1:
+        # 2) Intentar función register_api de routes_notes
+        try:
+            from backend.routes_notes import register_api
+            register_api(app)
+            return "backend.routes_notes:register_api"
+        except Exception as e2:
+            # 3) Fallback: blueprint mínimo en backend.api
             try:
-                app.url_map._rules.remove(r)
-            except ValueError:
-                pass
-            lst = app.url_map._rules_by_endpoint.get(r.endpoint)
-            if lst and r in lst:
-                lst.remove(r)
-            if not app.url_map._rules_by_endpoint.get(r.endpoint):
-                app.view_functions.pop(r.endpoint, None)
+                from backend.api import api as api_bp
+                app.register_blueprint(api_bp, url_prefix="/api")
+                return "backend.api:api"
+            except Exception as e3:
+                print("~ wsgi: no API registered:", e1, "|", e2, "|", e3)
+                return None
 
-# Frontend idempotente
+api_src = _register_api(app)
+
+# Health
+@app.get("/api/health")
+def health():
+    return jsonify(ok=True, note="wsgiapp", api=bool(api_src), api_src=api_src)
+
+# Static helpers (opcional)
+@app.get("/")
+def static_root():
+    try:
+        return app.send_static_file("index.html")
+    except Exception:
+        return jsonify(ok=True, note="root")
+
+@app.get("/<path:filename>")
+def static(filename):
+    try:
+        return send_from_directory(app.static_folder, filename)
+    except Exception:
+        return jsonify(error="static_not_found", file=filename), 404
+
+# Auto create DB (seguro / idempotente)
 try:
-    from backend.webui import ensure_webui  # type: ignore
-    ensure_webui(app)
-except Exception:
-    pass
-
-# Purga y registra la API REAL
-_routes_mod = None
-try:
-    _purge_api_rules(app)
-    import backend.routes as _routes_mod  # type: ignore
-    app.register_blueprint(_routes_mod.api)  # type: ignore[attr-defined]
-except Exception as e:
-    @app.get("/__api_import_error")
-    def __api_import_error():
-        return {"ok": False, "where": "import/register backend.routes", "error": str(e)}, 500
-
-# Diags
-@app.get("/__whoami")
-def __whoami():
-    rules = sorted(
-        [{"rule": r.rule, "methods": sorted(r.methods), "endpoint": r.endpoint}
-         for r in app.url_map.iter_rules()],
-        key=lambda x: x["rule"]
-    )
-    return {
-        "blueprints": sorted(list(app.blueprints.keys())),
-        "has_detail_routes": any(r["rule"].startswith("/api/notes/<") for r in rules),
-        "sample": rules[:120],
-        "api_module_file": getattr(_routes_mod, "__file__", None),
-        "wsgi_file": __file__,
-    }
-
-@app.get("/__api_where")
-def __api_where():
-    rules = sorted([r.rule for r in app.url_map.iter_rules() if str(r.rule).startswith("/api")])
-    return {
-        "api_rules": rules,
-        "api_module_file": getattr(_routes_mod, "__file__", None),
-    }
+    if db is not None:
+        with app.app_context():
+            db.create_all()
+            print("~ wsgi: Auto create DB OK")
+except Exception as _e:
+    print("~ wsgi: Auto create DB failed:", _e)
