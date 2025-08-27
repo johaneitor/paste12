@@ -159,35 +159,25 @@ def _ensure_db():
 if not (_has("/api/notes","GET") and _has("/api/notes","POST")):
 
     @bp.get("/notes", endpoint="bridge_list_notes")
-    def bridge_list_notes():
-        db, Note = _ensure_db()
-        # DB OK → leer desde DB
-        if db and Note:
-            try:
-                page = 1
-                try: page = max(1, int(request.args.get("page", 1)))
-                except Exception: pass
-                q = Note.query.order_by(Note.timestamp.desc())
-                items = q.limit(20).offset((page-1)*20).all()
-                return jsonify([_note_json(n) for n in items]), 200
-            except Exception as e:
-                # cae a shim en memoria
-                pass
-        # Shim en memoria (si está habilitado) (si está habilitado)
-        if not _shim_enabled():
-            return jsonify(ok=False, error="list_failed", detail=str(e)), 500
+def bridge_list_notes():
+    try:
+        page = 1
         try:
+            page = max(1, int(request.args.get("page", 1)))
+        except Exception:
             page = 1
-            try: page = max(1, int(request.args.get("page", 1)))
-            except Exception: pass
-            start = (page-1)*20
-            end = start+20
-            items = sorted(_mem["items"], key=lambda x: x["timestamp"], reverse=True)[start:end]
+        try:
+            q = Note.query.order_by(Note.timestamp.desc())
+            items = q.limit(20).offset((page-1)*20).all()
             return jsonify([_note_json(n) for n in items]), 200
         except Exception as e:
+            # Respuesta JSON consistente (evita HTML 500)
             return jsonify(ok=False, error="list_failed", detail=str(e)), 500
+    except Exception as e:
+        return jsonify(ok=False, error="list_failed", detail=str(e)), 500
 
-    @bp.post("/notes", endpoint="bridge_create_note")
+@bp.post("/notes", endpoint="bridge_create_note")
+("/notes", endpoint="bridge_create_note")
     def bridge_create_note():
         db, Note = _ensure_db()
         data = request.get_json(silent=True) or {}
@@ -234,6 +224,20 @@ if not (_has("/api/notes","GET") and _has("/api/notes","POST")):
 
 # 5) Registrar blueprint bajo /api (idempotente)
 try:
-    app.register_blueprint(bp, url_prefix="/api")
+    
+# === Diag: /api/notes/diag (devuelve conteo y primer item) ===
+@bp.get("/notes/diag", endpoint="bridge_notes_diag")
+def bridge_notes_diag():
+    try:
+        cnt = Note.query.count()
+        first = Note.query.order_by(Note.id.asc()).first()
+        out = {"count": int(cnt)}
+        if first is not None:
+            out["first"] = _note_json(first)
+        return jsonify(ok=True, diag=out), 200
+    except Exception as e:
+        return jsonify(ok=False, error="diag_failed", detail=str(e)), 500
+
+app.register_blueprint(bp, url_prefix="/api")
 except Exception:
     pass
