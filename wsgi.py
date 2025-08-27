@@ -2,14 +2,13 @@ from __future__ import annotations
 import os
 from flask import Flask, jsonify, send_from_directory
 
-# App base para Render (WSGI)
-app = Flask(__name__, static_folder="public", static_url_path="")
+VER = "wsgi-v2"  # marcador para verificar despliegue
 
-# Config DB (coincidir con tu app)
+app = Flask(__name__, static_folder="public", static_url_path="")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Inicializar DB si el paquete expone 'db'
+# Inicializar DB si backend expone 'db'
 db = None
 try:
     from backend import db as _db
@@ -18,20 +17,20 @@ try:
 except Exception as e:
     print("~ wsgi: db.init_app skipped:", e)
 
-def _register_api(app: Flask) -> str|None:
-    # 1) Intentar blueprint ya existente en backend.routes
+def _register_api(app) -> str | None:
+    # 1) Intentar blueprint oficial backend.routes:bp
     try:
         from backend.routes import bp as api_bp
         app.register_blueprint(api_bp, url_prefix="/api")
         return "backend.routes:bp"
     except Exception as e1:
-        # 2) Intentar función register_api de routes_notes
+        # 2) Intentar una función de registro en routes_notes
         try:
             from backend.routes_notes import register_api
             register_api(app)
             return "backend.routes_notes:register_api"
         except Exception as e2:
-            # 3) Fallback: blueprint mínimo en backend.api
+            # 3) Fallback mínimo
             try:
                 from backend.api import api as api_bp
                 app.register_blueprint(api_bp, url_prefix="/api")
@@ -42,18 +41,25 @@ def _register_api(app: Flask) -> str|None:
 
 api_src = _register_api(app)
 
-# Health
+# Health con marker para verificar qué wsgi está vivo
 @app.get("/api/health")
 def health():
-    return jsonify(ok=True, note="wsgiapp", api=bool(api_src), api_src=api_src)
+    return jsonify(ok=True, note="wsgiapp", ver=VER, api=bool(api_src), api_src=api_src)
 
-# Static helpers (opcional)
+# Static mínimos
 @app.get("/")
 def static_root():
     try:
         return app.send_static_file("index.html")
     except Exception:
         return jsonify(ok=True, note="root")
+
+@app.get("/ads.txt")
+def static_ads():
+    try:
+        return app.send_static_file("ads.txt")
+    except Exception:
+        return ("", 204)
 
 @app.get("/<path:filename>")
 def static(filename):
@@ -62,7 +68,7 @@ def static(filename):
     except Exception:
         return jsonify(error="static_not_found", file=filename), 404
 
-# Auto create DB (seguro / idempotente)
+# Auto create DB (idempotente)
 try:
     if db is not None:
         with app.app_context():
