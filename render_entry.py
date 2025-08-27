@@ -197,3 +197,4 @@ try:
         pass
 except Exception:
     pass
+from backend.modules.interactions import ensure_schema

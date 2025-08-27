@@ -198,3 +198,25 @@ def register_alias_into(app):
         app.register_blueprint(alias_bp, url_prefix="/api")
     except Exception:
         pass
+
+
+# === Diag: existencia de tabla y counts básicos ===
+@bp.get("/notes/diag", endpoint="interactions_diag")
+def interactions_diag():
+    try:
+        eng = db.get_engine()
+        insp = getattr(eng, "inspect", None)
+        # SQLAlchemy 2.x pattern
+        from sqlalchemy import inspect as _inspect
+        inspector = _inspect(eng)
+        tables = inspector.get_table_names()
+        has_evt = "interaction_event" in tables
+        likes_cnt = views_cnt = None
+        if has_evt:
+            likes_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="like").scalar() or 0
+            views_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="view").scalar() or 0
+        return jsonify(ok=True, tables=tables, has_interaction_event=has_evt,
+                       total_likes=int(likes_cnt) if likes_cnt is not None else None,
+                       total_views=int(views_cnt) if views_cnt is not None else None), 200
+    except Exception as e:
+        return jsonify(ok=False, error="diag_failed", detail=str(e)), 500
