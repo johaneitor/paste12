@@ -241,3 +241,61 @@ def bridge_notes_diag():
 app.register_blueprint(bp, url_prefix="/api")
 except Exception:
     pass
+
+# --- interactions: registro forzado sobre wsgiapp.app ---
+try:
+    # Normalizar DATABASE_URL (soporta postgres:// -> postgresql://)
+    import os
+    url = os.environ.get("DATABASE_URL","")
+    if url.startswith("postgres://"):
+        os.environ["DATABASE_URL"] = "postgresql://" + url[len("postgres://"):]
+except Exception:
+    pass
+
+try:
+    from backend.modules.interactions import bp as interactions_bp, alias_bp
+    from flask import current_app as _cap
+    _app = None
+    try:
+        _app = _cap._get_current_object()
+    except Exception:
+        pass
+    if _app is None:
+        try:
+            _app = app
+        except Exception:
+            _app = None
+    def _has_rule(_a, path, method):
+        try:
+            for r in _a.url_map.iter_rules():
+                if str(r)==path and method.upper() in r.methods:
+                    return True
+        except Exception:
+            pass
+        return False
+    if _app is not None:
+        need_like  = not _has_rule(_app, "/api/notes/<int:note_id>/like",  "POST")
+        need_view  = not _has_rule(_app, "/api/notes/<int:note_id>/view",  "POST")
+        need_stats = not _has_rule(_app, "/api/notes/<int:note_id>/stats", "GET")
+        need_alias = not _has_rule(_app, "/api/ix/notes/<int:note_id>/like","POST")
+        if need_like or need_view or need_stats:
+            _app.register_blueprint(interactions_bp, url_prefix="/api")
+        if need_alias:
+            _app.register_blueprint(alias_bp, url_prefix="/api")
+        # create_all() para garantizar tablas
+        try:
+            from backend import db as _db
+            with _app.app_context():
+                _db.create_all()
+        except Exception:
+            try:
+                from flask_sqlalchemy import SQLAlchemy
+                _db = SQLAlchemy(_app)
+                with _app.app_context():
+                    _db.create_all()
+            except Exception:
+                pass
+except Exception:
+    # no rompemos el arranque si falla
+    pass
+# --- /interactions ---
