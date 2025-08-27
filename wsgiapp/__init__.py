@@ -55,7 +55,10 @@ def _has(path:str, method:str)->bool:
 # 3) Setup de modelo/DB (sin bloquear el registro de rutas)
 _db = None
 _Note = None
-_mem = {"seq": 0, "items": []}  # shim en memoria si DB falla
+_mem = {"seq": 0, "items": []}  # shim en memoria
+def _shim_enabled() -> bool:
+    import os
+    return os.environ.get("BRIDGE_ALLOW_SHIM","0").strip() in ("1","true","yes")
 
 def _note_json(n, now=None):
     now = now or _now()
@@ -88,6 +91,42 @@ def _ensure_db():
     global _db, _Note
     if _db is not None and _Note is not None:
         return _db, _Note
+    try:
+        from flask_sqlalchemy import SQLAlchemy
+    except Exception:
+        return None, None
+    try:
+        # Forzar DATABASE_URL si está definida
+        import os
+        uri = os.environ.get("DATABASE_URL") or os.environ.get("SQLALCHEMY_DATABASE_URI")
+        if uri:
+            if uri.startswith("postgres://"):
+                uri = "postgresql://" + uri[len("postgres://"):]
+            app.config["SQLALCHEMY_DATABASE_URI"] = uri
+        # Config por si acaso
+        app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+
+        _db = SQLAlchemy(app)
+        class Note(_db.Model):
+            __tablename__ = "note"
+            id = _db.Column(_db.Integer, primary_key=True)
+            text = _db.Column(_db.Text, nullable=False)
+            timestamp = _db.Column(_db.DateTime, nullable=False, index=True)
+            expires_at = _db.Column(_db.DateTime, nullable=False, index=True)
+            likes = _db.Column(_db.Integer, default=0, nullable=False)
+            views = _db.Column(_db.Integer, default=0, nullable=False)
+            reports = _db.Column(_db.Integer, default=0, nullable=False)
+            author_fp = _db.Column(_db.String(64), nullable=False, default="noctx", index=True)
+        _Note = Note
+        try:
+            with app.app_context():
+                _db.create_all()
+        except Exception:
+            pass
+        return _db, _Note
+    except Exception:
+        _db, _Note = None, None
+        return None, None
     try:
         from flask_sqlalchemy import SQLAlchemy
     except Exception:
@@ -134,7 +173,9 @@ if not (_has("/api/notes","GET") and _has("/api/notes","POST")):
             except Exception as e:
                 # cae a shim en memoria
                 pass
-        # Shim en memoria
+        # Shim en memoria (si está habilitado) (si está habilitado)
+        if not _shim_enabled():
+            return jsonify(ok=False, error="list_failed", detail=str(e)), 500
         try:
             page = 1
             try: page = max(1, int(request.args.get("page", 1)))
@@ -175,7 +216,7 @@ if not (_has("/api/notes","GET") and _has("/api/notes","POST")):
                 # rollback y caer a shim
                 try: db.session.rollback()
                 except Exception: pass
-        # Shim en memoria
+        # Shim en memoria (si está habilitado)
         try:
             _mem["seq"] += 1
             n = {
