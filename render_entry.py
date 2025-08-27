@@ -197,7 +197,7 @@ try:
         pass
 except Exception:
     pass
-from backend.modules.interactions import ensure_schema, register_into, register_alias_into
+from backend.modules.interactions import ensure_schema, register_into, register_alias_into, register_into, register_alias_into
 
 ##__INTERACTIONS_BOOTSTRAP__
 try:
@@ -223,3 +223,35 @@ try:
                 pass
 except Exception:
     pass
+
+# >>> interactions_bootstrap
+try:
+    # Localiza el objeto app si existe
+    from flask import current_app as _cap
+    _app = _cap._get_current_object() if _cap else (app if 'app' in globals() else None)
+except Exception:
+    _app = app if 'app' in globals() else None
+
+try:
+    if _app is not None:
+        with _app.app_context():
+            # crear tablas por si falta interaction_event
+            try:
+                ensure_schema()
+            except Exception:
+                pass
+            # registrar blueprints principales
+            try:
+                register_into(_app)
+            except Exception:
+                pass
+            # registrar alias /api/ix/...
+            try:
+                register_alias_into(_app)
+            except Exception:
+                pass
+except Exception:
+    # no romper inicio
+    pass
+
+# (fin bootstrap)
