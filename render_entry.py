@@ -197,7 +197,7 @@ try:
         pass
 except Exception:
     pass
-from backend.modules.interactions import ensure_schema, register_into, register_alias_into, register_into, register_alias_into
+from backend.modules.interactions import ensure_schema, register_into, register_alias_into, register_into, register_alias_into, register_into, register_alias_into
 
 ##__INTERACTIONS_BOOTSTRAP__
 try:
