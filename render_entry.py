@@ -197,4 +197,29 @@ try:
         pass
 except Exception:
     pass
-from backend.modules.interactions import ensure_schema
+from backend.modules.interactions import ensure_schema, register_into, register_alias_into
+
+##__INTERACTIONS_BOOTSTRAP__
+try:
+    from flask import current_app as _cap
+    _app = _cap._get_current_object() if _cap else app
+except Exception:
+    _app = app if 'app' in globals() else None
+
+try:
+    if _app is not None:
+        with _app.app_context():
+            try:
+                ensure_schema()
+            except Exception:  # no romper boot
+                pass
+            try:
+                register_into(_app)
+            except Exception:
+                pass
+            try:
+                register_alias_into(_app)
+            except Exception:
+                pass
+except Exception:
+    pass

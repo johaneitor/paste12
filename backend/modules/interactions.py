@@ -85,50 +85,59 @@ def _note_or_404(note_id: int) -> Optional[Note]:
 
 @bp.post("/notes/<int:note_id>/like")
 def like_note(note_id: int):
+    def _do(note_id=note_id):
     n = _note_or_404(note_id)
     if not n:
-        return jsonify(ok=False, error="not_found"), 404
+                return jsonify(ok=False, error="not_found"), 404
     fp = _fp()
     try:
         # Insert idempotente: like => bucket=0
         evt = InteractionEvent(note_id=note_id, fp=fp, type="like", bucket_15m=0)
-        db.session.add(evt)
-        db.session.commit()
+                db.session.add(evt)
+                db.session.commit()
     except Exception:
         # Violación de unique (ya likeó): ignorar
-        db.session.rollback()
+                db.session.rollback()
     # Recalcular contador denormalizado
-    likes = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="like").scalar() or 0
+    likes =         db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="like").scalar() or 0
     n.likes = int(likes)
-    db.session.commit()
-    return jsonify(ok=True, id=note_id, likes=n.likes), 200
+            db.session.commit()
+            return jsonify(ok=True, id=note_id, likes=n.likes), 200
+
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
 
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
+    def _do(note_id=note_id):
     n = _note_or_404(note_id)
     if not n:
-        return jsonify(ok=False, error="not_found"), 404
+                return jsonify(ok=False, error="not_found"), 404
     fp = _fp()
     b = _bucket_15m()
     try:
         evt = InteractionEvent(note_id=note_id, fp=fp, type="view", bucket_15m=b)
-        db.session.add(evt)
-        db.session.commit()
+                db.session.add(evt)
+                db.session.commit()
     except Exception:
-        db.session.rollback()
-    views = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="view").scalar() or 0
+                db.session.rollback()
+    views =         db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="view").scalar() or 0
     n.views = int(views)
-    db.session.commit()
-    return jsonify(ok=True, id=note_id, views=n.views, window="15m"), 200
+            db.session.commit()
+            return jsonify(ok=True, id=note_id, views=n.views, window="15m"), 200
+
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
 
 @bp.get("/notes/<int:note_id>/stats")
 def stats_note(note_id: int):
+    def _do(note_id=note_id):
     n = _note_or_404(note_id)
     if not n:
-        return jsonify(ok=False, error="not_found"), 404
+                return jsonify(ok=False, error="not_found"), 404
     likes = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="like").scalar() or 0
     views = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="view").scalar() or 0
-    return jsonify(ok=True, id=note_id, likes=int(likes), views=int(views), denorm={"likes":n.likes,"views":n.views}), 200
+            return jsonify(ok=True, id=note_id, likes=int(likes), views=int(views), denorm={"likes":n.likes,"views":n.views}), 200
 
 def ensure_schema():
     try:
@@ -158,13 +167,22 @@ except Exception:
 from flask import Blueprint as _BP
 alias_bp = _BP("interactions_alias", __name__)
 
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
+
 @alias_bp.post("/ix/notes/<int:note_id>/like")
 def _alias_like(note_id:int):  # reusa la lógica
     return like_note(note_id)
 
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
+
 @alias_bp.post("/ix/notes/<int:note_id>/view")
 def _alias_view(note_id:int):
     return view_note(note_id)
+
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
 
 @alias_bp.get("/ix/notes/<int:note_id>/stats")
 def _alias_stats(note_id:int):
@@ -181,13 +199,22 @@ def register_alias_into(app):
 from flask import Blueprint as _BP
 alias_bp = _BP("interactions_alias", __name__)
 
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
+
 @alias_bp.post("/ix/notes/<int:note_id>/like")
 def _alias_like(note_id:int):  # reusa la lógica
     return like_note(note_id)
 
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
+
 @alias_bp.post("/ix/notes/<int:note_id>/view")
 def _alias_view(note_id:int):
     return view_note(note_id)
+
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
 
 @alias_bp.get("/ix/notes/<int:note_id>/stats")
 def _alias_stats(note_id:int):
@@ -201,6 +228,9 @@ def register_alias_into(app):
 
 
 # === Diag: existencia de tabla y counts básicos ===
+    # end _do
+    return _maybe_bootstrap_schema_and_retry(_do)
+
 @bp.get("/notes/diag", endpoint="interactions_diag")
 def interactions_diag():
     try:
@@ -215,8 +245,23 @@ def interactions_diag():
         if has_evt:
             likes_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="like").scalar() or 0
             views_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="view").scalar() or 0
-        return jsonify(ok=True, tables=tables, has_interaction_event=has_evt,
+                return jsonify(ok=True, tables=tables, has_interaction_event=has_evt,
                        total_likes=int(likes_cnt) if likes_cnt is not None else None,
                        total_views=int(views_cnt) if views_cnt is not None else None), 200
     except Exception as e:
-        return jsonify(ok=False, error="diag_failed", detail=str(e)), 500
+                return jsonify(ok=False, error="diag_failed", detail=str(e)), 500
+
+_MISSING_EVT_ERRS = ("no such table: interaction_event", "UndefinedTable: relation \"interaction_event\"")
+def _maybe_bootstrap_schema_and_retry(fn, *args, **kwargs):
+    try:
+        return fn(*args, **kwargs)
+    except Exception as e:
+        msg = str(e).lower()
+        if any(t in msg for t in _MISSING_EVT_ERRS):
+            try:
+                ensure_schema()
+            except Exception:
+                pass
+            # retry 1 vez
+            return fn(*args, **kwargs)
+        raise
