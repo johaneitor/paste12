@@ -169,7 +169,7 @@ try:
         need_view = not _has_rule(_app, "/api/notes/<int:note_id>/view", "POST")
         need_stats= not _has_rule(_app, "/api/notes/<int:note_id>/stats","GET")
         if need_like or need_view or need_stats:
-            from backend.modules.interactions import interactions_bp
+            from backend.modules.interactions import repair_interaction_table, interactions_bp
             _app.register_blueprint(interactions_bp, url_prefix="/api")
 except Exception as e:
     # silent; no romper inicio de app
@@ -202,7 +202,7 @@ try:
         pass
 except Exception:
     pass
-from backend.modules.interactions import ensure_schema, register_into, register_alias_into, register_into, register_alias_into, register_into, register_alias_into
+from backend.modules.interactions import repair_interaction_table, ensure_schema, register_into, register_alias_into, register_into, register_alias_into, register_into, register_alias_into
 
 ##__INTERACTIONS_BOOTSTRAP__
 try:
@@ -382,6 +382,27 @@ try:
 
     try:
         app.register_blueprint(_mnt, url_prefix="/api")
+    except Exception:
+        pass
+except Exception:
+    pass
+
+
+# === mantenimiento: POST /api/notes/repair-interactions ===
+try:
+    from flask import Blueprint, jsonify
+    _mnt2 = Blueprint("interactions_repair", __name__)
+
+    @_mnt2.post("/notes/repair-interactions", endpoint="repair_interaction_schema")
+    def _repair_interactions():
+        try:
+            ok = repair_interaction_table()
+            return jsonify(ok=bool(ok)), (200 if ok else 500)
+        except Exception as e:
+            return jsonify(ok=False, error="repair_failed", detail=str(e)), 500
+
+    try:
+        app.register_blueprint(_mnt2, url_prefix="/api")
     except Exception:
         pass
 except Exception:

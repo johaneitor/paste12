@@ -8,6 +8,7 @@ from sqlalchemy import UniqueConstraint, Index, func
 # Intentar usar ORM real del proyecto
 db = None
 Note = None
+
 try:
     from backend import db as _db
     from backend.models import Note as _Note
@@ -50,7 +51,7 @@ def _fp() -> str:
 class InteractionEvent(db.Model):  # type: ignore
     __tablename__ = "interaction_event"
     id = db.Column(db.Integer, primary_key=True)
-    note_id = db.Column(db.Integer, db.ForeignKey("note.id", ondelete="CASCADE"), nullable=False, index=True)
+    note_id = db.Column(db.Integer, db.ForeignKey(f"{NOTE_TABLE}.id", ondelete="CASCADE"), nullable=False, index=True)
     fp = db.Column(db.String(64), nullable=False, index=True)
     # 'like' | 'view'
     type = db.Column(db.String(16), nullable=False, index=True)
@@ -181,3 +182,47 @@ try:
         register_alias_into(_app)
 except Exception:
     pass
+
+NOTE_TABLE = getattr(Note, "__tablename__", "note")
+
+
+# === helpers de mantenimiento (drop&create seguro) ===
+def create_interaction_table(bind=None):
+    try:
+        InteractionEvent.__table__.create(bind=bind or db.engine, checkfirst=True)
+        return True
+    except Exception:
+        return False
+
+def drop_interaction_table(bind=None):
+    try:
+        InteractionEvent.__table__.drop(bind=bind or db.engine, checkfirst=True)
+        return True
+    except Exception:
+        return False
+
+def fk_points_to_correct_note(inspector) -> bool:
+    try:
+        fks = inspector.get_foreign_keys("interaction_event")
+        for fk in fks:
+            if fk.get("referred_table") == NOTE_TABLE:
+                return True
+        return False
+    except Exception:
+        return False
+
+def repair_interaction_table():
+    from sqlalchemy import inspect
+    insp = inspect(db.engine)
+    tables = set(insp.get_table_names())
+    if "interaction_event" not in tables:
+        # no existe: crear
+        return create_interaction_table()
+    # existe: validar FK
+    if fk_points_to_correct_note(insp):
+        return True  # ya está bien
+    # mal apuntada: dropear y recrear
+    ok = drop_interaction_table()
+    if not ok:
+        return False
+    return create_interaction_table()
