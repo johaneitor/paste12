@@ -2,6 +2,11 @@ from __future__ import annotations
 import os, hashlib
 from datetime import datetime, timedelta
 from flask import Flask, Blueprint, jsonify, request
+# --- safe default for NOTE_TABLE (evita NameError al importar en Render) ---
+import os as _os
+NOTE_TABLE = _os.environ.get('NOTE_TABLE','note')
+# ---------------------------------------------------------------------------
+
 
 app = None
 db = None
@@ -174,10 +179,6 @@ try:
 except Exception:
     pass
 from backend.modules.interactions import repair_interaction_table, ensure_schema, register_into, register_alias_into, register_into, register_alias_into, register_into, register_alias_into
-# --- safe default for NOTE_TABLE (evita NameError al importar en Render) ---
-import os as _os
-NOTE_TABLE = _os.environ.get('NOTE_TABLE','note')
-# ---------------------------------------------------------------------------
 
 
 
