@@ -409,7 +409,7 @@ try:
     @_repair_bp.post("/api/notes/repair-interactions", endpoint="repair_interactions")
     def _repair_interactions():
         try:
-            from backend.modules.interactions import ensure_schema
+            from backend.modules.interactions import ensure_schema, register_into, register_alias_into
             with app.app_context():
                 ensure_schema()
             return _jsonify(ok=True, note="ensure_schema() done"), 200
