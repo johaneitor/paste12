@@ -181,6 +181,7 @@ NOTE_TABLE = _os.environ.get('NOTE_TABLE','note')
 
 
 
+
 ##__INTERACTIONS_BOOTSTRAP__
 try:
     from flask import current_app as _cap
