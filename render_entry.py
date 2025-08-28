@@ -775,62 +775,46 @@ except Exception:
     pass
 # --- end interactions bootstrap
 
-# --- interactions bootstrap (clean) start ---
+# (old interactions bootstrap removed)
+
+
+# --- interactions bootstrap (CLEAN, idempotent) ---
 try:
-    # Módulo encapsulado (events + counters, no-unlike)
     from backend.modules.interactions import (
-        bp as interactions_bp,
-        alias_bp as interactions_alias_bp,
+        bp as _ix_bp,
+        alias_bp as _ix_alias_bp,
         ensure_schema as _ix_ensure_schema,
     )
-except Exception as _e_ix_import:
-    interactions_bp = None
-    interactions_alias_bp = None
+except Exception as _e_ix:
+    _ix_bp = None
+    _ix_alias_bp = None
     def _ix_ensure_schema():
         return None
 
-def _ix_try_register(_app):
+def _ix_register_blueprints(_app):
     try:
-        # Crear tablas necesarias
         if _ix_ensure_schema:
             with _app.app_context():
                 _ix_ensure_schema()
-        # Registrar blueprints (idempotente)
-        if interactions_bp is not None:
-            try:
-                _app.register_blueprint(interactions_bp, url_prefix="/api")
-            except Exception:
-                pass
-        if interactions_alias_bp is not None:
-            try:
-                _app.register_blueprint(interactions_alias_bp, url_prefix="/api")
-            except Exception:
-                pass
+        if _ix_bp is not None:
+            try: _app.register_blueprint(_ix_bp, url_prefix="/api")
+            except Exception: pass
+        if _ix_alias_bp is not None:
+            try: _app.register_blueprint(_ix_alias_bp, url_prefix="/api")
+            except Exception: pass
     except Exception:
-        # No romper el arranque
         pass
 
 try:
-    _ix_try_register(app)
+    _ix_register_blueprints(app)
 except Exception:
     pass
 
-# Diag + reparación mínima para el esquema de interacciones
-from flask import Blueprint as _BP_, jsonify as _jsonify_
-_ixdiag = _BP_("ixdiag_render_entry", __name__)
-
-@_ixdiag.post("/notes/repair-interactions")
-def repair_interactions():
-    try:
-        if _ix_ensure_schema:
-            with app.app_context():
-                _ix_ensure_schema()
-        return _jsonify_(ok=True, repaired=True), 200
-    except Exception as e:
-        return _jsonify_(ok=False, error="repair_failed", detail=str(e)), 500
+from flask import Blueprint as _IXBP, jsonify as _jsonify
+_ixdiag = _IXBP("ixdiag_render_entry", __name__)
 
 @_ixdiag.get("/notes/diag")
-def notes_diag():
+def _ix_notes_diag():
     try:
         from sqlalchemy import inspect as _inspect, func as _func
         eng = db.get_engine()
@@ -842,15 +826,24 @@ def notes_diag():
             from backend.modules.interactions import InteractionEvent
             likes_cnt = db.session.query(_func.count(InteractionEvent.id)).filter_by(type="like").scalar() or 0
             views_cnt = db.session.query(_func.count(InteractionEvent.id)).filter_by(type="view").scalar() or 0
-            out["total_likes"] = int(likes_cnt)
-            out["total_views"] = int(views_cnt)
-        return _jsonify_(ok=True, **out), 200
+            out["total_likes"] = int(likes_cnt); out["total_views"] = int(views_cnt)
+        return _jsonify(ok=True, **out), 200
     except Exception as e:
-        return _jsonify_(ok=False, error="diag_failed", detail=str(e)), 500
+        return _jsonify(ok=False, error="diag_failed", detail=str(e)), 500
+
+@_ixdiag.post("/notes/repair-interactions")
+def _ix_repair_interactions():
+    try:
+        if _ix_ensure_schema:
+            with app.app_context():
+                _ix_ensure_schema()
+        return _jsonify(ok=True, repaired=True), 200
+    except Exception as e:
+        return _jsonify(ok=False, error="repair_failed", detail=str(e)), 500
 
 try:
     app.register_blueprint(_ixdiag, url_prefix="/api")
 except Exception:
     pass
-# --- interactions bootstrap (clean) end ---
+# --- end interactions bootstrap
 
