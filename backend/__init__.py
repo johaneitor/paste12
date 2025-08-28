@@ -25,3 +25,47 @@ def create_app() -> Flask:
         pass
 
     return app
+
+
+# --- DB hardening helpers (idempotente) ---
+def _normalize_database_url(url: str|None):
+    if not url:
+        return url
+    # Corrige postgres:// -> postgresql://
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    # Asegura sslmode=require si no está presente
+    if "sslmode=" not in url:
+        sep = "&" if "?" in url else "?"
+        url = f"{url}{sep}sslmode=require"
+    return url
+
+def apply_engine_hardening(app):
+    # Motor con pre_ping y recycle para evitar EOF/idle disconnects
+    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {})
+    opts = app.config["SQLALCHEMY_ENGINE_OPTIONS"]
+    opts.setdefault("pool_pre_ping", True)
+    opts.setdefault("pool_recycle", 300)
+    opts.setdefault("pool_size", 5)
+    opts.setdefault("max_overflow", 10)
+    opts.setdefault("pool_timeout", 30)
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = opts
+
+
+# create_all con retry para evitar fallos transitorios de red/SSL
+def _retry_create_all(db, app, tries=5):
+    import time
+    for i in range(tries):
+        try:
+            with app.app_context():
+                db.create_all()
+            return True
+        except Exception as e:
+            # backoff simple
+            time.sleep(1 + i)
+    return False
+
+try:
+    _retry_create_all(db, app)
+except Exception:
+    pass
