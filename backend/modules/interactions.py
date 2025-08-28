@@ -1,8 +1,7 @@
 from __future__ import annotations
-import os, math
+import os, math, hashlib
 from datetime import datetime, timezone
 from typing import Optional
-
 from flask import Blueprint, jsonify, request, current_app
 from sqlalchemy import UniqueConstraint, Index, func
 
@@ -13,7 +12,7 @@ try:
     from backend import db as _db
     from backend.models import Note as _Note
     db, Note = _db, _Note
-except Exception as _e:
+except Exception:
     # Fallback mínimo si se usa este módulo suelto
     from flask_sqlalchemy import SQLAlchemy
     from flask import Flask
@@ -23,7 +22,8 @@ except Exception as _e:
         _app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL","sqlite:///app.db")
         _app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db = SQLAlchemy(_app)
-    class Note(db.Model):
+
+    class Note(db.Model):  # type: ignore
         __tablename__ = "note"
         id = db.Column(db.Integer, primary_key=True)
         text = db.Column(db.Text, nullable=False)
@@ -41,14 +41,13 @@ def _fp() -> str:
     ip = request.headers.get("X-Forwarded-For","") or request.headers.get("CF-Connecting-IP","") or (request.remote_addr or "")
     ua = request.headers.get("User-Agent","")
     salt = os.environ.get("FP_SALT","")
-    import hashlib
     try:
         return hashlib.sha256(f"{ip}|{ua}|{salt}".encode()).hexdigest()[:32]
     except Exception:
         return "noctx"
 
 # === Modelo de eventos (sin unlike). Idempotencia por constraints ===
-class InteractionEvent(db.Model):
+class InteractionEvent(db.Model):  # type: ignore
     __tablename__ = "interaction_event"
     id = db.Column(db.Integer, primary_key=True)
     note_id = db.Column(db.Integer, db.ForeignKey("note.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -75,9 +74,8 @@ bp = Blueprint("interactions", __name__)
 
 def _bucket_15m(ts: Optional[datetime] = None) -> int:
     ts = ts or _utcnow()
-    # epoch seconds // 900
-    epoch = ts.timestamp()
-    return int(math.floor(epoch / 900.0))
+    epoch = ts.timestamp()  # seconds
+    return int(epoch // 900)
 
 def _note_or_404(note_id: int) -> Optional[Note]:
     n = Note.query.filter_by(id=note_id).first()
@@ -85,59 +83,48 @@ def _note_or_404(note_id: int) -> Optional[Note]:
 
 @bp.post("/notes/<int:note_id>/like")
 def like_note(note_id: int):
-    def _do(note_id=note_id):
     n = _note_or_404(note_id)
     if not n:
-                return jsonify(ok=False, error="not_found"), 404
+        return jsonify(ok=False, error="not_found"), 404
     fp = _fp()
     try:
-        # Insert idempotente: like => bucket=0
         evt = InteractionEvent(note_id=note_id, fp=fp, type="like", bucket_15m=0)
-                db.session.add(evt)
-                db.session.commit()
+        db.session.add(evt)
+        db.session.commit()
     except Exception:
-        # Violación de unique (ya likeó): ignorar
-                db.session.rollback()
-    # Recalcular contador denormalizado
-    likes =         db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="like").scalar() or 0
+        db.session.rollback()
+    likes = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="like").scalar() or 0
     n.likes = int(likes)
-            db.session.commit()
-            return jsonify(ok=True, id=note_id, likes=n.likes), 200
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
+    db.session.commit()
+    return jsonify(ok=True, id=note_id, likes=n.likes), 200
 
 @bp.post("/notes/<int:note_id>/view")
 def view_note(note_id: int):
-    def _do(note_id=note_id):
     n = _note_or_404(note_id)
     if not n:
-                return jsonify(ok=False, error="not_found"), 404
+        return jsonify(ok=False, error="not_found"), 404
     fp = _fp()
     b = _bucket_15m()
     try:
         evt = InteractionEvent(note_id=note_id, fp=fp, type="view", bucket_15m=b)
-                db.session.add(evt)
-                db.session.commit()
+        db.session.add(evt)
+        db.session.commit()
     except Exception:
-                db.session.rollback()
-    views =         db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="view").scalar() or 0
+        db.session.rollback()
+    views = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="view").scalar() or 0
     n.views = int(views)
-            db.session.commit()
-            return jsonify(ok=True, id=note_id, views=n.views, window="15m"), 200
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
+    db.session.commit()
+    return jsonify(ok=True, id=note_id, views=n.views, window="15m"), 200
 
 @bp.get("/notes/<int:note_id>/stats")
 def stats_note(note_id: int):
-    def _do(note_id=note_id):
     n = _note_or_404(note_id)
     if not n:
-                return jsonify(ok=False, error="not_found"), 404
+        return jsonify(ok=False, error="not_found"), 404
     likes = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="like").scalar() or 0
     views = db.session.query(func.count(InteractionEvent.id)).filter_by(note_id=note_id, type="view").scalar() or 0
-            return jsonify(ok=True, id=note_id, likes=int(likes), views=int(views), denorm={"likes":n.likes,"views":n.views}), 200
+    return jsonify(ok=True, id=note_id, likes=int(likes), views=int(views),
+                   denorm={"likes": n.likes, "views": n.views}), 200
 
 def ensure_schema():
     try:
@@ -146,7 +133,6 @@ def ensure_schema():
         pass
 
 def register_into(app):
-    # idempotente: si ya existen, no rompe
     try:
         app.register_blueprint(bp, url_prefix="/api")
     except Exception:
@@ -154,114 +140,44 @@ def register_into(app):
     with app.app_context():
         ensure_schema()
 
-# Auto-registro cuando el módulo se importa y hay app activa (opcional)
+# --- Alias blueprint para rutas “seguras” (/api/ix/...) ---
+alias_bp = Blueprint("interactions_alias", __name__)
+
+@alias_bp.post("/ix/notes/<int:note_id>/like")
+def _alias_like(note_id:int):
+    return like_note(note_id)
+
+@alias_bp.post("/ix/notes/<int:note_id>/view")
+def _alias_view(note_id:int):
+    return view_note(note_id)
+
+@alias_bp.get("/ix/notes/<int:note_id>/stats")
+def _alias_stats(note_id:int):
+    return stats_note(note_id)
+
+def register_alias_into(app):
+    try:
+        app.register_blueprint(alias_bp, url_prefix="/api")
+    except Exception:
+        pass
+
+# === Diag: existencia de tabla y counts básicos ===
+@bp.get("/notes/diag", endpoint="interactions_diag")
+def interactions_diag():
+    try:
+        likes_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="like").scalar() or 0
+        views_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="view").scalar() or 0
+        # listar tablas disponible vía inspector puede variar entre SA1/SA2, mantener simple:
+        return jsonify(ok=True, has_interaction_event=True,
+                       total_likes=int(likes_cnt), total_views=int(views_cnt)), 200
+    except Exception as e:
+        return jsonify(ok=False, error="diag_failed", detail=str(e)), 500
+
+# Auto-registro suave si hay app activa
 try:
     _app = current_app._get_current_object()
     if _app:
         register_into(_app)
+        register_alias_into(_app)
 except Exception:
     pass
-
-
-# --- Alias blueprint para evitar choques de rutas legacy ---
-from flask import Blueprint as _BP
-alias_bp = _BP("interactions_alias", __name__)
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
-
-@alias_bp.post("/ix/notes/<int:note_id>/like")
-def _alias_like(note_id:int):  # reusa la lógica
-    return like_note(note_id)
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
-
-@alias_bp.post("/ix/notes/<int:note_id>/view")
-def _alias_view(note_id:int):
-    return view_note(note_id)
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
-
-@alias_bp.get("/ix/notes/<int:note_id>/stats")
-def _alias_stats(note_id:int):
-    return stats_note(note_id)
-
-def register_alias_into(app):
-    try:
-        app.register_blueprint(alias_bp, url_prefix="/api")
-    except Exception:
-        pass
-
-
-# --- Alias blueprint para evitar choques de rutas legacy ---
-from flask import Blueprint as _BP
-alias_bp = _BP("interactions_alias", __name__)
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
-
-@alias_bp.post("/ix/notes/<int:note_id>/like")
-def _alias_like(note_id:int):  # reusa la lógica
-    return like_note(note_id)
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
-
-@alias_bp.post("/ix/notes/<int:note_id>/view")
-def _alias_view(note_id:int):
-    return view_note(note_id)
-
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
-
-@alias_bp.get("/ix/notes/<int:note_id>/stats")
-def _alias_stats(note_id:int):
-    return stats_note(note_id)
-
-def register_alias_into(app):
-    try:
-        app.register_blueprint(alias_bp, url_prefix="/api")
-    except Exception:
-        pass
-
-
-# === Diag: existencia de tabla y counts básicos ===
-    # end _do
-    return _maybe_bootstrap_schema_and_retry(_do)
-
-@bp.get("/notes/diag", endpoint="interactions_diag")
-def interactions_diag():
-    try:
-        eng = db.get_engine()
-        insp = getattr(eng, "inspect", None)
-        # SQLAlchemy 2.x pattern
-        from sqlalchemy import inspect as _inspect
-        inspector = _inspect(eng)
-        tables = inspector.get_table_names()
-        has_evt = "interaction_event" in tables
-        likes_cnt = views_cnt = None
-        if has_evt:
-            likes_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="like").scalar() or 0
-            views_cnt = db.session.query(func.count(InteractionEvent.id)).filter_by(type="view").scalar() or 0
-                return jsonify(ok=True, tables=tables, has_interaction_event=has_evt,
-                       total_likes=int(likes_cnt) if likes_cnt is not None else None,
-                       total_views=int(views_cnt) if views_cnt is not None else None), 200
-    except Exception as e:
-                return jsonify(ok=False, error="diag_failed", detail=str(e)), 500
-
-_MISSING_EVT_ERRS = ("no such table: interaction_event", "UndefinedTable: relation \"interaction_event\"")
-def _maybe_bootstrap_schema_and_retry(fn, *args, **kwargs):
-    try:
-        return fn(*args, **kwargs)
-    except Exception as e:
-        msg = str(e).lower()
-        if any(t in msg for t in _MISSING_EVT_ERRS):
-            try:
-                ensure_schema()
-            except Exception:
-                pass
-            # retry 1 vez
-            return fn(*args, **kwargs)
-        raise
