@@ -105,10 +105,6 @@ if Note and not (_has("/api/notes","GET") and _has("/api/notes","POST")):
     def create_note():
         from sqlalchemy.exc import SQLAlchemyError
 
-# --- safe default for NOTE_TABLE (evita NameError al importar en Render) ---
-import os as _os
-NOTE_TABLE = _os.environ.get('NOTE_TABLE','note')
-# ---------------------------------------------------------------------------
         try:
             data = request.get_json(silent=True) or {}
             text = (data.get("text") or "").strip()
@@ -178,6 +174,11 @@ try:
 except Exception:
     pass
 from backend.modules.interactions import repair_interaction_table, ensure_schema, register_into, register_alias_into, register_into, register_alias_into, register_into, register_alias_into
+# --- safe default for NOTE_TABLE (evita NameError al importar en Render) ---
+import os as _os
+NOTE_TABLE = _os.environ.get('NOTE_TABLE','note')
+# ---------------------------------------------------------------------------
+
 
 ##__INTERACTIONS_BOOTSTRAP__
 try:
