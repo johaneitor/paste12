@@ -104,6 +104,11 @@ if Note and not (_has("/api/notes","GET") and _has("/api/notes","POST")):
     @api.post("/notes")
     def create_note():
         from sqlalchemy.exc import SQLAlchemyError
+
+# --- safe default for NOTE_TABLE (evita NameError al importar en Render) ---
+import os as _os
+NOTE_TABLE = _os.environ.get('NOTE_TABLE','note')
+# ---------------------------------------------------------------------------
         try:
             data = request.get_json(silent=True) or {}
             text = (data.get("text") or "").strip()
@@ -407,3 +412,43 @@ try:
         pass
 except Exception:
     pass
+
+
+# === interactions: ensure schema + alias (/api/ix) ==========================
+try:
+    from backend.modules.interactions import register_alias_into, ensure_schema
+    try:
+        with app.app_context():
+            ensure_schema()
+    except Exception:
+        pass
+    try:
+        register_alias_into(app)  # /api/ix/notes/<id>/(like|view|stats)
+    except Exception:
+        pass
+except Exception:
+    # si no está el módulo, no rompemos el arranque
+    pass
+# ===========================================================================
+
+
+# --- POST /api/notes/repair-interactions: recrea esquema de interactions ----
+try:
+    from flask import Blueprint as _BP, jsonify as _jsonify
+    _repair_bp = _BP("repair_interactions_bp", __name__)
+    @_repair_bp.post("/api/notes/repair-interactions", endpoint="repair_interactions")
+    def _repair_interactions():
+        try:
+            from backend.modules.interactions import ensure_schema
+            with app.app_context():
+                ensure_schema()
+            return _jsonify(ok=True, note="ensure_schema() done"), 200
+        except Exception as e:
+            return _jsonify(ok=False, error="repair_failed", detail=str(e)), 500
+    try:
+        app.register_blueprint(_repair_bp)
+    except Exception:
+        pass
+except Exception:
+    pass
+# ----------------------------------------------------------------------------
