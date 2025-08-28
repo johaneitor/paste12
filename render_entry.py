@@ -255,3 +255,42 @@ except Exception:
     pass
 
 # (fin bootstrap)
+
+# >>> force_interactions_alias_only (safe, no endpoint collisions)
+try:
+    from backend.modules import interactions as _ix
+    try:
+        # asegurar esquema
+        from flask import current_app as _cap
+        _app = _cap._get_current_object() if _cap else app
+    except Exception:
+        try:
+            _app = app
+        except Exception:
+            _app = None
+    if _app is not None:
+        with _app.app_context():
+            try:
+                _ix.ensure_schema()
+            except Exception:
+                pass
+        # registrar solo alias (/api/ix/notes/*) y el blueprint principal si faltaran diag/stats
+        try:
+            _ix.register_alias_into(_app)
+        except Exception:
+            pass
+        # Si no existe /api/notes/diag, intentar registrar el bp principal también
+        try:
+            has_diag = any(str(r)=="/api/notes/diag" for r in _app.url_map.iter_rules())
+        except Exception:
+            has_diag = False
+        if not has_diag:
+            try:
+                _ix.register_into(_app)
+            except Exception:
+                pass
+except Exception:
+    # silencioso para no romper el startup
+    pass
+# <<< force_interactions_alias_only
+
