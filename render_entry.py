@@ -8,6 +8,7 @@ NOTE_TABLE = _os.environ.get('NOTE_TABLE','note')
 # ---------------------------------------------------------------------------
 
 
+
 app = None
 db = None
 Note = None
