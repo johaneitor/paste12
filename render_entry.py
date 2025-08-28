@@ -24,6 +24,11 @@ if app is None:
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db = SQLAlchemy(app)
+# ## interactions: startup ensure
+try:
+    _ensure_interaction_table(app, db)
+except Exception:
+    pass
     class Note(db.Model):
         __tablename__ = "note"
         id = db.Column(db.Integer, primary_key=True)
@@ -336,5 +341,48 @@ def _retry_create_all(db, app, tries=5):
 
 try:
     _retry_create_all(db, app)
+except Exception:
+    pass
+
+
+# === ensure: interacción (solo tabla interaction_event) ===
+def _ensure_interaction_table(app, db):
+    try:
+        # Normalizar URL y endurecer engine si tu archivo ya tiene helpers:
+        try:
+            app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_database_url(
+                app.config.get("SQLALCHEMY_DATABASE_URI")
+            )
+        except Exception:
+            pass
+        # Crear exclusivamente la tabla de eventos (idempotente)
+        from sqlalchemy import inspect
+        insp = inspect(db.engine)
+        if "interaction_event" not in insp.get_table_names():
+            InteractionEvent.__table__.create(bind=db.engine, checkfirst=True)
+        # Crear resto si faltara algo (seguro/idempotente)
+        ensure_schema()
+        return True
+    except Exception:
+        return False
+
+
+# === endpoint de mantenimiento: POST /api/notes/ensure-schema ===
+try:
+    from flask import Blueprint, jsonify
+    _mnt = Blueprint("interactions_maint", __name__)
+
+    @_mnt.post("/notes/ensure-schema", endpoint="ensure_interaction_schema")
+    def ensure_interaction_schema():
+        try:
+            ok = _ensure_interaction_table(app, db)
+            return jsonify(ok=bool(ok), created=True), (200 if ok else 500)
+        except Exception as e:
+            return jsonify(ok=False, error="ensure_failed", detail=str(e)), 500
+
+    try:
+        app.register_blueprint(_mnt, url_prefix="/api")
+    except Exception:
+        pass
 except Exception:
     pass
