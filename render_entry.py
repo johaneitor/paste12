@@ -193,3 +193,32 @@ except Exception:
 # WSGI app export
 #   Start Command recomendado en Render:
 #   gunicorn render_entry:app -w ${WEB_CONCURRENCY:-2} -k gthread --threads ${THREADS:-4} --bind 0.0.0.0:$PORT
+
+
+# --- interactions: registro limpio e idempotente ---
+try:
+    from backend.modules.interactions import ensure_schema as _ix_ensure_schema
+    from backend.modules.interactions import register_into as _ix_register_into
+    from backend.modules.interactions import register_alias_into as _ix_register_alias_into
+except Exception:
+    _ix_ensure_schema = None
+    _ix_register_into = None
+    _ix_register_alias_into = None
+
+def _ix_bootstrap(_app):
+    try:
+        if _ix_ensure_schema:
+            with _app.app_context():
+                _ix_ensure_schema()
+        if _ix_register_into:
+            _ix_register_into(_app, url_prefix="/api")
+        if _ix_register_alias_into:
+            _ix_register_alias_into(_app, url_prefix="/api")
+    except Exception:
+        pass
+
+try:
+    _ix_bootstrap(app)
+except Exception:
+    pass
+# --- /interactions ---
