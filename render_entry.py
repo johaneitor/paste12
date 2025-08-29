@@ -69,6 +69,12 @@ def _note_json(n: Note, now: datetime | None = None) -> dict:
 # --- API Blueprint ---
 api = Blueprint("api", __name__)
 
+@api.get("/version")
+def version():
+    sha = os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("GIT_COMMIT") or "unknown"
+    return jsonify(ok=True, commit=sha), 200
+
+
 @api.get("/health")
 def health():
     return jsonify(ok=True, note="render_entry"), 200
