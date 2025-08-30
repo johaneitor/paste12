@@ -39,3 +39,6 @@ patch_backend_views_and_admin.sh
 patch_viewlog_insert_day.sh
 patch_viewlog_unique_v2.sh
 tools/*.sh
+
+# trash de limpieza
+.trash_*/

@@ -105,3 +105,41 @@ def like_note(note_id: int):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error":"like_failed", "detail": str(e)}), 500
+
+# === paste12: /api/reports (mínimo, usa SQLite directo) ============
+import sqlite3, os
+from flask import request, jsonify
+DB_PATH = os.getenv("PASTE12_DB", "app.db")
+
+def _db_path():
+    for p in ("app.db", "instance/app.db", "data/app.db"):
+        if os.path.exists(os.path.join(os.getcwd(), p)): return p
+    return "app.db"
+
+def _conn():
+    path = _db_path()
+    conn = sqlite3.connect(path, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA busy_timeout=5000;")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@bp.route("/reports", methods=["POST"])
+def create_report_min():
+    try:
+        j = request.get_json(force=True, silent=True) or {}
+        cid = str(j.get("content_id","")).strip()
+        if not cid:
+            return jsonify({"error":"content_id_required"}), 400
+        fp = request.headers.get("X-Forwarded-For") or request.remote_addr or "anon"
+        con = _conn()
+        con.execute("INSERT OR IGNORE INTO reports(content_id, reporter_id, reason) VALUES(?,?,?)",
+                    (cid, fp, j.get("reason")))
+        con.commit()
+        c = int(con.execute("SELECT COUNT(*) FROM reports WHERE content_id=?", (cid,)).fetchone()[0])
+        con.close()
+        deleted = False  # (opcional) acá podrías ocultar la nota si c>=5
+        return jsonify({"ok": True, "count": c, "deleted": deleted}), 200
+    except Exception as e:
+        return jsonify({"error":"report_failed","detail":str(e)}), 500

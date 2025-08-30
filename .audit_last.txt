@@ -1,0 +1,2740 @@
+🔎 Audit paste12 — Sat Aug 30 11:44:20 -03 2025 — dir: /data/data/com.termux/files/home/paste12
+
+📂 Estructura (profundidad 3):
+.
+├── .audit_last.txt
+├── .bak_front
+│   ├── app.js.1756100931
+│   └── index.html.1756100931
+├── .deploy-nudge.txt
+├── .env
+├── .gitattributes
+├── .gitignore
+├── .paste12.log
+├── .paste12.pid
+├── .redeploy
+├── .renderignore
+├── .renderignore.bak.1755666866
+├── .tmp
+│   ├── author_fp_hook.log
+│   ├── diag_integral.txt
+│   ├── gather_out.txt
+│   ├── paste12.log
+│   └── paste12_doctor_report.txt
+├── DEPLOY.txt
+├── Dockerfile
+├── Procfile
+├── Procfile.bak.1755839039
+├── README.md
+├── Service
+├── Start
+├── VERSION
+├── add_actions_menu.sh
+├── add_countdown_timer.sh
+├── add_debug_overlay.sh
+├── add_reports_and_share.sh
+├── add_share_instagram_story.sh
+├── add_view_diag.sh
+├── add_views_counter.sh
+├── admin_fix_viewlog_uniques.sh
+├── ads.txt
+├── aggressive_reset_pack.sh
+├── api_pages_check.sh
+├── api_smoke_guard.sh
+├── api_smoke_guard_v2.sh
+├── api_smoke_guard_v3.sh
+├── api_verify_and_views.sh
+├── app
+│   ├── plugins_perf.py
+│   └── routers
+│       └── reports.py
+├── app.db
+├── app.js.tmp
+├── app.py
+├── app.py.bak.1756266847
+├── app_snapshot_20250820_201014.txt
+├── audit_paste12.sh
+├── audit_to_txt.sh
+├── backend
+│   ├── __init__.py
+│   ├── __init__.py.bad.1751947393
+│   ├── __init__.py.bad.1755203442
+│   ├── __init__.py.bad.1755277473
+│   ├── __init__.py.bak.1751947321
+│   ├── __init__.py.bak.1751947446
+│   ├── __init__.py.bak.1751947530
+│   ├── __init__.py.bak.1755190113
+│   ├── __init__.py.bak.1755277389
+│   ├── __init__.py.bak.1755547598
+│   ├── __init__.py.bak.1755554997
+│   ├── __init__.py.bak.1755556014
+│   ├── __init__.py.bak.1755640288
+│   ├── __init__.py.bak.1755640408
+│   ├── __init__.py.bak.1755649729
+│   ├── __init__.py.bak.1755661402
+│   ├── __init__.py.bak.1755661704
+│   ├── __init__.py.bak.1755663424
+│   ├── __init__.py.bak.1755663692
+│   ├── __init__.py.bak.1755663855
+│   ├── __init__.py.bak.1755664401
+│   ├── __init__.py.bak.1755664672
+│   ├── __init__.py.bak.1755665041
+│   ├── __init__.py.bak.1755665236
+│   ├── __init__.py.bak.1755665497
+│   ├── __init__.py.bak.1755665827
+│   ├── __init__.py.bak.1755666321
+│   ├── __init__.py.bak.1755666580
+│   ├── __init__.py.bak.1755666866
+│   ├── __init__.py.bak.1755667505
+│   ├── __init__.py.bak.1755667625
+│   ├── __init__.py.bak.1755667781
+│   ├── __init__.py.bak.1755686473
+│   ├── __init__.py.bak.1755686501
+│   ├── __init__.py.bak.1755686722
+│   ├── __init__.py.bak.1755686997
+│   ├── __init__.py.bak.1755705038
+│   ├── __init__.py.bak.1755705134
+│   ├── __init__.py.bak.1755705330
+│   ├── __init__.py.bak.1755705431
+│   ├── __init__.py.bak.1755706308
+│   ├── __init__.py.bak.1755706770
+│   ├── __init__.py.bak.1755714567
+│   ├── __init__.py.bak.1755832923
+│   ├── __init__.py.bak.1755835692
+│   ├── __init__.py.bak.1755836982
+│   ├── __init__.py.bak.1755839039
+│   ├── __init__.py.bak.1755840470
+│   ├── __init__.py.bak.1755842380
+│   ├── __init__.py.bak.1755860694
+│   ├── __init__.py.bak.1755860700
+│   ├── __init__.py.bak.1755883385
+│   ├── __init__.py.bak.1755883681
+│   ├── __init__.py.bak.1755884164
+│   ├── __init__.py.bak.1755890584
+│   ├── __init__.py.bak.1755892341
+│   ├── __init__.py.bak.1755892605
+│   ├── __init__.py.bak.1755893944
+│   ├── __init__.py.bak.1755897955
+│   ├── __init__.py.bak.1755898723
+│   ├── __init__.py.bak.1755899101
+│   ├── __init__.py.bak.1755901005
+│   ├── __init__.py.bak.1755901194
+│   ├── __init__.py.bak.1755906987
+│   ├── __init__.py.bak.1755907322
+│   ├── __init__.py.bak.1755907786
+│   ├── __init__.py.bak.1755908240
+│   ├── __init__.py.bak.1755909694
+│   ├── __init__.py.bak.1755909843
+│   ├── __init__.py.bak.1755910004
+│   ├── __init__.py.bak.1755948069
+│   ├── __init__.py.bak.1755948533
+│   ├── __init__.py.bak.1755948616
+│   ├── __init__.py.bak.1755961042
+│   ├── __init__.py.bak.1755971655
+│   ├── __init__.py.bak.1756266544
+│   ├── __init__.py.bak.1756565060
+│   ├── __init__.py.bak.20250825T184216Z
+│   ├── __init__.py.bak.20250825T205509Z
+│   ├── __init__.py.bak.20250826-233753
+│   ├── __init__.py.bak.20250827-002614
+│   ├── api.py
+│   ├── backend
+│   ├── debug_routes.py
+│   ├── debug_runtime.py
+│   ├── entry.py
+│   ├── errors.py
+│   ├── force_api.py
+│   ├── frontend
+│   │   ├── ads.txt
+│   │   ├── css
+│   │   ├── favicon.ico
+│   │   ├── favicon.svg
+│   │   ├── img
+│   │   ├── index.html
+│   │   ├── index.html.1755264206.bak
+│   │   ├── index.html.arcade.bak.1751948495
+│   │   ├── index.html.bak.1751947786
+│   │   ├── index.html.bak.1755266570
+│   │   ├── index.html.bak.1755276778
+│   │   ├── index.html.bak.1755277389
+│   │   ├── index.html.bak.1755491687
+│   │   ├── index.html.bak.1755547598
+│   │   ├── index.html.bak.1755554997
+│   │   ├── index.html.bak.1755562548
+│   │   ├── index.html.bak.1755641530
+│   │   ├── index.html.bak.1755643458
+│   │   ├── index.html.bak.1755645584
+│   │   ├── index.html.bak.1755646281
+│   │   ├── index.html.bak.1755659501
+│   │   ├── index.html.bak.1755663424
+│   │   ├── index.html.bak.1755663692
+│   │   ├── index.html.bak.1755667505
+│   │   ├── index.html.bak.1755668927
+│   │   ├── index.html.bak.1755740126
+│   │   ├── index.html.bak.1755741563
+│   │   ├── index.html.bak.1755742064
+│   │   ├── index.html.bak.1755742895
+│   │   ├── index.html.bak.1755782666
+│   │   ├── index.html.bak.1755840748
+│   │   ├── index.html.bak.1755841975
+│   │   ├── index.html.bak.1755842380
+│   │   ├── index.html.bak.1755842855
+│   │   ├── index.html.bak.1755860700
+│   │   ├── index.html.bak.1755870364
+│   │   ├── index.html.bak.1755882463
+│   │   ├── index.html.bak.1756482671
+│   │   ├── index.html.bak.1756565059
+│   │   ├── index.html.fix.1755219823
+│   │   ├── index.html.recover.1755266235
+│   │   ├── index.html.turq.bak.1751948722
+│   │   ├── index.html.versus.bak.1751948875
+│   │   ├── index.html.versus.bak.1751949528
+│   │   ├── js
+│   │   ├── legal
+│   │   ├── legal.html
+│   │   ├── privacy.html
+│   │   ├── robots.txt
+│   │   └── terms.html
+│   ├── models.py
+│   ├── models.py.1755264206.bak
+│   ├── models.py.bak.1755189134
+│   ├── models.py.bak.1755461704
+│   ├── models.py.bak.1755623473
+│   ├── models.py.bak.1755630837
+│   ├── models.py.bak.1755637831
+│   ├── models.py.bak.1755668927
+│   ├── models.py.bak.1755699998
+│   ├── models.py.bak.1755702452
+│   ├── models.py.bak.1755733842
+│   ├── models.py.bak.1755832923
+│   ├── models.py.bak.1755833534
+│   ├── models.py.bak.1755835692
+│   ├── models.py.bak.1755836982
+│   ├── models.py.bak.1755837316
+│   ├── models.py.bak.1755837517
+│   ├── models.py.bak.1755839370
+│   ├── models.py.bak.1755841247
+│   ├── models.py.bak.1755841975
+│   ├── models.py.bak.1755842380
+│   ├── models.py.bak.1755843247
+│   ├── models.py.bak.1755859384
+│   ├── models.py.bak.1756256356
+│   ├── models.py.bak.1756256403
+│   ├── models_hooks.py
+│   ├── modules
+│   │   ├── interactions.py
+│   │   └── interactions.py.bak.1756335564
+│   ├── repos
+│   │   ├── __init__.py
+│   │   └── notes_repo.py
+│   ├── routes.py
+│   ├── routes.py.1755264206.bak
+│   ├── routes.py.bak.1751947786
+│   ├── routes.py.bak.1755189134
+│   ├── routes.py.bak.1755204230
+│   ├── routes.py.bak.1755204925
+│   ├── routes.py.bak.1755461704
+│   ├── routes.py.bak.1755623473
+│   ├── routes.py.bak.1755623762
+│   ├── routes.py.bak.1755627627
+│   ├── routes.py.bak.1755629635
+│   ├── routes.py.bak.1755630430
+│   ├── routes.py.bak.1755630728
+│   ├── routes.py.bak.1755639793
+│   ├── routes.py.bak.1755645584
+│   ├── routes.py.bak.1755649729
+│   ├── routes.py.bak.1755661402
+│   ├── routes.py.bak.1755661704
+│   ├── routes.py.bak.1755668927
+│   ├── routes.py.bak.1755686473
+│   ├── routes.py.bak.1755686501
+│   ├── routes.py.bak.1755686722
+│   ├── routes.py.bak.1755686997
+│   ├── routes.py.bak.1755699998
+│   ├── routes.py.bak.1755702452
+│   ├── routes.py.bak.1755705038
+│   ├── routes.py.bak.1755715965
+│   ├── routes.py.bak.1755716565
+│   ├── routes.py.bak.1755716693
+│   ├── routes.py.bak.1755728838
+│   ├── routes.py.bak.1755732238
+│   ├── routes.py.bak.1755813088
+│   ├── routes.py.bak.1755814654
+│   ├── routes.py.bak.1755815396
+│   ├── routes.py.bak.1755816433
+│   ├── routes.py.bak.1755818084
+│   ├── routes.py.bak.1755818846
+│   ├── routes.py.bak.1755819812
+│   ├── routes.py.bak.1755820026
+│   ├── routes.py.bak.1755820202
+│   ├── routes.py.bak.1755820530
+│   ├── routes.py.bak.1755820707
+│   ├── routes.py.bak.1755820932
+│   ├── routes.py.bak.1755824080
+│   ├── routes.py.bak.1755824375
+│   ├── routes.py.bak.1755824511
+│   ├── routes.py.bak.1755824702
+│   ├── routes.py.bak.1755824977
+│   ├── routes.py.bak.1755825111
+│   ├── routes.py.bak.1755825314
+│   ├── routes.py.bak.1755826451
+│   ├── routes.py.bak.1755826551
+│   ├── routes.py.bak.1755827018
+│   ├── routes.py.bak.1755830723
+│   ├── routes.py.bak.1755830928
+│   ├── routes.py.bak.1755831116
+│   ├── routes.py.bak.1755832226
+│   ├── routes.py.bak.1755832923
+│   ├── routes.py.bak.1755833119
+│   ├── routes.py.bak.1755833632
+│   ├── routes.py.bak.1755833688
+│   ├── routes.py.bak.1755833758
+│   ├── routes.py.bak.1755833909
+│   ├── routes.py.bak.1755834035
+│   ├── routes.py.bak.1755834129
+│   ├── routes.py.bak.1755834244
+│   ├── routes.py.bak.1755835147
+│   ├── routes.py.bak.1755835346
+│   ├── routes.py.bak.1755835549
+│   ├── routes.py.bak.1755835692
+│   ├── routes.py.bak.1755836982
+│   ├── routes.py.bak.1755837426
+│   ├── routes.py.bak.1755837623
+│   ├── routes.py.bak.1755837779
+│   ├── routes.py.bak.1755841247
+│   ├── routes.py.bak.1755841975
+│   ├── routes.py.bak.1755842380
+│   ├── routes.py.bak.1755843247
+│   ├── routes.py.bak.1755859384
+│   ├── routes.py.bak.1755860694
+│   ├── routes.py.bak.1755860700
+│   ├── routes.py.bak.1755861127
+│   ├── routes.py.bak.1755861326
+│   ├── routes.py.bak.1755862277
+│   ├── routes.py.bak.1755863345
+│   ├── routes.py.bak.1755872318
+│   ├── routes.py.bak.1755872510
+│   ├── routes.py.bak.1755872808
+│   ├── routes.py.bak.1755873188
+│   ├── routes.py.bak.1755873483
+│   ├── routes.py.bak.1755874734
+│   ├── routes.py.bak.1755946816
+│   ├── routes.py.bak.1755947124
+│   ├── routes.py.bak.1755947248
+│   ├── routes.py.bak.1755971794
+│   ├── routes.py.bak.1755972015
+│   ├── routes.py.bak.1756256356
+│   ├── routes.py.bak.1756256403
+│   ├── routes.py.bak.1756262103
+│   ├── routes.py.bak.1756565060
+│   ├── routes.py.bak.1756565060.rl
+│   ├── routes.py.bak.20250825T154846Z
+│   ├── routes.py.bak.20250825T174215Z
+│   ├── routes.py.bak.20250825T183911Z
+│   ├── routes.py.bak.20250825T183917Z
+│   ├── routes.py.bak.20250825T205638Z
+│   ├── routes.py.bak.20250825T210017Z
+│   ├── routes.py.bak.20250825T210559Z
+│   ├── routes.py.bak.20250827-002822
+│   ├── routes_notes.py
+│   ├── routes_notes.py.bak.1756266695
+│   ├── schemas
+│   │   ├── __init__.py
+│   │   └── notes.py
+│   ├── services
+│   │   ├── __init__.py
+│   │   └── notes_service.py
+│   ├── static_routes.py
+│   ├── tasks.py
+│   ├── tasks.py.bak.1755686997
+│   ├── utils
+│   │   └── fingerprint.py
+│   ├── webui.py
+│   ├── webui.py.bak.1755898152
+│   ├── webui.py.bak.1755898723
+│   ├── webui.py.bak.1755899101
+│   ├── webui.py.bak.1755906988
+│   ├── webui.py.bak.1755907322
+│   └── webui.py.bak.1755907786
+├── backups_1755190274
+│   ├── index.html
+│   ├── models.py
+│   └── routes.py
+├── backups_1755689326
+│   ├── __init__.py
+│   └── routes.py
+├── backups_1755694697
+│   ├── __init__.py
+│   └── routes.py
+├── backups_1755703401
+│   ├── __init__.py
+│   ├── models.py
+│   └── routes.py
+├── backups_1755704186
+│   ├── __init__.py
+│   └── routes.py
+├── backups_1755704271
+│   ├── __init__.py
+│   └── routes.py
+├── backups_1755730760
+│   ├── models.py
+│   ├── production.db
+│   └── routes.py
+├── bn.txt
+├── check_notes_safe.sh
+├── collect_debug_bundle.sh
+├── data
+│   ├── app.db
+│   ├── app.db-shm
+│   └── app.db-wal
+├── db
+│   └── migrations
+│       └── 001_reports.sql
+├── debug_report_1755707598.txt
+├── deploy_to_render.sh
+├── diagnose_feed_and_views.sh
+├── docker-compose.yml
+├── docs
+│   └── snippets
+├── dump_architecture_and_code.sh
+├── dump_to_downloads.sh
+├── enable_adsense.sh
+├── enable_adsense_min.sh
+├── enable_likes_views.sh
+├── enable_share_copy_only.sh
+├── enforce_cap_everywhere.sh
+├── enforce_like_report_once.sh
+├── ensure_fp.sh
+├── ensure_legal_and_deploy.sh
+├── entry_main.py
+├── fix_and_push.sh
+├── fix_api_and_models.sh
+├── fix_backend_api_and_front.sh
+├── fix_backend_scheduler.sh
+├── fix_blueprint_and_boot.sh
+├── fix_boot_frontend.sh
+├── fix_core_stack.sh
+├── fix_datetime_awareness.sh
+├── fix_datetime_indent.sh
+├── fix_enforce_block_hard.sh
+├── fix_enforce_block_safe.sh
+├── fix_enforce_indent_block.sh
+├── fix_expiration.sh
+├── fix_favicon_routes_and_migrate.sh
+├── fix_feed_pagination_and_views_idempotent.sh
+├── fix_front_root_inline.sh
+├── fix_front_routes_indent_safe.sh
+├── fix_front_routes_once.sh
+├── fix_frontend_render.sh
+├── fix_frontend_routes_final.sh
+├── fix_future_import_and_cap.sh
+├── fix_idempotent_api_registration.sh
+├── fix_init_clean.sh
+├── fix_init_indent_cap.sh
+├── fix_legal_and_story.sh
+├── fix_limiter_import.sh
+├── fix_models_and_migrate.sh
+├── fix_rate_key_and_smoke.sh
+├── fix_register_frontend_name.sh
+├── fix_register_frontend_order.sh
+├── fix_remote_and_push.sh
+├── fix_render_db_plan.sh
+├── fix_render_legacy_db_plan.sh
+├── fix_render_static_and_routes.sh
+├── fix_root_404.sh
+├── fix_root_404_blueprint.sh
+├── fix_root_and_legal.sh
+├── fix_routes_and_register_api.sh
+├── fix_routes_purge_block.sh
+├── fix_schema.sh
+├── fix_static_root.sh
+├── fix_submit_and_style.sh
+├── fix_try_indentation_once.sh
+├── fix_viewlog_and_feed.sh
+├── fix_warn_and_favicon.sh
+├── force_enable_views_and_patch_view.sh
+├── force_fix_routes_render.sh
+├── force_frontend_fix.sh
+├── force_views_on.sh
+├── force_views_on_and_fix_view_endpoint.sh
+├── front_clean_index.sh
+├── front_min_scripts.sh
+├── front_restore_ui.sh
+├── front_safe_mode.sh
+├── front_safe_mode_force.sh
+├── front_ultra_minimal.sh
+├── frontend
+│   ├── ads.txt
+│   ├── css
+│   │   ├── styles.css
+│   │   ├── styles.css.1755264206.bak
+│   │   ├── styles.css.arcade.bak.1751948495
+│   │   ├── styles.css.bak.1751947786
+│   │   ├── styles.css.bak.1755276778
+│   │   ├── styles.css.bak.1755277389
+│   │   ├── styles.css.bak.1755461704
+│   │   ├── styles.css.bak.1755491687
+│   │   ├── styles.css.bak.1755547598
+│   │   ├── styles.css.bak.1755564574
+│   │   ├── styles.css.bak.1755623762
+│   │   ├── styles.css.bak.1755643458
+│   │   ├── styles.css.bak.1755646281
+│   │   ├── styles.css.bak.1755659501
+│   │   ├── styles.css.bak.1755840748
+│   │   ├── styles.css.bak.1755842380
+│   │   ├── styles.css.bak.1755842855
+│   │   ├── styles.css.bak.1755860700
+│   │   ├── styles.css.turq.bak.1751948722
+│   │   ├── styles.css.versus.bak.1751948875
+│   │   └── styles.css.versus.bak.1751949528
+│   ├── favicon.svg
+│   ├── img
+│   │   └── og.png
+│   ├── index.html
+│   ├── index.html.1755264206.bak
+│   ├── index.html.arcade.bak.1751948495
+│   ├── index.html.bak.1751947786
+│   ├── index.html.bak.1755266570
+│   ├── index.html.bak.1755276778
+│   ├── index.html.bak.1755277389
+│   ├── index.html.bak.1755491687
+│   ├── index.html.bak.1755547598
+│   ├── index.html.bak.1755554997
+│   ├── index.html.bak.1755562548
+│   ├── index.html.bak.1755641530
+│   ├── index.html.bak.1755643458
+│   ├── index.html.bak.1755645584
+│   ├── index.html.bak.1755646281
+│   ├── index.html.bak.1755659501
+│   ├── index.html.bak.1755663424
+│   ├── index.html.bak.1755663692
+│   ├── index.html.bak.1755667505
+│   ├── index.html.bak.1755668927
+│   ├── index.html.bak.1755740126
+│   ├── index.html.bak.1755741563
+│   ├── index.html.bak.1755742064
+│   ├── index.html.bak.1755742895
+│   ├── index.html.bak.1755782666
+│   ├── index.html.bak.1755840748
+│   ├── index.html.bak.1755841975
+│   ├── index.html.bak.1755842380
+│   ├── index.html.bak.1755842855
+│   ├── index.html.bak.1755860700
+│   ├── index.html.bak.1755870364
+│   ├── index.html.bak.1755882463
+│   ├── index.html.fix.1755219823
+│   ├── index.html.recover.1755266235
+│   ├── index.html.turq.bak.1751948722
+│   ├── index.html.versus.bak.1751948875
+│   ├── index.html.versus.bak.1751949528
+│   ├── js
+│   │   ├── actions_menu.js
+│   │   ├── app.js
+│   │   ├── app.js.1755264206.bak
+│   │   ├── app.js.bak.1751947786
+│   │   ├── app.js.bak.1755189134
+│   │   ├── app.js.bak.1755266570
+│   │   ├── app.js.bak.1755276778
+│   │   ├── app.js.bak.1755277389
+│   │   ├── app.js.bak.1755461704
+│   │   ├── app.js.bak.1755491687
+│   │   ├── app.js.bak.1755547598
+│   │   ├── app.js.bak.1755562548
+│   │   ├── app.js.bak.1755564574
+│   │   ├── app.js.bak.1755623762
+│   │   ├── app.js.bak.1755724962
+│   │   ├── app.js.bak.1755725064
+│   │   ├── app.js.bak.1755725605
+│   │   ├── app.js.bak.1755739555
+│   │   ├── app.js.bak.1755740126
+│   │   ├── app.js.bak.1755743941
+│   │   ├── app.js.bak.1755840748
+│   │   ├── app.js.bak.1755841584
+│   │   ├── app.js.bak.1755841975
+│   │   ├── app.js.bak.1755842380
+│   │   ├── app.js.bak.1755842855
+│   │   ├── app.js.bak.1755843247
+│   │   ├── app.js.bak.1755860694
+│   │   ├── app.js.bak.1755860700
+│   │   ├── app.js.bak.1755870364
+│   │   ├── app.js.bak.1755882463
+│   │   ├── app.js.fix.1755219823
+│   │   ├── client_fp.js
+│   │   ├── debug_overlay.js
+│   │   ├── hotfix.js
+│   │   ├── share_enhancer.js
+│   │   ├── stability_patch.js
+│   │   └── views_counter.js
+│   ├── legal.html
+│   ├── privacy.html
+│   ├── robots.txt
+│   └── terms.html
+├── go_paste12.sh
+├── hard_fix_init.sh
+├── hard_fix_init_clean.sh
+├── hard_reset_routes.sh
+├── hard_rewrite_routes.sh
+├── harden_like_report.sh
+├── harden_views_idempotent.sh
+├── hardening_backend.py
+├── hn.txt
+├── hotfix_405_and_guards.sh
+├── hotfix_api_guard_and_disable_views.sh
+├── hotfix_front_render.sh
+├── hotfix_remove_author_fp.sh
+├── include_reports_example.py
+├── instance
+│   ├── app.db
+│   ├── data.db
+│   ├── production.db
+│   ├── production.db.bak.1755218839
+│   └── production.db.bak.1755219068
+├── limit_notes.sh
+├── limit_total_notes_and_index.sh
+├── limit_total_notes_and_index_fix.sh
+├── migrate_reports.sql
+├── migrate_sqlite_to_pg.py
+├── migrate_sqlite_to_pg.sh
+├── migrate_viewlog_pg.sh
+├── paste12_auditoria_20250821_181812.md
+├── patch_backend_views_and_admin.sh
+├── patch_front_count_fix.sh
+├── patch_frontend.sh
+├── patch_frontend_dedupe_and_pagination.sh
+├── patch_frontend_dedupe_paging.sh
+├── patch_frontend_dedupe_safe.sh
+├── patch_frontend_v2.sh
+├── patch_render_db_eof.sh
+├── patch_view_endpoint_resilient.sh
+├── patch_viewlog_insert_day.sh
+├── patch_viewlog_unique_v2.sh
+├── patch_views_debug.sh
+├── peek_notes_response.sh
+├── peek_notes_response_local.sh
+├── perf_safe_mode.sh
+├── post_audit.sh
+├── post_audit_v2.sh
+├── public
+├── publish_untracked.sh
+├── push_to_github.sh
+├── pytest.ini
+├── quick_fix.sh
+├── rate_limit.py
+├── reactivate_all.sh
+├── rebuild_index.sh
+├── remove_twitter_popup.sh
+├── render.yaml
+├── render.yaml.bak.1755485395
+├── render.yaml.bak.1755486452
+├── render_entry.py
+├── render_entry.py.bak.1756335563
+├── render_entry.py.bak.1756337928
+├── render_entry.py.bak.1756338827
+├── render_entry.py.bak.1756339430
+├── render_entry.py.bak.1756345862
+├── render_entry.py.bak.1756348832
+├── render_entry.py.bak.1756350810
+├── render_entry.py.bak.1756352638
+├── render_entry.py.bak.1756353113
+├── render_entry.py.bak.1756376166
+├── render_entry.py.bak.1756376202
+├── render_entry.py.bak.1756377251
+├── render_entry.py.bak.1756377559
+├── render_entry.py.bak.1756377581
+├── render_entry.py.bak.1756379793
+├── render_entry.py.bak.1756379801
+├── render_entry.py.bak.1756384064
+├── render_entry.py.bak.1756384067
+├── render_entry.py.bak.1756398080
+├── render_entry.py.bak.20250828-181506
+├── render_entry.py.bak.20250828-181909
+├── render_entry.py.bak.20250828-183203
+├── render_entry.py.bak.20250828-183227
+├── render_entry.py.bak.20250828-185515
+├── render_entry.py.bak.20250828-185535
+├── render_entry.py.bak.20250828-185632
+├── render_entry.py.bak.20250828-185754
+├── render_entry.py.bak.20250828-190034
+├── render_entry.py.bak.20250828-190143
+├── render_entry.py.bak.20250828-190648
+├── render_entry.py.bak.20250828-191457
+├── render_entry.py.bak.20250828-191700
+├── render_entry.py.bak.20250828-194150
+├── render_entry.py.bak.20250828-212739
+├── repair_models_and_migrate_all.sh
+├── requirements.txt
+├── requirements.txt.bak.1755190113
+├── requirements.txt.bak.1755838265
+├── requirements.txt.bak.1755860694
+├── requirements.txt.bak.1755860700
+├── reset_create_app_clean.sh
+├── reset_init_min.sh
+├── run.py
+├── run.py.bak.1751946901
+├── run.py.bak.1751947074
+├── run.py.bak.1755825111
+├── run.py.bak.1755827018
+├── run.py.bak.1755827103
+├── run.py.bak.1755827224
+├── run.py.bak.1755827370
+├── run.py.bak.1755827495
+├── run.py.bak.1755832226
+├── run.py.bak.1755832923
+├── run.py.bak.1755834035
+├── run.py.bak.1755834244
+├── run.py.bak.1755835692
+├── run.py.bak.1755836982
+├── run.py.bak.1755837316
+├── run.py.bak.1755837517
+├── run.py.bak.1755838074
+├── run.py.bak.1755838266
+├── run.py.bak.1755839039
+├── run.py.bak.1755892341
+├── run.py.bak.1756256356
+├── run.py.bak.1756256403
+├── run.py.bak.1756265411
+├── run.py.bak.1756266311
+├── run.py.bak.1756266695
+├── run.py.bak.20250826-233753
+├── run.py.bak.20250827-002614
+├── runtime.txt
+├── sanity_redeploy.sh
+├── scripts
+│   ├── fix_before_id_pagination.py
+│   ├── patch_list_notes_before_id.py
+│   └── smoke_paging_overlap.sh
+├── setup_render.sh
+├── show_structure.sh
+├── smoke_check.sh
+├── smoke_full.sh
+├── stabilize_feed.sh
+├── tests
+│   └── test_api.py
+├── tools
+│   ├── add_api_routes_dump_and_ping.sh
+│   ├── add_api_ui_debug.sh
+│   ├── add_app_factory_and_unify_procfile.sh
+│   ├── add_dbdiag.sh
+│   ├── add_debug_routes_endpoint.sh
+│   ├── add_fallback_api_in_wsgi.sh
+│   ├── add_kebab_share_report_menu.sh
+│   ├── add_load_more_button_and_js.sh
+│   ├── add_min_frontend.sh
+│   ├── add_ping_and_routes_dump.sh
+│   ├── add_reports_threshold_and_menu.sh
+│   ├── add_runtime_debug_and_probe.sh
+│   ├── add_terms_privacy_ads_likes_views.sh
+│   ├── add_version_route.sh
+│   ├── add_wsgiapp_direct_api_endpoints.sh
+│   ├── add_wsgiapp_ping_min.sh
+│   ├── append_final_wrapper_factory.sh
+│   ├── apply_capsules.sh
+│   ├── apply_fix_remote_db_binding.sh
+│   ├── apply_interactions_module.sh
+│   ├── backup_paste12.sh
+│   ├── backup_paste12_zip.sh
+│   ├── bind_db_in_wsgi.sh
+│   ├── bridge_promote_db.sh
+│   ├── bridge_self_sqlalchemy_fix.sh
+│   ├── bridge_wsgiapp_to_wsgi.sh
+│   ├── check_local_blueprint_wiring.sh
+│   ├── check_remote.sh
+│   ├── clean_api_notes_decorators.sh
+│   ├── clean_routes_indent.sh
+│   ├── cleanup_webui_duplicates.sh
+│   ├── commit_frontend_fix_and_push.sh
+│   ├── commit_push_all.sh
+│   ├── db_create_all_verify_and_smoke.sh
+│   ├── db_init_local.sh
+│   ├── debug_notes_pagination.sh
+│   ├── debug_notes_pagination_v2.sh
+│   ├── dedupe_all_routes_endpoints.sh
+│   ├── dedupe_route_endpoints.sh
+│   ├── deploy_and_verify.sh
+│   ├── deploy_prep_pack.sh
+│   ├── dev_boot_diag.sh
+│   ├── diag_integral.sh
+│   ├── diag_server_start.sh
+│   ├── doctor_local_tmp.sh
+│   ├── doctor_v2.sh
+│   ├── dump_server_rules.sh
+│   ├── enable_ix_min.sh
+│   ├── enable_spa_static_and_fallback.sh
+│   ├── enforce_like_view_once.sh
+│   ├── ensure_api_blueprint.sh
+│   ├── ensure_api_registration.sh
+│   ├── ensure_interaction_table.sh
+│   ├── ensure_note_ids.sh
+│   ├── ensure_notes_endpoint.sh
+│   ├── ensure_notes_routes_and_retry.sh
+│   ├── ensure_routes_dump.sh
+│   ├── exec_bridge_promote.sh
+│   ├── exec_smoke_backend_recover.sh
+│   ├── expose_wsgiapp_import_error.sh
+│   ├── final_blueprint_routes_fix.sh
+│   ├── final_clean_commit.sh
+│   ├── final_route_surgery.sh
+│   ├── finalize_docs_and_ignore.sh
+│   ├── finalize_frontend_webui_commit.sh
+│   ├── finalize_routes_and_fix_handlers.sh
+│   ├── fix_and_probe.sh
+│   ├── fix_and_probe_api_diag.sh
+│   ├── fix_api_debug_paths.sh
+│   ├── fix_api_order_and_reload.sh
+│   ├── fix_api_registration.sh
+│   ├── fix_attach_webui_minimal.sh
+│   ├── fix_attach_webui_minimal_noregex.sh
+│   ├── fix_author_fp_and_post_now.sh
+│   ├── fix_author_fp_termux.sh
+│   ├── fix_backend_init_nameerror.sh
+│   ├── fix_before_id_pagination.sh
+│   ├── fix_blueprint_binding.sh
+│   ├── fix_blueprint_order.sh
+│   ├── fix_bp_prefix_routes_v2.sh
+│   ├── fix_create_note_and_alias.sh
+│   ├── fix_db_binding_and_smoke.sh
+│   ├── fix_dbdiag_and_bind.sh
+│   ├── fix_dedupe_like_view.sh
+│   ├── fix_duplicate_endpoints.sh
+│   ├── fix_duplicate_index_pg.sh
+│   ├── fix_endpoints_multiline.sh
+│   ├── fix_factory_prefix_simple.sh
+│   ├── fix_fp_unbound_and_smoke.sh
+│   ├── fix_frontend_404.sh
+│   ├── fix_frontend_anyentry.sh
+│   ├── fix_frontend_blueprint_wrapper.sh
+│   ├── fix_frontend_menu_patch.sh
+│   ├── fix_frontend_register_blueprint_anycase.sh
+│   ├── fix_frontend_routes_in_app_factory.sh
+│   ├── fix_frontend_routes_in_run.sh
+│   ├── fix_frontend_serve_final.sh
+│   ├── fix_frontend_wrapper_any.sh
+│   ├── fix_future_and_bp_guard.sh
+│   ├── fix_future_import_top.sh
+│   ├── fix_future_imports_and_restart.sh
+│   ├── fix_indent_createapp_and_frontend.sh
+│   ├── fix_indent_note.sh
+│   ├── fix_indent_offending_line.sh
+│   ├── fix_indent_routes_block.sh
+│   ├── fix_init_return_outside_fn.sh
+│   ├── fix_interaction_fk_and_repair.sh
+│   ├── fix_interactions_autoreg.sh
+│   ├── fix_interactions_create_all_and_retry.sh
+│   ├── fix_interactions_indent.sh
+│   ├── fix_interactions_module.sh
+│   ├── fix_list_notes_return_page.sh
+│   ├── fix_list_notes_slice_final.sh
+│   ├── fix_list_notes_slice_hard.sh
+│   ├── fix_load_more_block.sh
+│   ├── fix_local_pagination_and_test.sh
+│   ├── fix_map_authorfp_diag_restart_push.sh
+│   ├── fix_model_routes_db_and_smoke.sh
+│   ├── fix_models_and_run_cleanup.sh
+│   ├── fix_models_future_and_reload.sh
+│   ├── fix_newlines_models_run.sh
+│   ├── fix_notes_routes_and_db.sh
+│   ├── fix_notes_sqlalchemy_and_restart.sh
+│   ├── fix_pick_indent_hard.sh
+│   ├── fix_prefix_everywhere.sh
+│   ├── fix_psycopg_and_promote_entry.sh
+│   ├── fix_remote_db_binding.sh
+│   ├── fix_remote_interactions_ddl.sh
+│   ├── fix_render_404_frontend_paths.sh
+│   ├── fix_render_api_v2.sh
+│   ├── fix_render_entry_and_interactions.sh
+│   ├── fix_render_entry_and_register_ix.sh
+│   ├── fix_render_entry_bootstrap.sh
+│   ├── fix_render_entry_indentation_and_ix.sh
+│   ├── fix_render_frontend_404_final.sh
+│   ├── fix_render_frontend_now.sh
+│   ├── fix_render_plaintext_notes.sh
+│   ├── fix_render_psycopg_and_run.sh
+│   ├── fix_routes_indent.sh
+│   ├── fix_routes_indent2.sh
+│   ├── fix_routes_indent_and_alias.sh
+│   ├── fix_routes_indent_line.sh
+│   ├── fix_routes_model_ctor_and_smoke.sh
+│   ├── fix_routes_pick.sh
+│   ├── fix_routes_pick2.sh
+│   ├── fix_routes_pick_block.sh
+│   ├── fix_routes_strip_tail.sh
+│   ├── fix_routes_try_indent.sh
+│   ├── fix_run_future_block_and_restart.sh
+│   ├── fix_run_guard_indent.sh
+│   ├── fix_run_rewrite_clean.sh
+│   ├── fix_top_level_try_blocks.sh
+│   ├── fix_ui_consent_footer_perf.sh
+│   ├── fix_unique_get_notes.sh
+│   ├── fix_viewlog_day_notnull.sh
+│   ├── fix_viewlog_everywhere.sh
+│   ├── fix_viewlog_model.sh
+│   ├── fix_wsgi_and_verify.sh
+│   ├── fix_wsgi_blueprint_prefix.sh
+│   ├── fix_wsgiapp_bridge.sh
+│   ├── force_alias_only_in_render_entry.sh
+│   ├── force_api_blueprint_and_routes.sh
+│   ├── force_api_prefix_for_notes.sh
+│   ├── force_factory_ping.sh
+│   ├── force_factory_ping_routes_strict.sh
+│   ├── force_for_real_remote_notes.sh
+│   ├── force_import_routes.sh
+│   ├── force_interactions_in_render_entry.sh
+│   ├── force_list_pagination_local.sh
+│   ├── force_ping_and_routes_before_return.sh
+│   ├── force_ping_endpoint.sh
+│   ├── force_ping_online.sh
+│   ├── force_rebuild_marker.sh
+│   ├── force_register_interactions_on_wsgiapp.sh
+│   ├── force_remote_notes_routes.sh
+│   ├── force_render_entry_takeover.sh
+│   ├── force_requirements_psycopg.sh
+│   ├── force_run_entrypoint_and_verify.sh
+│   ├── force_webui_and_routes_debug.sh
+│   ├── force_wsgi_and_api.sh
+│   ├── force_wsgi_entrypoint.sh
+│   ├── force_wsgi_ping_early.sh
+│   ├── force_wsgi_ping_now.sh
+│   ├── gather_debug.sh
+│   ├── git_push_all.sh
+│   ├── git_push_fix.sh
+│   ├── git_push_frontend_fix.sh
+│   ├── git_push_routes.sh
+│   ├── guardrails.sh
+│   ├── hard_fix_list_pagination.sh
+│   ├── hard_fix_ping_and_routes.sh
+│   ├── hard_fix_render_entry_indent.sh
+│   ├── hard_fix_routes_handlers_sa1.sh
+│   ├── hard_fix_webui_and_expose_app.sh
+│   ├── hard_fix_webui_routes_and_css.sh
+│   ├── hard_fix_wsgi_and_webui.sh
+│   ├── hard_fix_wsgiapp.sh
+│   ├── hard_register_webui_final.sh
+│   ├── hard_register_webui_hotfix.sh
+│   ├── hard_reset_min_server_stack.sh
+│   ├── hard_reset_routes_and_register.sh
+│   ├── hard_reset_routes_minimal.sh
+│   ├── hard_shim_wsgiapp_to_wsgi.sh
+│   ├── harden_bridge_list_and_diag.sh
+│   ├── harden_sqlalchemy_pool.sh
+│   ├── harden_wsgiapp_bootstrap.sh
+│   ├── hardwire_ping_blueprint.sh
+│   ├── hotfix_add_ping_and_routes.sh
+│   ├── hotfix_app_level_ping_routes.sh
+│   ├── init_db_and_smoke.sh
+│   ├── install_render_entry.sh
+│   ├── ix_hotfix_routes_and_migrate.sh
+│   ├── ix_try_repair_and_test.sh
+│   ├── list_server_routes.sh
+│   ├── make_render_entry.sh
+│   ├── migrate_events_and_constraints.sh
+│   ├── min_reset_stable_and_commit.sh
+│   ├── normalize_create_app.sh
+│   ├── normalize_create_note_block.sh
+│   ├── notes_post_diag.sh
+│   ├── one_shot_diag_fix_push.sh
+│   ├── paste12_doctor.sh
+│   ├── patch_actions_fallback_tag.sh
+│   ├── patch_admin_cleanup_block.sh
+│   ├── patch_backend_init_factory.sh
+│   ├── patch_bridge_add_notes.sh
+│   ├── patch_bridge_notes_v2.sh
+│   ├── patch_create_app_wrapper.sh
+│   ├── patch_create_note_accept_all.sh
+│   ├── patch_list_notes_pagination.sh
+│   ├── patch_load_more.sh
+│   ├── patch_pagination_and_expire.sh
+│   ├── patch_register_interactions.sh
+│   ├── patch_routes_handlers_fix.sh
+│   ├── patch_routes_indent_min.sh
+│   ├── patch_run_autocreate_db.sh
+│   ├── patch_wsgi_force_api.sh
+│   ├── patch_wsgi_register_api.sh
+│   ├── patch_wsgiapp_force_notes.sh
+│   ├── patch_wsgiapp_package_force_notes.sh
+│   ├── peek_import_error.sh
+│   ├── poke_redeploy.sh
+│   ├── post_deploy_smoke_v1.sh
+│   ├── print_factory_tail.sh
+│   ├── probe_render_debug.sh
+│   ├── prod_frontend_probe.sh
+│   ├── prod_frontend_verify.sh
+│   ├── quick_dedupe_header.sh
+│   ├── quick_paginate_only_v2.sh
+│   ├── quick_restart_and_paginate.sh
+│   ├── quick_restart_and_paginate_v2.sh
+│   ├── rebuild_run_and_push.sh
+│   ├── recheck_notes_json.sh
+│   ├── recheck_notes_json_v2.sh
+│   ├── recheck_notes_json_v3.sh
+│   ├── recheck_notes_json_v4.sh
+│   ├── recheck_notes_json_v5.sh
+│   ├── redeploy_render_checklist.sh
+│   ├── relax_create_note_parsing.sh
+│   ├── remote_diag_notes.sh
+│   ├── remote_probe_ix.sh
+│   ├── remote_probe_wsgiapp.sh
+│   ├── render_blueprint_takeover.sh
+│   ├── render_deploy_fix_pack.sh
+│   ├── repair_blocks_and_hook.sh
+│   ├── repair_future_initdb_and_restart.sh
+│   ├── repair_header_min.sh
+│   ├── repair_init_and_attach_frontend.sh
+│   ├── repair_init_try_and_hook.sh
+│   ├── repair_routes_future_and_reload.sh
+│   ├── repair_run_and_restart.sh
+│   ├── reset_api_minimal.sh
+│   ├── reset_routes_canonical.sh
+│   ├── restart_and_check_pagination.sh
+│   ├── restore_backend_core.sh
+│   ├── restore_min_render_entry.sh
+│   ├── restore_routes_min.sh
+│   ├── rewrite_create_note.sh
+│   ├── rollback_pre_paging.sh
+│   ├── routes_total_reset_clean.sh
+│   ├── routes_use_raw_sql_sqlite.sh
+│   ├── run_ping_suite.sh
+│   ├── run_system_smoke.sh
+│   ├── safe_frontend_attach.sh
+│   ├── sanitize_backend_and_run.sh
+│   ├── set_procfile_entrypoint.sh
+│   ├── set_procfile_entrypoint_v2.sh
+│   ├── setup_render_entry.sh
+│   ├── show_lines.sh
+│   ├── show_lines_auto.sh
+│   ├── show_remote_state.sh
+│   ├── show_server_rules.sh
+│   ├── show_version_and_routes.sh
+│   ├── smoke_after_factory.sh
+│   ├── smoke_after_fix_prefix.sh
+│   ├── smoke_all.sh
+│   ├── smoke_api.sh
+│   ├── smoke_api_min.sh
+│   ├── smoke_backend_min.sh
+│   ├── smoke_backend_recover.sh
+│   ├── smoke_expired.sh
+│   ├── smoke_front.sh
+│   ├── smoke_front_full.sh
+│   ├── smoke_front_runtime.sh
+│   ├── smoke_load_more.sh
+│   ├── smoke_load_more_min.sh
+│   ├── smoke_local_api.sh
+│   ├── smoke_menu_views.sh
+│   ├── smoke_notes_dual.sh
+│   ├── smoke_pagination.sh
+│   ├── smoke_paging_overlap.sh
+│   ├── smoke_ping_and_routes.sh
+│   ├── smoke_ping_diag.sh
+│   ├── smoke_ping_min.sh
+│   ├── smoke_ping_routes.sh
+│   ├── smoke_render_deploy.sh
+│   ├── smoke_routes_loose.sh
+│   ├── smoke_routes_only.sh
+│   ├── smoke_routes_strict.sh
+│   ├── smoke_share_report.sh
+│   ├── smoke_ui_pagination_expire.sh
+│   ├── smoke_ui_runtime.sh
+│   ├── smoke_view.sh
+│   ├── static_smoke_render_entry.sh
+│   ├── surgical_routes_rewrite_min.sh
+│   ├── switch_to_entry_main.sh
+│   ├── switch_wsgiapp_to_package.sh
+│   ├── sync_frontend_and_patch_webui.sh
+│   ├── takeover_render_entrypoint.sh
+│   ├── test_integral_interactions.sh
+│   ├── test_pagination_local_and_remote.sh
+│   ├── triple_entry_unify.sh
+│   ├── ultimate_db_fix_and_restart.sh
+│   ├── unify_db_and_fix_note_restart.sh
+│   ├── upgrade_phase1_hardening.sh
+│   ├── upgrade_phase2_features.sh
+│   ├── verify_all_paste12.sh
+│   ├── verify_and_nudge_ix.sh
+│   ├── verify_factory_prefix.sh
+│   ├── verify_fix_notes_pagination.sh
+│   ├── verify_remote_is_wsgi.sh
+│   ├── verify_wsgi_patch.sh
+│   ├── write_interactions_module.sh
+│   └── wsgiapp_package_shim.sh
+├── update_and_push.sh
+├── venv
+│   ├── bin
+│   │   ├── Activate.ps1
+│   │   ├── activate
+│   │   ├── activate.csh
+│   │   ├── activate.fish
+│   │   ├── dotenv
+│   │   ├── flask
+│   │   ├── gunicorn
+│   │   ├── markdown-it
+│   │   ├── pip
+│   │   ├── pip3
+│   │   ├── pip3.12
+│   │   ├── pygmentize
+│   │   ├── python -> /data/data/com.termux/files/usr/bin/python
+│   │   ├── python3 -> python
+│   │   ├── python3.12 -> python
+│   │   └── waitress-serve
+│   ├── include
+│   │   ├── python3.12
+│   │   └── site
+│   ├── lib
+│   │   └── python3.12
+│   ├── lib64 -> lib
+│   └── pyvenv.cfg
+├── wsgi.py
+├── wsgi.py.bak.1755952031
+├── wsgi.py.bak.1755952145
+├── wsgi.py.bak.1755952399
+├── wsgi.py.bak.1755952645
+├── wsgi.py.bak.1755952914
+├── wsgi.py.bak.1755960585
+├── wsgi.py.bak.1755960754
+├── wsgi.py.bak.1755960788
+├── wsgi.py.bak.1755960809
+├── wsgi.py.bak.1755961042
+├── wsgi.py.bak.1755971655
+├── wsgi.py.bak.1756266544
+├── wsgi.py.bak.1756266695
+├── wsgi.py.bak.1756266846
+├── wsgi.py.bak.1756267644
+├── wsgi.py.bak.1756267840
+├── wsgi.py.bak.1756267883
+├── wsgi.py.bak.1756268012
+├── wsgi_app.py
+├── wsgiapp
+│   ├── __init__.py
+│   ├── __init__.py.bak.1756290644
+│   ├── __init__.py.bak.1756296503
+│   ├── __init__.py.bak.1756310144
+│   ├── __init__.py.bak.1756312827
+│   ├── __init__.py.bak.1756313333
+│   ├── __init__.py.bak.1756323801
+│   ├── __init__.py.bak.1756330859
+│   ├── __init__.py.bak.1756331477
+│   └── __init__.py.bak.1756332194
+├── wsgiapp.py.bak.1756266846
+├── wsgiapp.py.bak.1756267063
+├── wsgiapp.py.bak.1756267468
+├── wsgiapp.py.bak.1756269258
+├── wsgiapp.py.bak.1756269486
+├── wsgiapp.py.bak.1756288454
+└── wsgiapp.py.bak.1756291902
+
+47 directories, 1071 files
+
+🧩 Greps de features:
+40:        "likes": getattr(n, "likes", 0),
+41:        "views": getattr(n, "views", 0),
+42:        "reports": getattr(n, "reports", 0),
+94:@bp.route("/notes/<int:note_id>/like", methods=["POST"])
+95:def like_note(note_id: int):
+102:        n.likes = int(getattr(n, "likes", 0)) + 1
+104:        return jsonify({"ok": True, "likes": n.likes, "id": n.id}), 200
+107:        return jsonify({"error":"like_failed", "detail": str(e)}), 500
+109:# === paste12: /api/reports (mínimo, usa SQLite directo) ============
+128:@bp.route("/reports", methods=["POST"])
+129:def create_report_min():
+137:        con.execute("INSERT OR IGNORE INTO reports(content_id, reporter_id, reason) VALUES(?,?,?)",
+140:        c = int(con.execute("SELECT COUNT(*) FROM reports WHERE content_id=?", (cid,)).fetchone()[0])
+145:        return jsonify({"error":"report_failed","detail":str(e)}), 500
+backend/__init__.py:4:from flask_limiter import Limiter
+backend/__init__.py:76:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1751947321:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1751947321:29:    Limiter(key_func=get_remote_address, app=app, default_limits=["30 per minute"])
+backend/__init__.py.bad.1751947393:5:from flask_limiter import Limiter
+backend/__init__.py.bad.1751947393:29:    Limiter(key_func=get_remote_address, app=app, default_limits=["30 per minute"])
+backend/__init__.py.bak.1751947446:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1751947446:34:    Limiter(key_func=get_remote_address, app=app, default_limits=["30 per minute"])
+backend/__init__.py.bak.1751947530:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1751947530:36:    Limiter(key_func=get_remote_address, app=app, default_limits=["30 per minute"])
+backend/__init__.py.bak.1755190113:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755190113:36:    Limiter(key_func=get_remote_address,
+backend/__init__.py.bak.1755190113:37:            app=app, default_limits=["30 per minute"])
+backend/__init__.py.bad.1755203442:5:from flask_limiter import Limiter
+backend/__init__.py.bad.1755203442:44:    Limiter(key_func=get_remote_address,
+backend/__init__.py.bad.1755203442:45:            app=app, default_limits=["30 per minute"])
+backend/routes.py.bak.1755204230:1:from flask_limiter import Limiter
+backend/routes.py.bak.1755204925:1:from flask_limiter import Limiter
+backend/__init__.py.bak.1755277389:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755277389:34:    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
+backend/__init__.py.bad.1755277473:5:from flask_limiter import Limiter
+backend/__init__.py.bad.1755277473:34:    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
+backend/__init__.py.bak.1755547598:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755547598:35:    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
+backend/__init__.py.bak.1755554997:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755554997:57:    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
+backend/__init__.py.bak.1755556014:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755556014:57:    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
+backend/__init__.py.bak.1755640288:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755640288:59:    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
+backend/__init__.py.bak.1755640408:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755640408:88:    Limiter(key_func=get_remote_address, app=app, default_limits=["60 per minute"])
+backend/__init__.py.bak.1755649729:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755649729:25:    limiter = Limiter(
+backend/__init__.py.bak.1755649729:29:        default_limits=[os.getenv("RATE_LIMIT", "200/minute")],
+backend/__init__.py.bak.1755661402:11:from flask_limiter import Limiter
+backend/__init__.py.bak.1755661402:47:    limiter = Limiter(
+backend/__init__.py.bak.1755661402:51:        default_limits=[os.getenv("RATE_LIMIT", "200/minute")],
+backend/__init__.py.bak.1755661704:11:from flask_limiter import Limiter
+backend/__init__.py.bak.1755661704:47:    limiter = Limiter(
+backend/__init__.py.bak.1755661704:51:        default_limits=[os.getenv("RATE_LIMIT", "200/minute")],
+backend/routes.py.bak.1755661704:68:@limiter.limit('1 per 10 seconds', key_func=_rate_key)
+backend/routes.py.bak.1755661704:69:@limiter.limit('500 per day', key_func=_rate_key)
+backend/__init__.py.bak.1755663424:11:from flask_limiter import Limiter
+backend/__init__.py.bak.1755663424:47:    limiter = Limiter(
+backend/__init__.py.bak.1755663424:51:        default_limits=[os.getenv("RATE_LIMIT", "200/minute")],
+backend/__init__.py.bak.1755663424:154:# Flask-Limiter singleton
+backend/__init__.py.bak.1755663424:155:limiter = Limiter(
+backend/__init__.py.bak.1755663424:158:    default_limits=[],  # límites por endpoint
+backend/__init__.py.bak.1755663692:11:from flask_limiter import Limiter
+backend/__init__.py.bak.1755663692:51:    limiter = Limiter(
+backend/__init__.py.bak.1755663692:55:        default_limits=[os.getenv("RATE_LIMIT", "200/minute")],
+backend/__init__.py.bak.1755663692:158:# Flask-Limiter singleton
+backend/__init__.py.bak.1755663692:159:limiter = Limiter(
+backend/__init__.py.bak.1755663692:162:    default_limits=[],  # límites por endpoint
+backend/__init__.py.bak.1755663855:11:from flask_limiter import Limiter
+backend/__init__.py.bak.1755663855:61:    limiter = Limiter(
+backend/__init__.py.bak.1755663855:65:        default_limits=[os.getenv("RATE_LIMIT", "200/minute")],
+backend/__init__.py.bak.1755663855:165:# Flask-Limiter singleton
+backend/__init__.py.bak.1755663855:166:limiter = Limiter(
+backend/__init__.py.bak.1755663855:169:    default_limits=[],  # límites por endpoint
+backend/__init__.py.bak.1755664401:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755664401:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755664672:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755664672:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755665041:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755665041:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755665236:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755665236:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755665497:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755665497:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755665827:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755665827:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755666321:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755666321:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755666580:5:from flask_limiter import Limiter
+backend/__init__.py.bak.1755666580:17:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755666866:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755666866:20:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755667505:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755667505:20:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755667625:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755667625:20:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755667781:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755667781:20:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/routes.py.bak.1755668927:68:@limiter.limit('1 per 10 seconds', key_func=_rate_key)
+backend/routes.py.bak.1755668927:69:@limiter.limit('500 per day', key_func=_rate_key)
+backend/routes.py.bak.1755686473:68:@limiter.limit('1 per 10 seconds', key_func=_rate_key)
+backend/routes.py.bak.1755686473:69:@limiter.limit('500 per day', key_func=_rate_key)
+backend/routes.py.bak.1755686473:111:@limiter.limit("120 per minute")
+backend/__init__.py.bak.1755686473:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755686473:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755686473:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/routes.py.bak.1755686501:68:@limiter.limit('1 per 10 seconds', key_func=_rate_key)
+backend/routes.py.bak.1755686501:69:@limiter.limit('500 per day', key_func=_rate_key)
+backend/routes.py.bak.1755686501:111:@limiter.limit("120 per minute")
+backend/__init__.py.bak.1755686501:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755686501:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755686501:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/routes.py.bak.1755686722:68:@limiter.limit('1 per 10 seconds', key_func=_rate_key)
+backend/routes.py.bak.1755686722:69:@limiter.limit('500 per day', key_func=_rate_key)
+backend/routes.py.bak.1755686722:111:@limiter.limit("120 per minute")
+backend/__init__.py.bak.1755686722:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755686722:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755686722:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755686997:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755686997:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755686997:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/routes.py.bak.1755686997:68:@limiter.limit('1 per 10 seconds', key_func=_rate_key)
+backend/routes.py.bak.1755686997:69:@limiter.limit('500 per day', key_func=_rate_key)
+backend/routes.py.bak.1755686997:111:@limiter.limit("120 per minute")
+backend/routes.py.bak.1755699998:71:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755699998:72:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py.bak.1755702452:74:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755702452:75:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py.bak.1755705038:79:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755705038:80:@limiter.limit("500 per day", key_func=_rate_key)
+backend/__init__.py.bak.1755705038:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755705038:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755705038:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755705134:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755705134:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755705134:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755705330:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755705330:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755705330:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755705431:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755705431:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755705431:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755706308:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755706308:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755706308:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755706770:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755706770:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755706770:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755714567:1:# backend/__init__.py — clean reset: DB + Limiter + API + static frontend
+backend/__init__.py.bak.1755714567:6:from flask_limiter import Limiter
+backend/__init__.py.bak.1755714567:12:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/routes.py.bak.1755715965:78:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755715965:79:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py.bak.1755716565:93:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755716565:94:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py.bak.1755716693:91:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755716693:92:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py.bak.1755728838:92:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755728838:93:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py.bak.1755732238:33:def _rate_key():  # usado por Flask-Limiter
+backend/routes.py.bak.1755732238:82:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755732238:83:@limiter.limit("500 per day", key_func=_rate_key)
+backend/routes.py.bak.1755813088:124:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755813088:125:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755814654:124:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755814654:125:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755815396:124:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755815396:125:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755816433:124:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755816433:125:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755818084:124:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755818084:125:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755818846:102:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755818846:103:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755819812:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755819812:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755820026:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755820026:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755820202:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755820202:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755820530:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755820530:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755820707:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755820707:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755820932:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755820932:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755824080:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755824080:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/routes.py.bak.1755824375:103:@limiter.limit("1 per 10 seconds", key_func=_rate_key)
+backend/routes.py.bak.1755824375:104:@limiter.limit("10 per day", key_func=_rate_key)  # 10/día por usuario (fingerprint)
+backend/__init__.py.bak.1755860700:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755860700:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755860700:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755860700:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755860700:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755860700:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755860700:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755860700:92:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/routes.py.bak.1755860700:50:@limiter.limit("5/minute")
+backend/routes.py.bak.1755860700:105:@limiter.limit("30/minute")
+backend/routes.py.bak.1755860700:124:@limiter.limit("30/minute")
+backend/routes.py.bak.1755860700:144:@limiter.limit("30/minute")
+backend/routes.py.bak.1755861127:122:@limiter.limit("30/minute")
+backend/routes.py.bak.1755861127:141:@limiter.limit("30/minute")
+backend/routes.py.bak.1755861127:161:@limiter.limit("30/minute")
+backend/routes.py.bak.1755862277:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755862277:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755862277:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872510:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872510:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872510:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755873188:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755873188:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755873188:132:@limiter.limit("30/minute")
+backend/__init__.py.bak.1755890584:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755890584:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755890584:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755890584:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755890584:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755890584:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755890584:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755890584:102:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755892605:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755892605:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755892605:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755892605:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755892605:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755892605:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755892605:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755892605:102:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755897955:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755897955:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755897955:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755897955:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755897955:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755897955:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755897955:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755897955:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755899101:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755899101:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755899101:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755899101:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755899101:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755899101:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755899101:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755899101:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755901194:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755901194:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755901194:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755901194:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755901194:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755901194:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755901194:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755901194:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755907322:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755907322:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755907322:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755907322:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755907322:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755907322:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755907322:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755907322:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755907786:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755907786:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755907786:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755907786:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755907786:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755907786:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755907786:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755907786:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/routes.py.bak.1755946816:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755946816:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755946816:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755972015:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755972015:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755972015:132:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T154846Z:95:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T154846Z:114:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T154846Z:134:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T174215Z:95:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T174215Z:114:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T174215Z:134:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T183911Z:95:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T183911Z:114:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T183911Z:134:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T183917Z:95:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T183917Z:114:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T183917Z:134:@limiter.limit("30/minute")
+backend/__init__.py.bak.20250825T184216Z:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.20250825T184216Z:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.20250825T184216Z:14:    class _LimiterWrapper:
+backend/__init__.py.bak.20250825T184216Z:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.20250825T184216Z:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.20250825T184216Z:29:    class _NoopLimiter:
+backend/__init__.py.bak.20250825T184216Z:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.20250825T184216Z:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.20250825T205509Z:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.20250825T205509Z:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.20250825T205509Z:14:    class _LimiterWrapper:
+backend/__init__.py.bak.20250825T205509Z:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.20250825T205509Z:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.20250825T205509Z:29:    class _NoopLimiter:
+backend/__init__.py.bak.20250825T205509Z:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.20250825T205509Z:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/routes.py.bak.1756256356:65:@limiter.limit("60/minute")
+backend/routes.py.bak.1756256356:112:@limiter.limit("60/minute")
+backend/routes.py.bak.1756256356:132:@limiter.limit("60/minute")
+backend/routes.py.bak.1756256356:151:@limiter.limit("30/minute")
+backend/routes.py.bak.1756256403:63:@limiter.limit("60/minute")
+backend/routes.py.bak.1756256403:98:@limiter.limit("60/minute")
+backend/routes.py.bak.1756256403:118:@limiter.limit("60/minute")
+backend/routes.py.bak.1756256403:137:@limiter.limit("30/minute")
+backend/routes.py.bak.20250827-002822:63:@limiter.limit("60/minute")
+backend/routes.py.bak.20250827-002822:70:@limiter.limit("60/minute")
+backend/routes.py.bak.20250827-002822:90:@limiter.limit("60/minute")
+backend/routes.py.bak.20250827-002822:109:@limiter.limit("30/minute")
+backend/__init__.py.bak.1756266544:4:from flask_limiter import Limiter
+backend/__init__.py.bak.1756266544:9:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1756266544:12:    # Config mínima de DB y Limiter
+backend/__init__.py.bak.1755832923:8:from flask_limiter import Limiter
+backend/__init__.py.bak.1755832923:14:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/__init__.py.bak.1755835692:8:from flask_limiter import Limiter
+backend/__init__.py.bak.1755835692:14:limiter = Limiter(key_func=get_remote_address, default_limits=[])
+backend/routes.py.bak.1755861326:129:@limiter.limit("30/minute")
+backend/routes.py.bak.1755861326:148:@limiter.limit("30/minute")
+backend/routes.py.bak.1755861326:168:@limiter.limit("30/minute")
+backend/routes.py.bak.1755863345:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755863345:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755863345:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872318:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872318:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872318:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872808:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872808:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755872808:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755873483:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755873483:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755873483:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755874734:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755874734:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755874734:132:@limiter.limit("30/minute")
+backend/__init__.py.bak.1755883385:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755883385:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755883385:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755883385:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755883385:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755883385:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755883385:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755883385:102:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755883681:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755883681:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755883681:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755883681:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755883681:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755883681:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755883681:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755883681:102:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755884164:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755884164:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755884164:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755884164:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755884164:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755884164:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755884164:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755884164:102:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755892341:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755892341:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755892341:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755892341:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755892341:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755892341:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755892341:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755892341:102:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755893944:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755893944:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755893944:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755893944:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755893944:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755893944:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755893944:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755893944:102:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755898723:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755898723:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755898723:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755898723:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755898723:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755898723:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755898723:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755898723:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755901005:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755901005:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755901005:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755901005:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755901005:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755901005:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755901005:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755901005:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755906987:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755906987:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755906987:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755906987:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755906987:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755906987:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755906987:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755906987:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755908240:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755908240:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755908240:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755908240:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755908240:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755908240:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755908240:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755908240:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755909694:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755909694:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755909694:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755909694:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755909694:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755909694:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755909694:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755909694:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755909843:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755909843:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755909843:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755909843:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755909843:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755909843:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755909843:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755909843:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755910004:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755910004:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755910004:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755910004:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755910004:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755910004:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755910004:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755910004:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/routes.py.bak.1755947124:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755947124:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755947124:132:@limiter.limit("30/minute")
+backend/routes.py.bak.1755947248:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755947248:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755947248:132:@limiter.limit("30/minute")
+backend/__init__.py.bak.1755948069:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755948069:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755948069:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755948069:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755948069:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755948069:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755948069:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755948069:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755948533:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755948533:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755948533:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755948533:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755948533:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755948533:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755948533:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755948533:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755948616:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755948616:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755948616:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755948616:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755948616:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755948616:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755948616:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755948616:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755961042:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755961042:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755961042:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755961042:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755961042:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755961042:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755961042:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755961042:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/__init__.py.bak.1755971655:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.1755971655:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.1755971655:14:    class _LimiterWrapper:
+backend/__init__.py.bak.1755971655:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.1755971655:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.1755971655:29:    class _NoopLimiter:
+backend/__init__.py.bak.1755971655:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.1755971655:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+backend/routes.py.bak.1755971794:93:@limiter.limit("30/minute")
+backend/routes.py.bak.1755971794:112:@limiter.limit("30/minute")
+backend/routes.py.bak.1755971794:132:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T205638Z:95:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T205638Z:114:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T205638Z:134:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T210017Z:95:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T210017Z:114:@limiter.limit("30/minute")
+backend/routes.py.bak.20250825T210017Z:134:@limiter.limit("30/minute")
+backend/routes.py.bak.1756262103:63:@limiter.limit("60/minute")
+backend/routes.py.bak.1756262103:98:@limiter.limit("60/minute")
+backend/routes.py.bak.1756262103:118:@limiter.limit("60/minute")
+backend/routes.py.bak.1756262103:137:@limiter.limit("30/minute")
+backend/__init__.py.bak.20250826-233753:10:# Limiter opcional (no revienta si no está instalado)
+backend/__init__.py.bak.20250826-233753:12:    from flask_limiter import Limiter
+backend/__init__.py.bak.20250826-233753:14:    class _LimiterWrapper:
+backend/__init__.py.bak.20250826-233753:20:            self._limiter = Limiter(key_func=key_func, default_limits=[])
+backend/__init__.py.bak.20250826-233753:27:    limiter = _LimiterWrapper()
+backend/__init__.py.bak.20250826-233753:29:    class _NoopLimiter:
+backend/__init__.py.bak.20250826-233753:34:    limiter = _NoopLimiter()
+backend/__init__.py.bak.20250826-233753:109:    except Exception as e: app.logger.warning(f"Limiter init: {e}")
+18:class ReportLog(db.Model):
+24:    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_report_note_fp"),)
+27:class LikeLog(db.Model):
+33:    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_like_note_fp"),)
+backend/models.py:12:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py:4:from datetime import datetime, timedelta
+backend/routes.py:39:        "expires_at": n.expires_at.isoformat() if hasattr(n.expires_at, "isoformat") else n.expires_at,
+backend/routes.py:84:            expires_at=now + timedelta(hours=hours),
+backend/tasks.py:31:def purge_expired(app):
+backend/tasks.py:38:        Note.query.filter(Note.expires_at <= datetime.now(timezone.utc)).delete()
+backend/__init__.py.bak.1751947321:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1751947321:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1751947321:37:    from .tasks import purge_expired
+backend/__init__.py.bak.1751947321:38:    sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1751947321:39:    sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/__init__.py.bad.1751947393:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bad.1751947393:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bad.1751947393:37:    from .tasks import purge_expired
+backend/__init__.py.bad.1751947393:38:    sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bad.1751947393:39:    sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/__init__.py.bak.1751947446:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1751947446:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1751947446:42:    from .tasks import purge_expired
+backend/__init__.py.bak.1751947446:43:    sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1751947446:44:    sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/__init__.py.bak.1751947530:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1751947530:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1751947530:44:    from .tasks import purge_expired
+backend/__init__.py.bak.1751947530:45:    sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1751947530:46:    sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/routes.py.bak.1751947786:17:        "expires_at": n.expires_at.isoformat(),
+backend/models.py.bak.1755189134:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755189134:8:    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)+timedelta(days=7))
+backend/routes.py.bak.1755189134:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755189134:18:        "expires_at": n.expires_at.isoformat(),
+backend/routes.py.bak.1755189134:38:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755189134:40:    note = Note(text=text, expires_at=expires_at)
+backend/__init__.py.bak.1755190113:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755190113:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755190113:50:    from .tasks import purge_expired
+backend/__init__.py.bak.1755190113:51:    scheduler = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755190113:52:    scheduler.add_job(lambda: purge_expired(app),
+backend/__init__.py.bad.1755203442:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bad.1755203442:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bad.1755203442:58:    from .tasks import purge_expired
+backend/__init__.py.bad.1755203442:59:    scheduler = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bad.1755203442:60:    scheduler.add_job(lambda: purge_expired(app),
+backend/routes.py.bak.1755204230:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755204230:20:        "expires_at": n.expires_at.isoformat(),
+backend/routes.py.bak.1755204230:40:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755204230:42:    note = Note(text=text, expires_at=expires_at)
+backend/routes.py.bak.1755204925:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755204925:20:        "expires_at": n.expires_at.isoformat(),
+backend/routes.py.bak.1755204925:40:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755204925:42:    note = Note(text=text, expires_at=expires_at)
+backend/models.py.1755264206.bak:1:from datetime import datetime, timezone, timedelta
+backend/models.py.1755264206.bak:11:    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)+timedelta(days=7))
+backend/routes.py.1755264206.bak:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.1755264206.bak:46:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.1755264206.bak:48:    note = Note(text=text, expires_at=expires_at)
+backend/__init__.py.bak.1755277389:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755277389:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755277389:48:        from .tasks import purge_expired
+backend/__init__.py.bak.1755277389:49:        sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755277389:50:        sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/__init__.py.bad.1755277473:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bad.1755277473:8:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bad.1755277473:48:        from .tasks import purge_expired    if not os.getenv("DISABLE_SCHEDULER"):
+backend/__init__.py.bad.1755277473:50:        sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bad.1755277473:51:        sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/models.py.bak.1755461704:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755461704:11:    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)+timedelta(days=7))
+backend/routes.py.bak.1755461704:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755461704:45:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755461704:46:    note = Note(text=text, expires_at=expires_at)
+backend/__init__.py.bak.1755547598:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755547598:9:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755547598:52:            from .tasks import purge_expired
+backend/__init__.py.bak.1755547598:53:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755547598:54:            sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/__init__.py.bak.1755554997:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755554997:9:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755554997:74:            from .tasks import purge_expired
+backend/__init__.py.bak.1755554997:75:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755554997:76:            sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/__init__.py.bak.1755556014:2:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755556014:9:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755556014:74:            from .tasks import purge_expired
+backend/__init__.py.bak.1755556014:75:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755556014:76:            sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/routes.py.bak.1755623473:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755623473:45:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755623473:46:    note = Note(text=text, expires_at=expires_at)
+backend/models.py.bak.1755623473:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755623473:11:    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)+timedelta(days=7))
+backend/routes.py.bak.1755623762:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755623762:8:def purge_expired_now():
+backend/routes.py.bak.1755623762:15:        db.session.query(Note).filter(Note.expires_at <= now).delete(synchronize_session=False)
+backend/routes.py.bak.1755623762:17:    purge_expired_now()
+backend/routes.py.bak.1755623762:30:    purge_expired_now()
+backend/routes.py.bak.1755623762:36:    q = Note.query.filter(Note.expires_at > datetime.now(timezone.utc)).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755623762:72:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755623762:73:    note = Note(text=text, expires_at=expires_at)
+backend/routes.py.bak.1755627627:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755627627:11:        exp = n.expires_at.astimezone(timezone.utc)
+backend/routes.py.bak.1755627627:13:        exp = n.expires_at
+backend/routes.py.bak.1755627627:17:def purge_expired_now():
+backend/routes.py.bak.1755627627:24:        db.session.query(Note).filter(Note.expires_at <= now).delete(synchronize_session=False)
+backend/routes.py.bak.1755627627:26:    purge_expired_now()
+backend/routes.py.bak.1755627627:39:    purge_expired_now()
+backend/routes.py.bak.1755627627:45:    q = Note.query.filter(Note.expires_at > datetime.now(timezone.utc)).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755627627:76:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755627627:77:    note = Note(text=text, expires_at=expires_at)
+backend/routes.py.bak.1755629635:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755629635:11:        exp = n.expires_at.astimezone(timezone.utc)
+backend/routes.py.bak.1755629635:13:        exp = n.expires_at
+backend/routes.py.bak.1755629635:17:def purge_expired_now():
+backend/routes.py.bak.1755629635:24:        db.session.query(Note).filter(Note.expires_at <= now).delete(synchronize_session=False)
+backend/routes.py.bak.1755629635:26:    purge_expired_now()
+backend/routes.py.bak.1755629635:39:    purge_expired_now()
+backend/routes.py.bak.1755629635:45:    q = Note.query.filter(Note.expires_at > datetime.now(timezone.utc)).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755629635:76:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755629635:77:    note = Note(text=text, expires_at=expires_at)
+backend/routes.py.bak.1755630430:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755630430:11:        exp = n.expires_at.astimezone(timezone.utc)
+backend/routes.py.bak.1755630430:13:        exp = n.expires_at
+backend/routes.py.bak.1755630430:17:def purge_expired_now():
+backend/routes.py.bak.1755630430:24:        db.session.query(Note).filter(Note.expires_at <= now).delete(synchronize_session=False)
+backend/routes.py.bak.1755630430:26:    purge_expired_now()
+backend/routes.py.bak.1755630430:39:    purge_expired_now()
+backend/routes.py.bak.1755630430:45:    q = Note.query.filter(Note.expires_at > datetime.now(timezone.utc)).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755630430:76:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755630430:77:    note = Note(text=text, expires_at=expires_at)
+backend/routes.py.bak.1755630728:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755630728:10:        exp = n.expires_at.astimezone(timezone.utc)
+backend/routes.py.bak.1755630728:11:        exp = n.expires_at
+backend/routes.py.bak.1755630728:20:        db.session.query(Note).filter(Note.expires_at <= now).delete(synchronize_session=False)
+backend/routes.py.bak.1755630728:36:    q = Note.query.filter(Note.expires_at > datetime.now(timezone.utc)).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755630728:65:    expires_at = datetime.now(timezone.utc) + timedelta(hours=hours)
+backend/routes.py.bak.1755630728:66:    note = Note(text=text, expires_at=expires_at)
+backend/models.py.bak.1755630837:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755630837:5:    __table_args__ = (db.Index('ix_note_expires_at', 'expires_at'),)
+backend/models.py.bak.1755630837:12:    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)+timedelta(days=7))
+backend/models.py.bak.1755637831:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755637831:11:    expires_at  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc) + timedelta(days=7))
+backend/routes.py.bak.1755639793:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755639793:10:    rem = max(0, int((n.expires_at - now).total_seconds()))
+backend/routes.py.bak.1755639793:15:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755639793:27:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755639793:46:        expires_at=now + timedelta(hours=hours),
+backend/__init__.py.bak.1755640288:3:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755640288:10:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755640288:76:            from .tasks import purge_expired
+backend/__init__.py.bak.1755640288:77:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755640288:78:            sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/__init__.py.bak.1755640408:3:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755640408:10:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755640408:105:            from .tasks import purge_expired
+backend/__init__.py.bak.1755640408:106:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755640408:107:            sch.add_job(lambda: purge_expired(app), "interval", minutes=30)
+backend/routes.py.bak.1755645584:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755645584:10:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755645584:15:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755645584:27:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755645584:62:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755649729:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755649729:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755649729:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755649729:40:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755649729:62:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/__init__.py.bak.1755661402:3:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755661402:5:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755661402:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755661402:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755661402:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755661402:53:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755661402:75:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/__init__.py.bak.1755661704:3:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755661704:5:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755661704:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755661704:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755661704:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755661704:63:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755661704:87:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/__init__.py.bak.1755663424:3:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755663424:5:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755663692:3:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755663692:5:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755663855:3:from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755663855:5:from datetime import datetime, timezone, timedelta
+backend/__init__.py.bak.1755666866:101:            from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755666866:102:            from .tasks import purge_expired
+backend/__init__.py.bak.1755666866:103:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755666866:104:            sch.add_job(lambda: purge_expired(app), 'interval', minutes=30)
+backend/__init__.py.bak.1755667505:103:            from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755667505:104:            from .tasks import purge_expired
+backend/__init__.py.bak.1755667505:105:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755667505:106:            sch.add_job(lambda: purge_expired(app), 'interval', minutes=30)
+backend/__init__.py.bak.1755667625:103:            from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755667625:104:            from .tasks import purge_expired
+backend/__init__.py.bak.1755667625:105:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755667625:106:            sch.add_job(lambda: purge_expired(app), 'interval', minutes=30)
+backend/__init__.py.bak.1755667781:102:            from apscheduler.schedulers.background import BackgroundScheduler
+backend/__init__.py.bak.1755667781:103:            from .tasks import purge_expired
+backend/__init__.py.bak.1755667781:104:            sch = BackgroundScheduler(timezone=timezone.utc)
+backend/__init__.py.bak.1755667781:105:            sch.add_job(lambda: purge_expired(app), 'interval', minutes=30)
+backend/models.py.bak.1755668927:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755668927:9:    expires_at  = db.Column(db.DateTime(timezone=True), index=True, nullable=False)
+backend/models.py.bak.1755668927:18:        if not getattr(self, "expires_at", None):
+backend/models.py.bak.1755668927:19:            self.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+backend/routes.py.bak.1755668927:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755668927:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755668927:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755668927:63:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755668927:87:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755686473:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755686473:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755686473:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755686473:63:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755686473:87:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755686501:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755686501:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755686501:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755686501:63:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755686501:87:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755686722:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755686722:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755686722:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755686722:63:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755686722:87:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/tasks.py.bak.1755686997:5:def purge_expired(app):
+backend/tasks.py.bak.1755686997:7:        Note.query.filter(Note.expires_at <= datetime.now(timezone.utc)).delete()
+backend/routes.py.bak.1755686997:2:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755686997:13:    rem = max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else 0
+backend/routes.py.bak.1755686997:18:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755686997:63:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755686997:87:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755699998:3:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755699998:27:    rem = max(0, int((n.expires_at - now).total_seconds())) if getattr(n, "expires_at", None) else 0
+backend/routes.py.bak.1755699998:32:        "expires_at": (n.expires_at.isoformat() if getattr(n, "expires_at", None) else None),
+backend/routes.py.bak.1755699998:55:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755699998:89:        expires_at=now + timedelta(hours=hours),
+backend/models.py.bak.1755699998:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755699998:9:    expires_at  = db.Column(db.DateTime(timezone=True), index=True, nullable=False)
+backend/models.py.bak.1755699998:18:        if not getattr(self, "expires_at", None):
+backend/models.py.bak.1755699998:19:            self.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+backend/models.py.bak.1755702452:1:from datetime import datetime, timezone, timedelta
+backend/models.py.bak.1755702452:9:    expires_at  = db.Column(db.DateTime(timezone=True), index=True, nullable=False)
+backend/models.py.bak.1755702452:18:        if not getattr(self, "expires_at", None):
+backend/models.py.bak.1755702452:19:            self.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+backend/routes.py.bak.1755702452:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755702452:28:    rem = max(0, int((n.expires_at - now).total_seconds())) if getattr(n, "expires_at", None) else 0
+backend/routes.py.bak.1755702452:33:        "expires_at": (n.expires_at.isoformat() if getattr(n, "expires_at", None) else None),
+backend/routes.py.bak.1755702452:62:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755702452:92:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755705038:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755705038:28:    rem = max(0, int((n.expires_at - now).total_seconds())) if getattr(n, "expires_at", None) else 0
+backend/routes.py.bak.1755705038:33:        "expires_at": (n.expires_at.isoformat() if getattr(n, "expires_at", None) else None),
+backend/routes.py.bak.1755705038:67:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755705038:97:        expires_at=now + timedelta(hours=hours),
+backend/__init__.py.bak.1755705038:153:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755705038:154:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+backend/__init__.py.bak.1755705134:157:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755705134:158:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+backend/__init__.py.bak.1755705330:157:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755705330:158:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+backend/__init__.py.bak.1755705431:158:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755705431:159:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+backend/__init__.py.bak.1755706308:157:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755706308:158:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+backend/__init__.py.bak.1755706770:157:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755706770:158:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+backend/__init__.py.bak.1755714567:99:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755714567:100:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts ON note (expires_at, timestamp)"))
+backend/routes.py.bak.1755715965:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755715965:46:        "expires_at": (n.expires_at.isoformat() if n.expires_at else None),
+backend/routes.py.bak.1755715965:47:        "remaining": max(0, int((n.expires_at - now).total_seconds())) if n.expires_at else None,
+backend/routes.py.bak.1755715965:66:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755715965:88:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755716565:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755716565:55:    exp = _as_aware_opt(getattr(n, 'expires_at', None))
+backend/routes.py.bak.1755716565:61:        "expires_at": (exp.isoformat() if exp else None),
+backend/routes.py.bak.1755716565:81:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755716565:103:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755716693:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755716693:53:    exp = _as_aware_opt(getattr(n, 'expires_at', None))
+backend/routes.py.bak.1755716693:59:        "expires_at": (exp.isoformat() if exp else None),
+backend/routes.py.bak.1755716693:79:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755716693:101:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755728838:4:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755728838:50:    exp = _as_aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755728838:56:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755728838:79:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755728838:107:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755732238:3:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755732238:46:    exp = _as_aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755732238:52:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755732238:71:    q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755732238:114:        expires_at=now + timedelta(hours=hours),
+backend/models.py.bak.1755733842:13:    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+backend/routes.py.bak.1755813088:6:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755813088:72:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755813088:78:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755813088:110:        q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755813088:137:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755814654:6:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755814654:72:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755814654:78:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755814654:110:        q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755814654:138:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755815396:6:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755815396:72:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755815396:78:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755815396:110:        q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755815396:138:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755816433:6:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755816433:72:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755816433:78:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755816433:110:        q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755816433:129:    from datetime import timedelta
+backend/routes.py.bak.1755816433:146:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755818084:6:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755818084:72:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755818084:78:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755818084:110:        q = Note.query.filter(Note.expires_at > now).order_by(Note.timestamp.desc())
+backend/routes.py.bak.1755818084:129:    from datetime import timedelta
+backend/routes.py.bak.1755818084:146:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755818846:6:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755818846:72:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755818846:78:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755818846:670:    from datetime import timedelta
+backend/routes.py.bak.1755818846:685:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755819812:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755819812:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755819812:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755819812:671:    from datetime import timedelta
+backend/routes.py.bak.1755819812:686:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755820026:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755820026:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755820026:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755820026:669:    from datetime import timedelta
+backend/routes.py.bak.1755820026:684:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755820202:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755820202:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755820202:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755820202:668:    from datetime import timedelta
+backend/routes.py.bak.1755820202:683:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755820530:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755820530:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755820530:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755820530:668:    from datetime import timedelta
+backend/routes.py.bak.1755820530:683:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755820707:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755820707:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755820707:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755820707:668:    from datetime import timedelta
+backend/routes.py.bak.1755820707:683:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755820932:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755820932:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755820932:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755820932:668:    from datetime import timedelta
+backend/routes.py.bak.1755820932:683:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755824080:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755824080:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755824080:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755824080:668:    from datetime import timedelta
+backend/routes.py.bak.1755824080:683:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755824375:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755824375:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755824375:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755824375:670:    from datetime import timedelta
+backend/routes.py.bak.1755824375:685:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755824511:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755824511:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755824511:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755824511:669:    from datetime import timedelta
+backend/routes.py.bak.1755824511:684:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755824702:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755824702:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755824702:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755824702:671:    from datetime import timedelta
+backend/routes.py.bak.1755824702:686:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755824977:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755824977:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755824977:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755824977:665:    from datetime import timedelta
+backend/routes.py.bak.1755824977:680:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755825111:7:from datetime import datetime, timezone, timedelta
+backend/routes.py.bak.1755825111:73:    exp = _aware(getattr(n, "expires_at", None))
+backend/routes.py.bak.1755825111:79:        "expires_at": exp.isoformat() if exp else None,
+backend/routes.py.bak.1755825111:655:    from datetime import timedelta
+backend/routes.py.bak.1755825111:670:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755825314:3:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755825314:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755825314:55:    n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755826551:3:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755826551:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755826551:46:    from datetime import timedelta
+backend/routes.py.bak.1755826551:58:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755827018:6:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755827018:23:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755827018:47:    from datetime import timedelta
+backend/routes.py.bak.1755827018:59:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755831116:5:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755831116:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755831116:46:    from datetime import timedelta
+backend/routes.py.bak.1755831116:58:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours, author_fp=_fingerprint_from_request(request)),
+backend/routes.py.bak.1755832226:5:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755832226:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755832226:46:    from datetime import timedelta
+backend/routes.py.bak.1755832226:58:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours, author_fp=_fingerprint_from_request(request)),
+backend/models.py.bak.1755832923:14:    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+backend/routes.py.bak.1755833119:6:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755833119:23:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755833119:47:    from datetime import timedelta
+backend/routes.py.bak.1755833119:59:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours,
+backend/routes.py.bak.1755833909:9:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755833909:26:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755833909:52:    from datetime import datetime, timedelta
+backend/routes.py.bak.1755833909:66:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755833909:105:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755835346:14:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755835346:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755835346:57:    from datetime import datetime, timedelta
+backend/routes.py.bak.1755835346:72:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755835549:7:from datetime import datetime, timedelta
+backend/routes.py.bak.1755835549:24:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755835549:65:            expires_at=now + timedelta(hours=hours),
+backend/models.py.bak.1755835692:16:    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+backend/routes.py.bak.1755835692:8:from datetime import datetime, timedelta
+backend/routes.py.bak.1755835692:25:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755835692:35:    from datetime import datetime, timedelta
+backend/routes.py.bak.1755835692:50:            "exp": (now + timedelta(hours=hours)).isoformat(sep=" "),
+backend/routes.py.bak.1755835692:54:            "INSERT INTO notes (text, timestamp, expires_at, likes, views, reports, author_fp) "
+backend/routes.py.bak.1755836982:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1755836982:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755836982:60:            expires_at=now + timedelta(hours=hours),
+backend/models.py.bak.1755839370:12:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/models.py.bak.1755841247:12:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py.bak.1755841975:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1755841975:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755841975:82:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755841975:152:            "expires_at": n.expires_at.isoformat() if getattr(n, 'expires_at', None) else None,
+backend/models.py.bak.1755842380:10:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py.bak.1755842380:4:from datetime import datetime, timedelta
+backend/routes.py.bak.1755842380:21:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755842380:82:            expires_at=now + timedelta(hours=hours),
+backend/models.py.bak.1755843247:10:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py.bak.1755843247:4:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755843247:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755843247:81:            expires_at=now + timedelta(hours=hours),
+backend/models.py.bak.1755859384:10:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py.bak.1755859384:4:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755859384:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755859384:81:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755860694:4:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755860694:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755860694:81:            expires_at=now + timedelta(hours=hours),
+backend/__init__.py.bak.1755860700:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755860700:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755860700:54:                Note.expires_at < now
+backend/__init__.py.bak.1755860700:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755860700:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755860700:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/routes.py.bak.1755860700:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755860700:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755860700:88:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755861127:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755861127:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755861127:56:                "expires_at": n.expires_at.isoformat() if getattr(n,"expires_at",None) else None,
+backend/routes.py.bak.1755861127:105:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755862277:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755862277:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755862277:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755862277:193:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755872510:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755872510:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755872510:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755872510:199:                    "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755873188:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755873188:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755873188:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755873188:200:                    "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/__init__.py.bak.1755890584:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755890584:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755890584:54:                Note.expires_at < now
+backend/__init__.py.bak.1755890584:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755890584:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755890584:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755892605:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755892605:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755892605:54:                Note.expires_at < now
+backend/__init__.py.bak.1755892605:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755892605:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755892605:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755897955:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755897955:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755897955:54:                Note.expires_at < now
+backend/__init__.py.bak.1755897955:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755897955:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755897955:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755899101:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755899101:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755899101:54:                Note.expires_at < now
+backend/__init__.py.bak.1755899101:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755899101:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755899101:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755901194:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755901194:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755901194:54:                Note.expires_at < now
+backend/__init__.py.bak.1755901194:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755901194:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755901194:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755907322:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755907322:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755907322:54:                Note.expires_at < now
+backend/__init__.py.bak.1755907322:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755907322:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755907322:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755907786:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755907786:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755907786:54:                Note.expires_at < now
+backend/__init__.py.bak.1755907786:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755907786:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755907786:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/routes.py.bak.1755946816:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755946816:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755946816:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755946816:196:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755972015:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755972015:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755972015:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755972015:196:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T154846Z:7:from datetime import datetime, timedelta, date
+backend/routes.py.bak.20250825T154846Z:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T154846Z:78:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.20250825T154846Z:199:        q = q.filter(Note.expires_at > sa.func.now())
+backend/routes.py.bak.20250825T154846Z:222:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T154846Z:371:        exp = db.session.query(Note.id).filter(Note.expires_at != None, Note.expires_at <= cutoff).limit(max_batch).all()
+backend/routes.py.bak.20250825T174215Z:7:from datetime import datetime, timedelta, date
+backend/routes.py.bak.20250825T174215Z:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T174215Z:78:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.20250825T174215Z:199:        q = q.filter(Note.expires_at > sa.func.now())
+backend/routes.py.bak.20250825T174215Z:222:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T174215Z:371:        exp = db.session.query(Note.id).filter(Note.expires_at != None, Note.expires_at <= cutoff).limit(max_batch).all()
+backend/routes.py.bak.20250825T183911Z:7:from datetime import datetime, timedelta, date
+backend/routes.py.bak.20250825T183911Z:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T183911Z:78:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.20250825T183911Z:199:        q = q.filter(Note.expires_at > sa.func.now())
+backend/routes.py.bak.20250825T183911Z:222:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T183911Z:371:        exp = db.session.query(Note.id).filter(Note.expires_at != None, Note.expires_at <= cutoff).limit(max_batch).all()
+backend/routes.py.bak.20250825T183917Z:7:from datetime import datetime, timedelta, date
+backend/routes.py.bak.20250825T183917Z:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T183917Z:78:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.20250825T183917Z:199:        q = q.filter(Note.expires_at > sa.func.now())
+backend/routes.py.bak.20250825T183917Z:222:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T183917Z:371:        exp = db.session.query(Note.id).filter(Note.expires_at != None, Note.expires_at <= cutoff).limit(max_batch).all()
+backend/__init__.py.bak.20250825T184216Z:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.20250825T184216Z:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.20250825T184216Z:54:                Note.expires_at < now
+backend/__init__.py.bak.20250825T184216Z:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.20250825T184216Z:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.20250825T184216Z:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.20250825T205509Z:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.20250825T205509Z:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.20250825T205509Z:54:                Note.expires_at < now
+backend/__init__.py.bak.20250825T205509Z:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.20250825T205509Z:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.20250825T205509Z:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/routes.py.bak.20250825T210559Z:7:from datetime import datetime, timedelta, date
+backend/routes.py.bak.20250825T210559Z:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1756256356:6:from datetime import datetime, timedelta
+backend/routes.py.bak.1756256356:42:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1756256356:95:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1756256356:199:        q = q.filter(Note.expires_at > sa.func.now())
+backend/models.py.bak.1756256356:12:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py.bak.1756256403:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1756256403:40:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1756256403:67:    from datetime import timedelta
+backend/routes.py.bak.1756256403:82:            expires_at=now + timedelta(hours=hours),
+backend/services/notes_service.py:1:from datetime import timedelta
+backend/services/notes_service.py:11:    return repo_create(text, now, now + timedelta(hours=hours), fp)
+backend/routes_notes.py:3:from datetime import datetime, timedelta
+backend/routes_notes.py:49:                "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes_notes.py:73:            expires_at=now + timedelta(hours=hours),
+backend/routes_notes.py:82:            "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.20250827-002822:5:from datetime import datetime, timedelta
+backend/routes.py.bak.20250827-002822:40:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/api.py:3:from datetime import datetime, timedelta
+backend/api.py:37:        "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/api.py:57:            expires_at=now + timedelta(hours=hours),
+backend/api.py:64:            "expires_at": n.expires_at.isoformat() if n.expires_at else None,
+backend/routes.py.bak.1755826451:3:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755826451:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755826451:46:    from datetime import timedelta
+backend/routes.py.bak.1755826451:58:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours))
+backend/routes.py.bak.1755830723:4:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755830723:21:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755830723:45:    from datetime import timedelta
+backend/routes.py.bak.1755830723:57:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755830928:5:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755830928:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755830928:46:    from datetime import timedelta
+backend/routes.py.bak.1755830928:58:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours, author_fp=_fingerprint_from_request(request)),
+backend/__init__.py.bak.1755832923:59:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755832923:60:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts   ON note (expires_at, timestamp)"))
+backend/routes.py.bak.1755832923:5:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755832923:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755832923:46:    from datetime import timedelta
+backend/routes.py.bak.1755832923:58:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours,
+backend/models.py.bak.1755833534:15:    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+backend/routes.py.bak.1755833632:7:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755833632:24:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755833632:48:    from datetime import timedelta
+backend/routes.py.bak.1755833632:60:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours,
+backend/routes.py.bak.1755833688:9:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755833688:26:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755833688:50:    from datetime import timedelta
+backend/routes.py.bak.1755833688:62:        n = Note(text=text, timestamp=now, expires_at=now + timedelta(hours=hours,
+backend/routes.py.bak.1755833758:9:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755833758:26:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755833758:51:    from datetime import datetime, timedelta
+backend/routes.py.bak.1755833758:65:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755833758:104:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755834035:11:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755834035:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755834035:36:    from datetime import datetime, timedelta
+backend/routes.py.bak.1755834035:50:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755834035:83:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755834129:12:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755834129:29:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755834129:37:    from datetime import datetime, timedelta
+backend/routes.py.bak.1755834129:51:        expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755834129:84:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755834244:12:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755834244:29:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755835147:13:from datetime import datetime, timedelta, timezone
+backend/routes.py.bak.1755835147:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755835147:54:    from datetime import datetime, timedelta
+backend/routes.py.bak.1755835147:69:            expires_at=now + timedelta(hours=hours),
+backend/__init__.py.bak.1755835692:59:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_expires_at ON note (expires_at)"))
+backend/__init__.py.bak.1755835692:60:                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_note_exp_ts   ON note (expires_at, timestamp)"))
+backend/models.py.bak.1755836982:12:    expires_at = db.Column(db.DateTime, nullable=True)
+backend/models.py.bak.1755837316:11:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py.bak.1755837426:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1755837426:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755837426:60:            expires_at=now + timedelta(hours=hours),
+backend/models.py.bak.1755837517:11:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/routes.py.bak.1755837623:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1755837623:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755837623:72:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755837779:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1755837779:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755837779:82:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755841247:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1755841247:22:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755841247:82:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755861326:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755861326:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755861326:62:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755861326:112:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755863345:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755863345:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755863345:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755863345:193:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755872318:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755872318:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755872318:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755872318:199:                    "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755872808:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755872808:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755872808:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755872808:199:                    "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755873483:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755873483:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755873483:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755873483:196:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755874734:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755874734:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755874734:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755874734:196:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/__init__.py.bak.1755883385:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755883385:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755883385:54:                Note.expires_at < now
+backend/__init__.py.bak.1755883385:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755883385:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755883385:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755883681:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755883681:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755883681:54:                Note.expires_at < now
+backend/__init__.py.bak.1755883681:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755883681:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755883681:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755884164:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755884164:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755884164:54:                Note.expires_at < now
+backend/__init__.py.bak.1755884164:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755884164:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755884164:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755892341:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755892341:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755892341:54:                Note.expires_at < now
+backend/__init__.py.bak.1755892341:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755892341:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755892341:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755893944:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755893944:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755893944:54:                Note.expires_at < now
+backend/__init__.py.bak.1755893944:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755893944:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755893944:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/frontend/js/app.js:207:        #${n.id} &nbsp; ts: ${fmt(n.timestamp)} &nbsp; expira: ${fmt(n.expires_at)} &nbsp;
+backend/frontend/js/hotfix.js:43:        <span class="countdown" data-expires-at="${n.expires_at||""}"></span>
+backend/frontend/js/app.js.bak.1755724962:493:    if(note?.expires_at){ cd.setAttribute('data-expires-at', note.expires_at); }
+backend/frontend/js/app.js.bak.1755725064:482:    if(note?.expires_at){ cd.setAttribute('data-expires-at', note.expires_at); }
+backend/frontend/js/app.js.bak.1755725605:487:    if(note?.expires_at){ cd.setAttribute('data-expires-at', note.expires_at); }
+backend/frontend/js/app.js.bak.1755841584:79:        <span> · expira: \${fmtISO(n.expires_at)}</span>
+backend/frontend/js/app.js.bak.1755841975:96:    meta.appendChild(document.createTextNode('id #'+n.id+' · '+fmtISO(n.timestamp)+' · expira: '+fmtISO(n.expires_at)));
+backend/frontend/js/app.js.bak.1755842380:54:    meta.appendChild(document.createTextNode('id #'+n.id+' · '+fmtISO(n.timestamp)+' · expira: '+fmtISO(n.expires_at)));
+backend/frontend/js/app.js.bak.1755842855:83:    const spanExp = document.createElement('span'); spanExp.textContent = fmtISO(n.expires_at);
+backend/frontend/js/app.js.bak.1755843247:83:    const spanExp = document.createElement('span'); spanExp.textContent = fmtISO(n.expires_at);
+backend/frontend/js/app.js.bak.1755860694:104:    meta.textContent = `id #${n.id} · ${fmtISO(n.timestamp)} · expira: ${fmtISO(n.expires_at)}`;
+backend/frontend/js/app.js.bak.1755860700:112:    meta.textContent = `id #${n.id} · ${fmtISO(n.timestamp)} · expira: ${fmtISO(n.expires_at)}`;
+backend/frontend/js/app.js.bak.1755870364:128:    meta.textContent = `id #${n.id} · ${fmtISO(n.timestamp)} · expira: ${fmtISO(n.expires_at)}`;
+backend/frontend/js/app.js.bak.1755882463:128:    meta.textContent = `id #${n.id} · ${fmtISO(n.timestamp)} · expira: ${fmtISO(n.expires_at)}`;
+backend/frontend/js/actions.js:270:      if (n?.expires_at && map.get(id)) attach(map.get(id), n.expires_at);
+backend/frontend/js/actions.js:317:        <small>#${n.id}&nbsp;ts: ${String(n.timestamp||'').replace('T',' ')}&nbsp;&nbsp;expira: ${String(n.expires_at||'').replace('T',' ')}</small>
+backend/frontend/js/app.js.bak.1756482671:221:        #${n.id} &nbsp; ts: ${fmt(n.timestamp)} &nbsp; expira: ${fmt(n.expires_at)} &nbsp;
+backend/frontend/js/app.js.bak.1756482671:310:        #${n.id} &nbsp; ts: ${fmt(n.timestamp)} &nbsp; expira: ${fmt(n.expires_at)} &nbsp;
+backend/__init__.py.bak.1755898723:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755898723:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755898723:54:                Note.expires_at < now
+backend/__init__.py.bak.1755898723:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755898723:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755898723:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755901005:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755901005:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755901005:54:                Note.expires_at < now
+backend/__init__.py.bak.1755901005:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755901005:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755901005:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755906987:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755906987:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755906987:54:                Note.expires_at < now
+backend/__init__.py.bak.1755906987:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755906987:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755906987:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755908240:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755908240:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755908240:54:                Note.expires_at < now
+backend/__init__.py.bak.1755908240:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755908240:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755908240:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755909694:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755909694:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755909694:54:                Note.expires_at < now
+backend/__init__.py.bak.1755909694:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755909694:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755909694:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755909843:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755909843:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755909843:54:                Note.expires_at < now
+backend/__init__.py.bak.1755909843:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755909843:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755909843:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755910004:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755910004:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755910004:54:                Note.expires_at < now
+backend/__init__.py.bak.1755910004:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755910004:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755910004:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/routes.py.bak.1755947124:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755947124:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755947124:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755947124:196:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755947248:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755947248:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755947248:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755947248:196:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/__init__.py.bak.1755948069:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755948069:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755948069:54:                Note.expires_at < now
+backend/__init__.py.bak.1755948069:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755948069:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755948069:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755948533:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755948533:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755948533:54:                Note.expires_at < now
+backend/__init__.py.bak.1755948533:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755948533:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755948533:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755948616:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755948616:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755948616:54:                Note.expires_at < now
+backend/__init__.py.bak.1755948616:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755948616:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755948616:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755961042:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755961042:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755961042:54:                Note.expires_at < now
+backend/__init__.py.bak.1755961042:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755961042:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755961042:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/__init__.py.bak.1755971655:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.1755971655:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.1755971655:54:                Note.expires_at < now
+backend/__init__.py.bak.1755971655:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.1755971655:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.1755971655:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/routes.py.bak.1755971794:5:from datetime import datetime, timedelta, date
+backend/routes.py.bak.1755971794:28:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1755971794:76:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1755971794:196:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T205638Z:7:from datetime import datetime, timedelta, date
+backend/routes.py.bak.20250825T205638Z:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T205638Z:78:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.20250825T205638Z:199:        q = q.filter(Note.expires_at > sa.func.now())
+backend/routes.py.bak.20250825T205638Z:222:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T205638Z:371:        exp = db.session.query(Note.id).filter(Note.expires_at != None, Note.expires_at <= cutoff).limit(max_batch).all()
+backend/routes.py.bak.20250825T210017Z:7:from datetime import datetime, timedelta, date
+backend/routes.py.bak.20250825T210017Z:30:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T210017Z:78:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.20250825T210017Z:199:        q = q.filter(Note.expires_at > sa.func.now())
+backend/routes.py.bak.20250825T210017Z:222:                "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.20250825T210017Z:371:        exp = db.session.query(Note.id).filter(Note.expires_at != None, Note.expires_at <= cutoff).limit(max_batch).all()
+backend/models.py.bak.1756256403:12:    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+backend/repos/notes_repo.py:3:def create_note(text: str, now, expires_at, author_fp: str) -> Note:
+backend/repos/notes_repo.py:4:    n = Note(text=text, timestamp=now, expires_at=expires_at, author_fp=author_fp)
+backend/routes.py.bak.1756262103:5:from datetime import datetime, timedelta
+backend/routes.py.bak.1756262103:40:        "expires_at": n.expires_at.isoformat() if getattr(n, "expires_at", None) else None,
+backend/routes.py.bak.1756262103:67:    from datetime import timedelta
+backend/routes.py.bak.1756262103:82:            expires_at=now + timedelta(hours=hours),
+backend/__init__.py.bak.20250826-233753:3:from datetime import datetime, timedelta, date
+backend/__init__.py.bak.20250826-233753:53:                Note.expires_at.isnot(None),
+backend/__init__.py.bak.20250826-233753:54:                Note.expires_at < now
+backend/__init__.py.bak.20250826-233753:60:                ViewLog.view_date < (now.date() - timedelta(days=30))
+backend/__init__.py.bak.20250826-233753:63:                LikeLog.created_at < (now - timedelta(days=90))
+backend/__init__.py.bak.20250826-233753:66:                ReportLog.created_at < (now - timedelta(days=180))
+backend/modules/interactions.py:32:        expires_at = db.Column(db.DateTime, nullable=False, index=True)
+backend/modules/interactions.py.bak.1756335564:31:        expires_at = db.Column(db.DateTime, nullable=False, index=True)
+backend/routes.py.bak.1756565060:4:from datetime import datetime, timedelta
+backend/routes.py.bak.1756565060:39:        "expires_at": n.expires_at.isoformat() if hasattr(n.expires_at, "isoformat") else n.expires_at,
+backend/routes.py.bak.1756565060:84:            expires_at=now + timedelta(hours=hours),
+backend/routes.py.bak.1756565060.rl:4:from datetime import datetime, timedelta
+backend/routes.py.bak.1756565060.rl:39:        "expires_at": n.expires_at.isoformat() if hasattr(n.expires_at, "isoformat") else n.expires_at,
+backend/routes.py.bak.1756565060.rl:84:            expires_at=now + timedelta(hours=hours),
+frontend/js/app.js:89:      if (navigator.share){ try{ await navigator.share({title:'Nota #'+n.id, url}); return; }catch(_){ } }
+frontend/js/app.js:90:      try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+frontend/js/app.js.bak.1755491687:34:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755491687:40:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755491687:99:  async share(id, text){
+frontend/js/app.js.bak.1755491687:102:    if (navigator.share) {
+frontend/js/app.js.bak.1755491687:103:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755491687:106:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755491687:135:            <button type="button" class="menu-item share">🔗 Compartir</button>
+frontend/js/app.js.bak.1755547598:34:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755547598:40:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755547598:99:  async share(id, text){
+frontend/js/app.js.bak.1755547598:102:    if (navigator.share) {
+frontend/js/app.js.bak.1755547598:103:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755547598:106:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755547598:137:            <button type="button" class="menu-item share">🔗 Compartir</button>
+frontend/js/app.js.bak.1755562548:34:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755562548:40:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755562548:99:  async share(id, text){
+frontend/js/app.js.bak.1755562548:102:    if (navigator.share) {
+frontend/js/app.js.bak.1755562548:103:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755562548:106:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755562548:137:            <button type="button" class="menu-item share">🔗 Compartir</button>
+frontend/js/app.js.bak.1755562548:195:// ====== GENERADOR DE HISTORIAS (1080x1920) ======
+frontend/js/app.js.bak.1755562548:219:  const c = document.getElementById('story-canvas'); const ctx = c.getContext('2d');
+frontend/js/app.js.bak.1755562548:261:async function shareOrDownload(blob){
+frontend/js/app.js.bak.1755562548:264:    await navigator.share({files:[file], title:"Paste12", text:""});
+frontend/js/app.js.bak.1755562548:285:    await shareOrDownload(blob);
+frontend/js/app.js.bak.1755564574:34:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755564574:40:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755564574:99:  async share(id, text){
+frontend/js/app.js.bak.1755564574:102:    if (navigator.share) {
+frontend/js/app.js.bak.1755564574:103:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755564574:106:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755564574:137:            <button type="button" class="menu-item share">🔗 Compartir</button>
+frontend/js/app.js.bak.1755564574:195:// ====== GENERADOR DE HISTORIAS (1080x1920) ======
+frontend/js/app.js.bak.1755564574:219:  const c = document.getElementById('story-canvas'); const ctx = c.getContext('2d');
+frontend/js/app.js.bak.1755564574:261:async function shareOrDownload(blob){
+frontend/js/app.js.bak.1755564574:264:    await navigator.share({files:[file], title:"Paste12", text:""});
+frontend/js/app.js.bak.1755564574:285:    await shareOrDownload(blob);
+frontend/js/app.js.bak.1755564574:294:async function shareNative(text, url){
+frontend/js/app.js.bak.1755564574:296:    if(navigator.share){
+frontend/js/app.js.bak.1755564574:297:      await navigator.share({title:'Paste12', text, url});
+frontend/js/app.js.bak.1755564574:302:    await navigator.clipboard.writeText(`${text}\n${url}`);
+frontend/js/app.js.bak.1755564574:314:// Interceptor global: cualquier click en .share, .share-twitter o [data-share]
+frontend/js/app.js.bak.1755564574:316:  const el = ev.target.closest('[data-share], .share, .share-twitter');
+frontend/js/app.js.bak.1755564574:323:  await shareNative(text, url);
+frontend/js/app.js.bak.1755623762:34:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755623762:40:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755623762:99:  async share(id, text){
+frontend/js/app.js.bak.1755623762:102:    if (navigator.share) {
+frontend/js/app.js.bak.1755623762:103:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755623762:106:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755623762:137:            <button type="button" class="menu-item share">🔗 Compartir</button>
+frontend/js/app.js.bak.1755623762:195:// ====== GENERADOR DE HISTORIAS (1080x1920) ======
+frontend/js/app.js.bak.1755623762:219:  const c = document.getElementById('story-canvas'); const ctx = c.getContext('2d');
+frontend/js/app.js.bak.1755623762:261:async function shareOrDownload(blob){
+frontend/js/app.js.bak.1755623762:264:    await navigator.share({files:[file], title:"Paste12", text:""});
+frontend/js/app.js.bak.1755623762:285:    await shareOrDownload(blob);
+frontend/js/app.js.bak.1755623762:294:async function shareNative(text, url){
+frontend/js/app.js.bak.1755623762:296:    if(navigator.share){
+frontend/js/app.js.bak.1755623762:297:      await navigator.share({title:'Paste12', text, url});
+frontend/js/app.js.bak.1755623762:302:    await navigator.clipboard.writeText(`${text}\n${url}`);
+frontend/js/app.js.bak.1755623762:314:// Interceptor global: cualquier click en .share, .share-twitter o [data-share]
+frontend/js/app.js.bak.1755623762:316:  const el = ev.target.closest('[data-share], .share, .share-twitter');
+frontend/js/app.js.bak.1755623762:323:  await shareNative(text, url);
+frontend/js/app.js.bak.1755623762:327:// === IG Story Share (1080x1920) ===
+frontend/js/app.js.bak.1755623762:330:  const c=document.createElement('canvas'); c.width=W; c.height=H;
+frontend/js/app.js.bak.1755623762:388:async function shareIGStory(text, bgUrl){
+frontend/js/app.js.bak.1755623762:389:  const canvas = await makeStoryCanvas(text, bgUrl);
+frontend/js/app.js.bak.1755623762:390:  const blob = await new Promise(r=>canvas.toBlob(r,'image/png',0.95));
+frontend/js/app.js.bak.1755623762:396:      await navigator.share({files:[file], title:'Paste12', text});
+frontend/js/app.js.bak.1755623762:422:      await shareIGStory(text);
+frontend/js/app.js.bak.1755623762:432:  const el = ev.target.closest('[data-ig-story], .share-ig');
+frontend/js/app.js.bak.1755623762:438:  await shareIGStory(text);
+frontend/js/hotfix.js:18:      document.querySelectorAll('.countdown[data-expires-at]').forEach(el=>{
+frontend/js/hotfix.js:43:        <span class="countdown" data-expires-at="${n.expires_at||""}"></span>
+frontend/js/share_enhancer.js:6:      await navigator.clipboard.writeText(text);
+frontend/js/share_enhancer.js:23:    let t = document.getElementById('toast-share');
+frontend/js/share_enhancer.js:26:      t.id = 'toast-share';
+frontend/js/share_enhancer.js:43:    if (navigator.share && (!navigator.canShare || navigator.canShare({url}))){
+frontend/js/share_enhancer.js:44:      try { await navigator.share({title:'Paste12', text:'Mira esta nota', url}); return; }
+frontend/js/share_enhancer.js:71:    if(card.querySelector('[data-share-id], .btn-share, .menu-share, .share-link')) return;
+frontend/js/share_enhancer.js:82:    btn.className = 'btn-share';
+frontend/js/share_enhancer.js:83:    btn.setAttribute('data-share-id', id);
+frontend/js/share_enhancer.js:101:      const target = ev.target.closest('[data-share-id], .btn-share, .menu-share, .share-link, .share-twitter, .share-x, a[href*="twitter.com/intent"]');
+frontend/js/share_enhancer.js:104:      const id = target.getAttribute('data-share-id')
+frontend/js/share_enhancer.js:120:    console.log('[share_enhancer] activo (sin popups; share sheet en móvil; copia en escritorio)');
+frontend/js/actions_menu.js:6:    try{ await navigator.clipboard.writeText(text); return true; }
+frontend/js/actions_menu.js:33:  async function shareNote(id){
+frontend/js/actions_menu.js:35:    if (navigator.share && (!navigator.canShare || navigator.canShare({url}))){
+frontend/js/actions_menu.js:36:      try { await navigator.share({title:'Paste12', text:'Mira esta nota', url}); return; }
+frontend/js/actions_menu.js:83:        <button type="button" class="p12-share">Compartir</button>
+frontend/js/actions_menu.js:91:    const share = wrap.querySelector('.p12-share');
+frontend/js/actions_menu.js:101:    share.addEventListener('click', (e)=>{ e.stopPropagation(); menu.setAttribute('hidden',''); shareNote(id); });
+frontend/js/app.js.bak.1755724962:34:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755724962:40:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755724962:99:  async share(id, text){
+frontend/js/app.js.bak.1755724962:102:    if (navigator.share) {
+frontend/js/app.js.bak.1755724962:103:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755724962:106:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755724962:137:            <button type="button" class="menu-item share">🔗 Compartir</button>
+frontend/js/app.js.bak.1755724962:195:// ====== GENERADOR DE HISTORIAS (1080x1920) ======
+frontend/js/app.js.bak.1755724962:219:  const c = document.getElementById('story-canvas'); const ctx = c.getContext('2d');
+frontend/js/app.js.bak.1755724962:261:async function shareOrDownload(blob){
+frontend/js/app.js.bak.1755724962:264:    await navigator.share({files:[file], title:"Paste12", text:""});
+frontend/js/app.js.bak.1755724962:285:    await shareOrDownload(blob);
+frontend/js/app.js.bak.1755724962:294:async function shareNative(text, url){
+frontend/js/app.js.bak.1755724962:296:    if(navigator.share){
+frontend/js/app.js.bak.1755724962:297:      await navigator.share({title:'Paste12', text, url});
+frontend/js/app.js.bak.1755724962:302:    await navigator.clipboard.writeText(`${text}\n${url}`);
+frontend/js/app.js.bak.1755724962:314:// Interceptor global: cualquier click en .share, .share-twitter o [data-share]
+frontend/js/app.js.bak.1755724962:316:  const el = ev.target.closest('[data-share], .share, .share-twitter');
+frontend/js/app.js.bak.1755724962:323:  await shareNative(text, url);
+frontend/js/app.js.bak.1755724962:327:// === IG Story Share (1080x1920) ===
+frontend/js/app.js.bak.1755724962:330:  const c=document.createElement('canvas'); c.width=W; c.height=H;
+frontend/js/app.js.bak.1755724962:388:async function shareIGStory(text, bgUrl){
+frontend/js/app.js.bak.1755724962:389:  const canvas = await makeStoryCanvas(text, bgUrl);
+frontend/js/app.js.bak.1755724962:390:  const blob = await new Promise(r=>canvas.toBlob(r,'image/png',0.95));
+frontend/js/app.js.bak.1755724962:396:      await navigator.share({files:[file], title:'Paste12', text});
+frontend/js/app.js.bak.1755724962:422:      await shareIGStory(text);
+frontend/js/app.js.bak.1755724962:432:  const el = ev.target.closest('[data-ig-story], .share-ig');
+frontend/js/app.js.bak.1755724962:438:  await shareIGStory(text);
+frontend/js/app.js.bak.1755724962:459:    document.querySelectorAll('.countdown[data-expires-at], .countdown[data-expires-in]').forEach(el=>{
+frontend/js/app.js.bak.1755724962:481:// Hook: cuando pintes las notas, pon el span countdown si no existe
+frontend/js/app.js.bak.1755724962:490:  if(!meta.querySelector('.countdown')){
+frontend/js/app.js.bak.1755724962:492:    cd.className = 'countdown';
+frontend/js/app.js.bak.1755725064:40:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755725064:46:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755725064:105:  async share(id, text){
+frontend/js/app.js.bak.1755725064:108:    if (navigator.share) {
+frontend/js/app.js.bak.1755725064:109:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755725064:112:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755725064:184:// ====== GENERADOR DE HISTORIAS (1080x1920) ======
+frontend/js/app.js.bak.1755725064:208:  const c = document.getElementById('story-canvas'); const ctx = c.getContext('2d');
+frontend/js/app.js.bak.1755725064:250:async function shareOrDownload(blob){
+frontend/js/app.js.bak.1755725064:253:    await navigator.share({files:[file], title:"Paste12", text:""});
+frontend/js/app.js.bak.1755725064:274:    await shareOrDownload(blob);
+frontend/js/app.js.bak.1755725064:283:async function shareNative(text, url){
+frontend/js/app.js.bak.1755725064:285:    if(navigator.share){
+frontend/js/app.js.bak.1755725064:286:      await navigator.share({title:'Paste12', text, url});
+frontend/js/app.js.bak.1755725064:291:    await navigator.clipboard.writeText(`${text}\n${url}`);
+frontend/js/app.js.bak.1755725064:303:// Interceptor global: cualquier click en .share, .share-twitter o [data-share]
+frontend/js/app.js.bak.1755725064:305:  const el = ev.target.closest('[data-share], .share, .share-twitter');
+frontend/js/app.js.bak.1755725064:312:  await shareNative(text, url);
+frontend/js/app.js.bak.1755725064:316:// === IG Story Share (1080x1920) ===
+frontend/js/app.js.bak.1755725064:319:  const c=document.createElement('canvas'); c.width=W; c.height=H;
+frontend/js/app.js.bak.1755725064:377:async function shareIGStory(text, bgUrl){
+frontend/js/app.js.bak.1755725064:378:  const canvas = await makeStoryCanvas(text, bgUrl);
+frontend/js/app.js.bak.1755725064:379:  const blob = await new Promise(r=>canvas.toBlob(r,'image/png',0.95));
+frontend/js/app.js.bak.1755725064:385:      await navigator.share({files:[file], title:'Paste12', text});
+frontend/js/app.js.bak.1755725064:411:      await shareIGStory(text);
+frontend/js/app.js.bak.1755725064:421:  const el = ev.target.closest('[data-ig-story], .share-ig');
+frontend/js/app.js.bak.1755725064:427:  await shareIGStory(text);
+frontend/js/app.js.bak.1755725064:448:    document.querySelectorAll('.countdown[data-expires-at], .countdown[data-expires-in]').forEach(el=>{
+frontend/js/app.js.bak.1755725064:470:// Hook: cuando pintes las notas, pon el span countdown si no existe
+frontend/js/app.js.bak.1755725064:479:  if(!meta.querySelector('.countdown')){
+frontend/js/app.js.bak.1755725064:481:    cd.className = 'countdown';
+frontend/js/app.js.bak.1755725605:45:      const share   = e.target.closest(".menu-item.share");
+frontend/js/app.js.bak.1755725605:51:      if (share && li)   return this.share(li.dataset.id, li.querySelector(".note-text")?.innerText || "");
+frontend/js/app.js.bak.1755725605:110:  async share(id, text){
+frontend/js/app.js.bak.1755725605:113:    if (navigator.share) {
+frontend/js/app.js.bak.1755725605:114:      try { await navigator.share(payload); return; } catch(e){}
+frontend/js/app.js.bak.1755725605:117:    try{ await navigator.clipboard.writeText(`${text}\n${url}`); alert("✅ Enlace copiado"); }catch(e){}
+frontend/js/app.js.bak.1755725605:189:// ====== GENERADOR DE HISTORIAS (1080x1920) ======
+frontend/js/app.js.bak.1755725605:213:  const c = document.getElementById('story-canvas'); const ctx = c.getContext('2d');
+frontend/js/app.js.bak.1755725605:255:async function shareOrDownload(blob){
+frontend/js/app.js.bak.1755725605:258:    await navigator.share({files:[file], title:"Paste12", text:""});
+frontend/js/app.js.bak.1755725605:279:    await shareOrDownload(blob);
+frontend/js/app.js.bak.1755725605:288:async function shareNative(text, url){
+frontend/js/app.js.bak.1755725605:290:    if(navigator.share){
+frontend/js/app.js.bak.1755725605:291:      await navigator.share({title:'Paste12', text, url});
+frontend/js/app.js.bak.1755725605:296:    await navigator.clipboard.writeText(`${text}\n${url}`);
+frontend/js/app.js.bak.1755725605:308:// Interceptor global: cualquier click en .share, .share-twitter o [data-share]
+frontend/js/app.js.bak.1755725605:310:  const el = ev.target.closest('[data-share], .share, .share-twitter');
+frontend/js/app.js.bak.1755725605:317:  await shareNative(text, url);
+frontend/js/app.js.bak.1755725605:321:// === IG Story Share (1080x1920) ===
+frontend/js/app.js.bak.1755725605:324:  const c=document.createElement('canvas'); c.width=W; c.height=H;
+frontend/js/app.js.bak.1755725605:382:async function shareIGStory(text, bgUrl){
+frontend/js/app.js.bak.1755725605:383:  const canvas = await makeStoryCanvas(text, bgUrl);
+frontend/js/app.js.bak.1755725605:384:  const blob = await new Promise(r=>canvas.toBlob(r,'image/png',0.95));
+frontend/js/app.js.bak.1755725605:390:      await navigator.share({files:[file], title:'Paste12', text});
+frontend/js/app.js.bak.1755725605:416:      await shareIGStory(text);
+frontend/js/app.js.bak.1755725605:426:  const el = ev.target.closest('[data-ig-story], .share-ig');
+frontend/js/app.js.bak.1755725605:432:  await shareIGStory(text);
+frontend/js/app.js.bak.1755725605:453:    document.querySelectorAll('.countdown[data-expires-at], .countdown[data-expires-in]').forEach(el=>{
+frontend/js/app.js.bak.1755725605:475:// Hook: cuando pintes las notas, pon el span countdown si no existe
+frontend/js/app.js.bak.1755725605:484:  if(!meta.querySelector('.countdown')){
+frontend/js/app.js.bak.1755725605:486:    cd.className = 'countdown';
+frontend/js/app.js.bak.1755743941:50:          <button type="button" class="menu-item share">🔗 Compartir</button>
+frontend/js/app.js.bak.1755743941:93:    menu.querySelector('.share').addEventListener('click', async ()=>{
+frontend/js/app.js.bak.1755743941:96:        if (navigator.share) await navigator.share({title:'Nota', text:n.text||'', url:u});
+frontend/js/app.js.bak.1755743941:97:        else await navigator.clipboard.writeText(u);
+frontend/js/app.js.bak.1755841584:22:async function shareNote(id){
+frontend/js/app.js.bak.1755841584:24:  if (navigator.share){
+frontend/js/app.js.bak.1755841584:25:    try{ await navigator.share({title:'Nota #' + id, url}); return; }catch(e){}
+frontend/js/app.js.bak.1755841584:28:    await navigator.clipboard.writeText(url);
+frontend/js/app.js.bak.1755841584:72:          <button onclick="shareNote(\${n.id})">Compartir</button>
+frontend/js/app.js.bak.1755841975:43:  async function shareNote(id){
+frontend/js/app.js.bak.1755841975:45:    if(navigator.share){
+frontend/js/app.js.bak.1755841975:46:      try{ await navigator.share({ title: 'Nota #'+id, url }); return; }catch(_){}
+frontend/js/app.js.bak.1755841975:48:    try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+frontend/js/app.js.bak.1755841975:80:    btnShare.addEventListener('click', (ev)=>{ ev.stopPropagation(); menu.classList.remove('open'); shareNote(n.id); });
+frontend/js/app.js.bak.1755842380:34:  async function shareNote(id){
+frontend/js/app.js.bak.1755842380:36:    if(navigator.share){ try{ await navigator.share({ title: 'Nota #'+id, url }); return; }catch(_){ } }
+frontend/js/app.js.bak.1755842380:37:    try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+frontend/js/app.js.bak.1755842380:49:    btnShare.addEventListener('click', ev=>{ ev.stopPropagation(); menu.classList.remove('open'); shareNote(n.id); });
+frontend/js/app.js.bak.1755842855:71:      if(navigator.share){ navigator.share({title:'Nota #'+n.id, url}).catch(()=>{}); return; }
+frontend/js/app.js.bak.1755842855:72:      navigator.clipboard?.writeText(url).then(()=>toast('Enlace copiado')).catch(()=>{ prompt('Copia este enlace:', url); });
+frontend/js/app.js.bak.1755843247:71:      if(navigator.share){ navigator.share({title:'Nota #'+n.id, url}).catch(()=>{}); return; }
+frontend/js/app.js.bak.1755843247:72:      navigator.clipboard?.writeText(url).then(()=>toast('Enlace copiado')).catch(()=>{ prompt('Copia este enlace:', url); });
+frontend/js/app.js.bak.1755860694:65:      if (navigator.share){ try{ await navigator.share({title:'Nota #'+n.id, url}); return; }catch(_){ } }
+frontend/js/app.js.bak.1755860694:66:      try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+frontend/js/app.js.bak.1755860700:73:      if (navigator.share){ try{ await navigator.share({title:'Nota #'+n.id, url}); return; }catch(_){ } }
+frontend/js/app.js.bak.1755860700:74:      try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+frontend/js/app.js.bak.1755870364:89:      if (navigator.share){ try{ await navigator.share({title:'Nota #'+n.id, url}); return; }catch(_){ } }
+frontend/js/app.js.bak.1755870364:90:      try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+frontend/js/app.js.bak.1755882463:89:      if (navigator.share){ try{ await navigator.share({title:'Nota #'+n.id, url}); return; }catch(_){ } }
+frontend/js/app.js.bak.1755882463:90:      try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+
+🐍 Python audit
+
+🛣️  Rutas (rule  |  methods  |  endpoint):
+ - /api/health                  | GET                | api.health
+ - /api/notes                   | GET                | api.list_notes
+ - /api/notes                   | POST               | api.create_note
+ - /api/notes/<int:note_id>/like | POST               | api.like_note
+ - /api/reports                 | POST               | api.create_report_min
+ - /static/<path:filename>      | GET                | static
+
+⏱️  Rate limiter: NO
+
+🗄️  DATABASE_URL: sqlite:///app.db
+   Tablas: ['like_log', 'notes', 'report_log', 'view_log']
+   Tabla 'note' NO existe
+   Columnas 'like_log': [('id', 'INTEGER', False), ('note_id', 'INTEGER', False), ('fingerprint', 'VARCHAR(128)', False), ('created_at', 'DATETIME', False)]
+   Columnas 'report_log': [('id', 'INTEGER', False), ('note_id', 'INTEGER', False), ('fingerprint', 'VARCHAR(128)', False), ('created_at', 'DATETIME', False)]
+   Unique 'like_log': ['uq_like_note_fp']
+   Unique 'report_log': ['uq_report_note_fp']
+
+🧱 Frontend:
+   app.static_folder: /data/data/com.termux/files/home/paste12/backend/static
+   index.html: NO
+   ads.txt: NO
+   favicon.svg: NO
+
+🖼️  Front assets:
+✅ index.html presente
+✅ frontend/js/app.js presente
+✅ share_enhancer.js presente
+✅ hotfix.js presente
+✅ ads.txt presente
+✅ favicon.svg presente
+
+🧪 Checks lógicos:
+❌ Ruta like ❌
+❌ Ruta report ❌
+⚠️  Ruta view (vistas) no encontrada
+⚠️  No veo borrado por 5 reportes
+⚠️  No detecto 12h en backend
+⚠️  No veo limit 1/10s
+⚠️  No veo limit 500/día
+
+✅ Fin del auditor: NO modificó nada. Usa la salida para decidir parches.

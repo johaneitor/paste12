@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 from flask import Flask
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 
 # SQLAlchemy global del paquete (lo usan los modelos)
@@ -69,3 +71,7 @@ try:
     _retry_create_all(db, app)
 except Exception:
     pass
+
+# paste12 limiter init
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
+
