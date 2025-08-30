@@ -42,3 +42,6 @@ tools/*.sh
 
 # trash de limpieza
 .trash_*/
+
+# trash de limpieza
+.trash_*/
