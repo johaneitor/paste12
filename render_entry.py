@@ -1,3 +1,5 @@
+from backend.remote_compat import bp as compat_bp
+from backend.web import bp as web_bp
 from __future__ import annotations
 import os, hashlib
 from datetime import datetime, timedelta
@@ -22,6 +24,10 @@ except Exception:
 if app is None:
     from flask_sqlalchemy import SQLAlchemy
     app = Flask(__name__)
+try: app.register_blueprint(web_bp)
+except Exception as _e: pass
+try: app.register_blueprint(compat_bp)
+except Exception as _e: pass
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db = SQLAlchemy(app)
