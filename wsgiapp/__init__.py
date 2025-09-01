@@ -1,4 +1,4 @@
-import os, sys, json
+import os, sys, json, mimetypes
 from importlib import import_module
 from typing import Callable, Tuple
 
@@ -54,7 +54,7 @@ try:
 except Exception as e:
     print(f"[wsgiapp] Bootstrap DB omitido: {e}")
 
-# --- utils JSON/WSGI ---
+# --- utils JSON/HTML/WSGI ---
 def _json(status: int, data: dict) -> Tuple[str, list, bytes]:
     body = json.dumps(data, default=str).encode("utf-8")
     status_line = f"{status} " + ("OK" if status == 200 else "ERROR")
@@ -62,10 +62,16 @@ def _json(status: int, data: dict) -> Tuple[str, list, bytes]:
                ("Content-Length", str(len(body)))]
     return status_line, headers, body
 
+def _html(status: int, body_html: str, ctype="text/html; charset=utf-8"):
+    body = body_html.encode("utf-8")
+    status_line = f"{status} " + ("OK" if status == 200 else "ERROR")
+    headers = [("Content-Type", ctype), ("Content-Length", str(len(body)))]
+    return status_line, headers, body
+
 def _finish(start_response, status, headers, body, method):
     headers = list(headers) + [("X-WSGI-Bridge", "1")]
     if method == "HEAD":
-        headers = [(k, ("0" if k.lower() == "content-length" else v)) for k, v in headers]
+        headers = [(k, ("0" if k.lower()=="content-length" else v)) for k,v in headers]
         start_response(status, headers)
         return [b""]
     start_response(status, headers)
@@ -78,8 +84,8 @@ def _engine():
         raise RuntimeError("DATABASE_URL/SQLALCHEMY_DATABASE_URI no definido")
     return create_engine(url, pool_pre_ping=True)
 
+# -------- notas: columnas dinámicas / payload unificado --------
 def _columns(conn) -> set:
-    """Devuelve set de nombres de columnas reales de note."""
     from sqlalchemy import text as _text
     dialect = conn.engine.dialect.name
     if dialect.startswith("sqlite"):
@@ -95,42 +101,18 @@ def _columns(conn) -> set:
         return {r["column_name"] for r in rows}
 
 def _build_select(cols: set, with_where: bool) -> str:
-    """Arma un SELECT portable según columnas disponibles."""
-    # Campos comunes
     base = ["id", "timestamp", "likes", "views", "reports", "author_fp"]
-    # Campos de modelo "texto"
     textish = ["text", "expires_at"]
-    # Campos de modelo "artículo"
     article = ["title", "url", "summary", "content"]
-
-    select_parts = []
-    for c in base:
-        select_parts.append(c if c in cols else f"NULL AS {c}")
-    for c in textish:
-        select_parts.append(c if c in cols else f"NULL AS {c}")
-    for c in article:
-        select_parts.append(c if c in cols else f"NULL AS {c}")
-
-    select_clause = ", ".join(select_parts)
-    where_clause = """
-        WHERE (timestamp < :ts) OR (timestamp = :ts AND id < :id)
-    """ if with_where else ""
-
-    return f"""
-        SELECT {select_clause}
-        FROM note
-        {where_clause}
-        ORDER BY timestamp DESC, id DESC
-        LIMIT :lim
-    """
+    parts = []
+    for c in base + textish + article:
+        parts.append(c if c in cols else f"NULL AS {c}")
+    where = "WHERE (timestamp < :ts) OR (timestamp = :ts AND id < :id)" if with_where else ""
+    return f"SELECT {', '.join(parts)} FROM note {where} ORDER BY timestamp DESC, id DESC LIMIT :lim"
 
 def _normalize_row(r: dict) -> dict:
-    """Devuelve un payload amplio compatible con ambos UIs."""
-    # Garantizamos las claves presentes (faltantes a None)
-    keys = ["id","text","title","url","summary","content",
-            "timestamp","expires_at","likes","views","reports","author_fp"]
+    keys = ["id","text","title","url","summary","content","timestamp","expires_at","likes","views","reports","author_fp"]
     out = {k: r.get(k) for k in keys}
-    # Si no hay text pero sí content/summary, arma un texto de cortesía
     if not out.get("text"):
         out["text"] = out.get("content") or out.get("summary")
     return out
@@ -142,11 +124,10 @@ def _notes_query(qs: str):
         params = parse_qs(qs or "", keep_blank_values=True)
         def _get(name, cast=lambda x:x, default=None):
             v = params.get(name, [None])[0]
-            return default if v is None or v == "" else cast(v)
+            return default if v is None or v=="" else cast(v)
         limit     = max(1, min(_get("limit", int, 20), 100))
         cursor_ts = _get("cursor_ts", str, None)
         cursor_id = _get("cursor_id", int, None)
-
         with _engine().begin() as cx:
             cols = _columns(cx)
             sql = _build_select(cols, with_where=bool(cursor_ts and cursor_id))
@@ -154,7 +135,6 @@ def _notes_query(qs: str):
             if cursor_ts and cursor_id:
                 args.update({"ts": cursor_ts, "id": cursor_id})
             rows = cx.execute(_text(sql), args).mappings().all()
-
         items = [_normalize_row(dict(r)) for r in rows]
         next_cursor = None
         if items:
@@ -165,12 +145,56 @@ def _notes_query(qs: str):
     except Exception as e:
         return 500, {"ok": False, "error": str(e)}
 
-def _middleware(inner_app: Callable) -> Callable:
+# -------- servir index.html en fallback --------
+def _try_read(path):
+    try:
+        with open(path, "rb") as f:
+            return f.read()
+    except Exception:
+        return None
+
+def _serve_index_html():
+    # Permite override con WSGI_BRIDGE_INDEX
+    override = os.environ.get("WSGI_BRIDGE_INDEX")
+    candidates = [override] if override else [
+        os.path.join(_REPO_DIR, "public", "index.html"),
+        os.path.join(_REPO_DIR, "frontend", "index.html"),
+        os.path.join(_REPO_DIR, "backend", "static", "index.html"),
+        os.path.join(_REPO_DIR, "index.html"),
+    ]
+    for p in candidates:
+        if p and os.path.isfile(p):
+            body = _try_read(p)
+            if body is not None:
+                ctype = mimetypes.guess_type(p)[0] or "text/html"
+                return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
+    # Fallback HTML mínimo
+    html = """<!doctype html>
+<html><head><meta charset="utf-8"><title>paste12</title></head>
+<body style="font-family: system-ui, sans-serif; margin: 2rem;">
+<h1>paste12</h1>
+<p>Backend vivo (bridge fallback). Endpoints útiles:</p>
+<ul>
+  <li><a href="/api/notes">/api/notes</a></li>
+  <li><a href="/api/notes_fallback">/api/notes_fallback</a></li>
+  <li><a href="/api/notes_diag">/api/notes_diag</a></li>
+  <li><a href="/api/deploy-stamp">/api/deploy-stamp</a></li>
+</ul>
+</body></html>"""
+    return _html(200, html)
+
+# -------- middleware --------
+def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
     from sqlalchemy import text as _text
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
+
+        # raíz amigable solo cuando estamos en fallback
+        if is_fallback and path in ("/", "/index.html") and method in ("GET","HEAD"):
+            status, headers, body = _serve_index_html()
+            return _finish(start_response, status, headers, body, method)
 
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
             data = {
@@ -219,5 +243,7 @@ def _fallback_app():
         return _finish(start_response, status, headers, body, method)
     return _app
 
-_inner = _resolve_app() or _fallback_app()
-app    = _middleware(_inner)
+_inner = _resolve_app()
+_is_fallback = _inner is None
+_inner = _inner or _fallback_app()
+app  = _middleware(_inner, _is_fallback)
