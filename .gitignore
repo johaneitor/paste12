@@ -72,3 +72,5 @@ backups_*/
 
 # runtime local
 .pid_waitress
+server.log
+.server.pid
