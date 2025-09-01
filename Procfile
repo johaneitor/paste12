@@ -1,1 +1,1 @@
-web: gunicorn render_entry:app -w ${WEB_CONCURRENCY:-2} -k gthread --threads ${THREADS:-4} --bind 0.0.0.0:$PORT
+web: bash -lc 'APP_MODULE=${APP_MODULE:-run:app} ./serve.sh'
