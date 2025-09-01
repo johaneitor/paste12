@@ -1,8 +1,7 @@
 import os
-# Asegura que patched_app resuelva la app correcta
 os.environ.setdefault("APP_MODULE", "run:app")
 
-# Bootstrap de DB solo en Postgres (idempotente)
+# --- Bootstrap DB en Postgres (idempotente) ---
 try:
     from sqlalchemy import create_engine, text
     url = os.environ.get("DATABASE_URL", "")
@@ -29,8 +28,20 @@ try:
             cx.execute(text("CREATE INDEX IF NOT EXISTS idx_note_views ON note (views)"))
             cx.execute(text("CREATE INDEX IF NOT EXISTS idx_note_reports ON note (reports)"))
 except Exception as e:
-    # No detenemos el arranque si falla el bootstrap; la app puede seguir
     print(f"[wsgiapp] Bootstrap DB omitido: {e}")
 
-# Expone el WSGI final desde nuestro shim
-from patched_app import app  # noqa: E402
+# --- Cargar shim principal ---
+from patched_app import app  # tipo: Flask o WSGI envuelto
+
+# --- Agregar /api/deploy-stamp para verificar qué build está corriendo ---
+try:
+    from flask import Flask, jsonify
+    if isinstance(app, Flask):
+        _commit = os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or ""
+        _stamp  = os.environ.get("DEPLOY_STAMP") or ""
+        @_:=app.get("/api/deploy-stamp")  # noqa: E231
+        def _deploy_stamp():
+            return jsonify(ok=True, commit=_commit, stamp=_stamp), 200
+except Exception:
+    # Si no es Flask, omitimos el endpoint (no rompe el arranque)
+    pass
