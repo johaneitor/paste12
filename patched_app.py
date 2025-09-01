@@ -19,7 +19,6 @@ def resolve_base_app():
     def getattr_safe(m, name):
         return getattr(m, name) if hasattr(m, name) else None
 
-    # APP_MODULE con factoría "create_app()" o "make_app()"
     if attr and attr.endswith("()"):
         func_name = attr[:-2]
         factory = getattr_safe(base_mod, func_name)
@@ -27,14 +26,12 @@ def resolve_base_app():
             raise RuntimeError(f"'{mod_name}:{func_name}()' no existe o no es callable.")
         return factory()
 
-    # APP_MODULE con atributo explícito
     if attr:
         obj = getattr_safe(base_mod, attr)
         if obj is None:
             raise RuntimeError(f"'{mod_name}:{attr}' no existe.")
         return obj
 
-    # Autointento: app -> application -> create_app()/make_app()
     obj = getattr_safe(base_mod, "app") or getattr_safe(base_mod, "application")
     if obj is not None:
         return obj
@@ -55,14 +52,13 @@ except Exception:
     is_flask = False
 
 if not is_flask:
-    # ---- ASGI → envolver a WSGI y añadir interceptor para rutas auxiliares ----
+    # ---------- ASGI → envolver a WSGI y despachar rutas auxiliares ----------
     try:
         from asgiref.wsgi import AsgiToWsgi
         base_wsgi = AsgiToWsgi(base_app)
     except Exception as e:
         raise RuntimeError("Detecté app ASGI, pero no pude envolverla a WSGI. Instala 'asgiref'.") from e
 
-    # Utilidades
     import sqlalchemy as sa
     from werkzeug.wrappers import Request, Response as WResponse
 
@@ -74,93 +70,94 @@ if not is_flask:
 
     def _json(status_code: int, data: dict):
         body = json.dumps(data, default=str).encode("utf-8")
-        return f"{status_code} " + ("OK" if status_code == 200 else "ERROR"), [
-            ("Content-Type", "application/json; charset=utf-8"),
-            ("Content-Length", str(len(body))),
-        ], body
+        status = f"{status_code} " + ("OK" if status_code == 200 else "ERROR")
+        headers = [("Content-Type", "application/json; charset=utf-8"),
+                   ("Content-Length", str(len(body)))]
+        return status, headers, body
 
-    @Request.application
-    def _shim(request):
-        path = request.path
-        method = request.method.upper()
+    def app(environ, start_response):
+        req = Request(environ)
+        p = req.path
+        m = req.method.upper()
 
         # /api/deploy-stamp
-        if path == "/api/deploy-stamp" and method == "GET":
+        if p == "/api/deploy-stamp" and m == "GET":
             data = dict(
                 ok=True,
                 commit=os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
                 stamp=os.environ.get("DEPLOY_STAMP") or "",
             )
             status, headers, body = _json(200, data)
-            return WResponse(body, status=status, headers=headers)
+            start_response(status, headers)
+            return [body]
 
         # /api/notes_fallback
-        if path == "/api/notes_fallback" and method == "GET":
+        if p == "/api/notes_fallback" and m == "GET":
             try:
-                limit = int(request.args.get("limit", 20))
+                limit = int(req.args.get("limit", 20))
                 limit = max(1, min(limit, 100))
             except Exception:
                 limit = 20
-            cursor_ts = request.args.get("cursor_ts")
-            cursor_id = request.args.get("cursor_id", type=int)
+            cursor_ts = req.args.get("cursor_ts")
+            cursor_id = req.args.get("cursor_id", type=int)
 
-            eng = _engine()
-            with eng.begin() as cx:
-                if cursor_ts and cursor_id:
-                    q = sa.text("""
-                        SELECT id, title, url, summary, content, timestamp, likes, views, reports
-                        FROM note
-                        WHERE (timestamp < :ts) OR (timestamp = :ts AND id < :id)
-                        ORDER BY timestamp DESC, id DESC
-                        LIMIT :lim
-                    """)
-                    rows = cx.execute(q, {"ts": cursor_ts, "id": cursor_id, "lim": limit}).mappings().all()
-                else:
-                    q = sa.text("""
-                        SELECT id, title, url, summary, content, timestamp, likes, views, reports
-                        FROM note
-                        ORDER BY timestamp DESC, id DESC
-                        LIMIT :lim
-                    """)
-                    rows = cx.execute(q, {"lim": limit}).mappings().all()
-            items = [dict(r) for r in rows]
-            next_cursor = None
-            if items:
-                last = items[-1]
-                next_cursor = {"cursor_ts": str(last["timestamp"]), "cursor_id": last["id"]}
-            status, headers, body = _json(200, {"ok": True, "items": items, "next": next_cursor})
-            return WResponse(body, status=status, headers=headers)
+            try:
+                eng = _engine()
+                with eng.begin() as cx:
+                    if cursor_ts and cursor_id:
+                        q = sa.text("""
+                            SELECT id, title, url, summary, content, timestamp, likes, views, reports
+                            FROM note
+                            WHERE (timestamp < :ts) OR (timestamp = :ts AND id < :id)
+                            ORDER BY timestamp DESC, id DESC
+                            LIMIT :lim
+                        """)
+                        rows = cx.execute(q, {"ts": cursor_ts, "id": cursor_id, "lim": limit}).mappings().all()
+                    else:
+                        q = sa.text("""
+                            SELECT id, title, url, summary, content, timestamp, likes, views, reports
+                            FROM note
+                            ORDER BY timestamp DESC, id DESC
+                            LIMIT :lim
+                        """)
+                        rows = cx.execute(q, {"lim": limit}).mappings().all()
+                items = [dict(r) for r in rows]
+                next_cursor = None
+                if items:
+                    last = items[-1]
+                    next_cursor = {"cursor_ts": str(last["timestamp"]), "cursor_id": last["id"]}
+                status, headers, body = _json(200, {"ok": True, "items": items, "next": next_cursor})
+            except Exception as e:
+                status, headers, body = _json(500, {"ok": False, "error": str(e)})
+            start_response(status, headers)
+            return [body]
 
         # /api/notes_diag
-        if path == "/api/notes_diag" and method == "GET":
-            eng = _engine()
-            with eng.begin() as cx:
-                dialect = cx.connection.engine.dialect.name
-                if dialect.startswith("sqlite"):
-                    cols = [dict(row) for row in cx.execute(sa.text("PRAGMA table_info(note)")).mappings().all()]
-                else:
-                    cols = [dict(row) for row in cx.execute(sa.text("""
-                        SELECT column_name, data_type
-                        FROM information_schema.columns
-                        WHERE table_name = 'note'
-                        ORDER BY ordinal_position
-                    """)).mappings().all()]
-            status, headers, body = _json(200, {"ok": True, "dialect": dialect, "columns": cols})
-            return WResponse(body, status=status, headers=headers)
+        if p == "/api/notes_diag" and m == "GET":
+            try:
+                eng = _engine()
+                with eng.begin() as cx:
+                    dialect = cx.connection.engine.dialect.name
+                    if dialect.startswith("sqlite"):
+                        cols = [dict(row) for row in cx.execute(sa.text("PRAGMA table_info(note)")).mappings().all()]
+                    else:
+                        cols = [dict(row) for row in cx.execute(sa.text("""
+                            SELECT column_name, data_type
+                            FROM information_schema.columns
+                            WHERE table_name = 'note'
+                            ORDER BY ordinal_position
+                        """)).mappings().all()]
+                status, headers, body = _json(200, {"ok": True, "dialect": dialect, "columns": cols})
+            except Exception as e:
+                status, headers, body = _json(500, {"ok": False, "error": str(e)})
+            start_response(status, headers)
+            return [body]
 
-        # Para todo lo demás, despacha a la app original
-        return base_wsgi
-
-    # El WSGI final es el *dispatcher* (shim primero, base si no coincide ruta)
-    def app(environ, start_response):
-        # _shim devuelve WResponse ó base_wsgi (callable WSGI)
-        res = _shim(environ, start_response)
-        if callable(res):
-            return res(environ, start_response)
-        return res(environ, start_response)
+        # Resto → app original
+        return base_wsgi(environ, start_response)
 
 else:
-    # ---- FLASK → inyectar rutas y CORS como antes ----
+    # ---------- FLASK → inyectar rutas y CORS ----------
     from flask import request, jsonify, send_from_directory, Response
     try:
         from flask_cors import CORS
@@ -231,9 +228,7 @@ else:
         cursor_ts = request.args.get("cursor_ts")
         cursor_id = request.args.get("cursor_id", type=int)
 
-        eng = _engine()
-        import sqlalchemy as sa
-        with eng.begin() as cx:
+        with _engine().begin() as cx:
             if cursor_ts and cursor_id:
                 q = sa.text("""
                     SELECT id, title, url, summary, content, timestamp, likes, views, reports
@@ -260,9 +255,7 @@ else:
 
     @app.get("/api/notes_diag")
     def _notes_diag():
-        eng = _engine()
-        import sqlalchemy as sa
-        with eng.begin() as cx:
+        with _engine().begin() as cx:
             dialect = cx.connection.engine.dialect.name
             if dialect.startswith("sqlite"):
                 cols = [dict(row) for row in cx.execute(sa.text("PRAGMA table_info(note)")).mappings().all()]
