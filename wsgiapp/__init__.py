@@ -1,7 +1,7 @@
 import os, sys
 from importlib import import_module
 
-# Candidatos ordenados (primero el más probable en Render)
+# Candidatos (el primero que exista se usa)
 CANDIDATES = [
     "app:app",          # app.py con app = Flask(...)
     "run:app",          # run.py con app = ...
@@ -10,18 +10,17 @@ CANDIDATES = [
 ]
 
 _last_err = None
-app = None  # se definirá más abajo
+app = None
 
 def _try_with(spec: str):
-    """Fija APP_MODULE y carga patched_app.app; si falla, rebota excepción."""
     os.environ["APP_MODULE"] = spec
-    # Forzar reimport para que lea el nuevo APP_MODULE
+    # Reimport limpio del shim para respetar APP_MODULE
     if "patched_app" in sys.modules:
         del sys.modules["patched_app"]
     pa = import_module("patched_app")
     return getattr(pa, "app")
 
-# --- Bootstrap DB (idempotente) antes de montar la app (solo Postgres) ---
+# --- Bootstrap DB (solo Postgres, idempotente) ---
 try:
     from sqlalchemy import create_engine, text
     url = os.environ.get("DATABASE_URL", "")
@@ -50,21 +49,19 @@ try:
 except Exception as e:
     print(f"[wsgiapp] Bootstrap DB omitido: {e}")
 
-# --- Resolver la app probando candidatos ---
+# --- Resolver app probando candidatos ---
 for spec in CANDIDATES:
     try:
         app = _try_with(spec)
-        print(f"[wsgiapp] APP_MODULE resuelto → {spec}")
+        print(f"[wsgiapp] APP_MODULE -> {spec}")
         break
     except Exception as e:
         _last_err = e
 
 if app is None:
-    msg = f"No pude resolver APP_MODULE; probados: {CANDIDATES}. Último error: {_last_err!r}"
-    # Render muestra el mensaje y marca el deploy como failed
-    raise RuntimeError(msg)
+    raise RuntimeError(f"No pude resolver APP_MODULE (probados {CANDIDATES}). Último error: {_last_err!r}")
 
-# --- Endpoint /api/deploy-stamp para verificar qué build corre ---
+# --- /api/deploy-stamp (si es Flask) ---
 try:
     from flask import Flask, jsonify
     if isinstance(app, Flask):
@@ -73,6 +70,5 @@ try:
         @app.get("/api/deploy-stamp")
         def _deploy_stamp():
             return jsonify(ok=True, commit=_commit, stamp=_stamp), 200
-except Exception as _e:
-    # Si no es Flask (ej: app ASGI envuelta), omitimos sin romper
-    print(f"[wsgiapp] deploy-stamp omitido: {_e}")
+except Exception as e:
+    print(f"[wsgiapp] deploy-stamp omitido: {e}")

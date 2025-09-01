@@ -49,7 +49,7 @@ if not is_flask:
     except Exception as e:
         raise RuntimeError("Detecté app ASGI, pero no pude envolverla a WSGI. Instala 'asgiref'.") from e
 else:
-    from flask import send_from_directory, Response
+    from flask import request, jsonify, send_from_directory, Response
     try:
         from flask_cors import CORS
     except Exception:
@@ -57,23 +57,7 @@ else:
 
     app = base_app
 
-    # Parche contra choque de blueprints duplicados (evita ValueError)
-    _orig_reg = app.register_blueprint
-    def _safe_register(bp, **options):
-        name = options.get("name", getattr(bp, "name", None))
-        if not name and hasattr(bp, "name"): name = bp.name
-        if name and name in app.blueprints:
-            # si ya está exactamente el mismo objeto, no registrar
-            if app.blueprints[name] is bp:
-                return
-            # si hay colisión, renombrar con sufijo incremental
-            base = name; i = 2
-            while f"{base}_{i}" in app.blueprints:
-                i += 1
-            options["name"] = f"{base}_{i}"
-        return _orig_reg(bp, **options)
-    app.register_blueprint = _safe_register
-
+    # CORS para /api/*
     if CORS:
         CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, max_age=86400)
 
@@ -81,6 +65,7 @@ else:
         try: return any(r.rule == rule for r in app.url_map.iter_rules())
         except Exception: return False
 
+    # Raíz "/"
     if not _has_rule("/"):
         @app.get("/")
         def _root():
@@ -89,7 +74,7 @@ else:
             if os.path.isfile(index): return send_from_directory(pub, "index.html")
             return Response("<!doctype html><h1>OK</h1><p>Backend vivo.</p>", mimetype="text/html")
 
-    # Interacciones: like/report (endpoint únicos)
+    # --- Interacciones like/report (endpoint únicos) ---
     import sqlalchemy as sa
     def _engine():
         url = os.environ.get("SQLALCHEMY_DATABASE_URI") or os.environ.get("DATABASE_URL")
@@ -102,7 +87,6 @@ else:
         if _has_rule(rule) or endpoint in getattr(app, "view_functions", {}):
             return
         def handler(note_id):
-            from flask import jsonify
             eng = _engine()
             with eng.begin() as cx:
                 cx.execute(sa.text(f"UPDATE note SET {column} = COALESCE({column},0) + 1 WHERE id=:id"), {"id": note_id})
@@ -114,3 +98,74 @@ else:
 
     _ensure_interaction_endpoint("like",   "likes")
     _ensure_interaction_endpoint("report", "reports")
+
+    # --- /api/deploy-stamp (Flask) ---
+    @app.get("/api/deploy-stamp")
+    def _deploy_stamp():
+        return jsonify(
+            ok=True,
+            commit=os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
+            stamp=os.environ.get("DEPLOY_STAMP") or ""
+        ), 200
+
+    # --- /api/notes_fallback (para esquivar 500 del original) ---
+    @app.get("/api/notes_fallback")
+    def _notes_fallback():
+        """
+        Fallback simple/keyset:
+        GET /api/notes_fallback?limit=20&cursor_ts=ISO8601&cursor_id=123
+        """
+        import datetime as dt
+        try:
+            limit = int(request.args.get("limit", 20))
+            limit = max(1, min(limit, 100))
+        except Exception:
+            limit = 20
+
+        cursor_ts = request.args.get("cursor_ts")
+        cursor_id = request.args.get("cursor_id", type=int)
+
+        eng = _engine()
+        with eng.begin() as cx:
+            if cursor_ts and cursor_id:
+                q = sa.text("""
+                    SELECT id, title, url, summary, content, timestamp, likes, views, reports
+                    FROM note
+                    WHERE (timestamp < :ts) OR (timestamp = :ts AND id < :id)
+                    ORDER BY timestamp DESC, id DESC
+                    LIMIT :lim
+                """)
+                rows = cx.execute(q, {"ts": cursor_ts, "id": cursor_id, "lim": limit}).mappings().all()
+            else:
+                q = sa.text("""
+                    SELECT id, title, url, summary, content, timestamp, likes, views, reports
+                    FROM note
+                    ORDER BY timestamp DESC, id DESC
+                    LIMIT :lim
+                """)
+                rows = cx.execute(q, {"lim": limit}).mappings().all()
+
+        items = [dict(r) for r in rows]
+        next_cursor = None
+        if items:
+            last = items[-1]
+            next_cursor = {"cursor_ts": str(last["timestamp"]), "cursor_id": last["id"]}
+        return jsonify(ok=True, items=items, next=next_cursor)
+
+    # --- /api/notes_diag (ver columnas reales en producción) ---
+    @app.get("/api/notes_diag")
+    def _notes_diag():
+        eng = _engine()
+        with eng.begin() as cx:
+            dialect = cx.connection.engine.dialect.name
+            cols = []
+            if dialect == "sqlite":
+                cols = [dict(row) for row in cx.execute(sa.text("PRAGMA table_info(note)")).mappings().all()]
+            else:
+                cols = [dict(row) for row in cx.execute(sa.text("""
+                    SELECT column_name, data_type
+                    FROM information_schema.columns
+                    WHERE table_name = 'note'
+                    ORDER BY ordinal_position
+                """)).mappings().all()]
+        return jsonify(ok=True, dialect=dialect, columns=cols), 200
