@@ -5,11 +5,10 @@ services:
     plan: free
     autoDeploy: true
     buildCommand: pip install -r requirements.txt
-    startCommand: bash -lc 'APP_MODULE=${APP_MODULE:-run:app} ./serve.sh'
+    startCommand: bash -lc './start_render.sh'
     envVars:
       - key: APP_MODULE
         value: run:app
       - key: PYTHONUNBUFFERED
         value: "1"
-      # Si usas Postgres de Render, ellos inyectan DATABASE_URL automáticamente.
     healthCheckPath: /api/health
