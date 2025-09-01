@@ -60,7 +60,7 @@ if not is_flask:
         raise RuntimeError("Detecté app ASGI, pero no pude envolverla a WSGI. Instala 'asgiref'.") from e
 
     import sqlalchemy as sa
-    from werkzeug.wrappers import Request, Response as WResponse
+    from werkzeug.wrappers import Request
 
     def _engine():
         url = os.environ.get("SQLALCHEMY_DATABASE_URI") or os.environ.get("DATABASE_URL")
@@ -75,24 +75,33 @@ if not is_flask:
                    ("Content-Length", str(len(body)))]
         return status, headers, body
 
+    def _finish(start_response, status, headers, body, method):
+        # En HEAD no enviamos cuerpo
+        if method == "HEAD":
+            # ajustamos Content-Length a 0 para evitar chunk innecesario
+            headers = [(k, ("0" if k.lower() == "content-length" else v)) for k, v in headers]
+            start_response(status, headers)
+            return [b""]
+        start_response(status, headers)
+        return [body]
+
     def app(environ, start_response):
         req = Request(environ)
         p = req.path
         m = req.method.upper()
 
-        # /api/deploy-stamp
-        if p == "/api/deploy-stamp" and m == "GET":
+        # /api/deploy-stamp (GET/HEAD)
+        if p == "/api/deploy-stamp" and m in ("GET", "HEAD"):
             data = dict(
                 ok=True,
                 commit=os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
                 stamp=os.environ.get("DEPLOY_STAMP") or "",
             )
             status, headers, body = _json(200, data)
-            start_response(status, headers)
-            return [body]
+            return _finish(start_response, status, headers, body, m)
 
-        # /api/notes_fallback
-        if p == "/api/notes_fallback" and m == "GET":
+        # /api/notes_fallback (GET/HEAD)
+        if p == "/api/notes_fallback" and m in ("GET", "HEAD"):
             try:
                 limit = int(req.args.get("limit", 20))
                 limit = max(1, min(limit, 100))
@@ -129,11 +138,10 @@ if not is_flask:
                 status, headers, body = _json(200, {"ok": True, "items": items, "next": next_cursor})
             except Exception as e:
                 status, headers, body = _json(500, {"ok": False, "error": str(e)})
-            start_response(status, headers)
-            return [body]
+            return _finish(start_response, status, headers, body, m)
 
-        # /api/notes_diag
-        if p == "/api/notes_diag" and m == "GET":
+        # /api/notes_diag (GET/HEAD)
+        if p == "/api/notes_diag" and m in ("GET", "HEAD"):
             try:
                 eng = _engine()
                 with eng.begin() as cx:
@@ -150,8 +158,7 @@ if not is_flask:
                 status, headers, body = _json(200, {"ok": True, "dialect": dialect, "columns": cols})
             except Exception as e:
                 status, headers, body = _json(500, {"ok": False, "error": str(e)})
-            start_response(status, headers)
-            return [body]
+            return _finish(start_response, status, headers, body, m)
 
         # Resto → app original
         return base_wsgi(environ, start_response)
@@ -210,7 +217,7 @@ else:
     _ensure_interaction_endpoint("like",   "likes")
     _ensure_interaction_endpoint("report", "reports")
 
-    @app.get("/api/deploy-stamp")
+    @app.route("/api/deploy-stamp", methods=["GET", "HEAD"])
     def _deploy_stamp():
         return jsonify(
             ok=True,
@@ -218,7 +225,7 @@ else:
             stamp=os.environ.get("DEPLOY_STAMP") or ""
         ), 200
 
-    @app.get("/api/notes_fallback")
+    @app.route("/api/notes_fallback", methods=["GET", "HEAD"])
     def _notes_fallback():
         try:
             limit = int(request.args.get("limit", 20))
@@ -253,7 +260,7 @@ else:
             next_cursor = {"cursor_ts": str(last["timestamp"]), "cursor_id": last["id"]}
         return jsonify(ok=True, items=items, next=next_cursor)
 
-    @app.get("/api/notes_diag")
+    @app.route("/api/notes_diag", methods=["GET", "HEAD"])
     def _notes_diag():
         with _engine().begin() as cx:
             dialect = cx.connection.engine.dialect.name
