@@ -1,6 +1,7 @@
 import os, sys, json, mimetypes
 from importlib import import_module
 from typing import Callable, Tuple
+from datetime import datetime, timedelta, timezone
 
 # --- asegurar repo en sys.path ---
 _THIS = os.path.abspath(__file__)
@@ -145,6 +146,50 @@ def _notes_query(qs: str):
     except Exception as e:
         return 500, {"ok": False, "error": str(e)}
 
+def _insert_note(payload: dict):
+    """Fallback de POST /api/notes: inserta una nota minimal."""
+    from sqlalchemy import text as _text
+    text_val = (payload.get("text") or "").strip()
+    if not text_val:
+        return 400, {"ok": False, "error": "text_required"}
+    ttl_hours = int(os.environ.get("NOTE_TTL_HOURS", "12") or "12")
+    now = datetime.now(timezone.utc)
+    exp = now + timedelta(hours=ttl_hours)
+    try:
+        with _engine().begin() as cx:
+            cols = _columns(cx)
+            # Elegir columna destino para el cuerpo
+            body_col = "text" if "text" in cols else ("content" if "content" in cols else ("summary" if "summary" in cols else None))
+            if body_col is None:
+                return 500, {"ok": False, "error": "no_textual_column"}
+            fields, marks, args = [body_col], [":body"], {"body": text_val}
+            if "timestamp" in cols:
+                fields.append("timestamp"); marks.append(":ts"); args["ts"] = now
+            if "expires_at" in cols:
+                fields.append("expires_at"); marks.append(":exp"); args["exp"] = exp
+            if "author_fp" in cols:
+                fields.append("author_fp"); marks.append(":fp"); args["fp"] = payload.get("author_fp")
+            sql = f"INSERT INTO note({', '.join(fields)}) VALUES ({', '.join(marks)})"
+            # Intentar RETURNING id (Postgres). Si falla, caemos a last insert.
+            id_val = None
+            try:
+                row = cx.execute(_text(sql + " RETURNING id")).first()
+                if row: id_val = row[0]
+            except Exception:
+                cx.execute(_text(sql), args)
+                try:
+                    id_val = cx.execute(_text("SELECT lastval()")).scalar()
+                except Exception:
+                    id_val = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
+            # Leer la fila creada con el SELECT dinámico
+            cols2 = _columns(cx)
+            sel = _build_select(cols2, with_where=False) + " OFFSET 0"
+            row = cx.execute(_text(f"SELECT * FROM ({sel}) x WHERE id=:id"), {"id": id_val, "lim": 1}).mappings().first()
+            item = _normalize_row(dict(row)) if row else {"id": id_val, "text": text_val}
+        return 201, {"ok": True, "item": item}
+    except Exception as e:
+        return 500, {"ok": False, "error": str(e)}
+
 # -------- servir index.html en fallback --------
 def _try_read(path):
     try:
@@ -154,7 +199,6 @@ def _try_read(path):
         return None
 
 def _serve_index_html():
-    # Permite override con WSGI_BRIDGE_INDEX
     override = os.environ.get("WSGI_BRIDGE_INDEX")
     candidates = [override] if override else [
         os.path.join(_REPO_DIR, "public", "index.html"),
@@ -168,12 +212,11 @@ def _serve_index_html():
             if body is not None:
                 ctype = mimetypes.guess_type(p)[0] or "text/html"
                 return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
-    # Fallback HTML mínimo
     html = """<!doctype html>
 <html><head><meta charset="utf-8"><title>paste12</title></head>
 <body style="font-family: system-ui, sans-serif; margin: 2rem;">
 <h1>paste12</h1>
-<p>Backend vivo (bridge fallback). Endpoints útiles:</p>
+<p>Backend vivo (bridge fallback). Endpoints:</p>
 <ul>
   <li><a href="/api/notes">/api/notes</a></li>
   <li><a href="/api/notes_fallback">/api/notes_fallback</a></li>
@@ -185,7 +228,6 @@ def _serve_index_html():
 
 # -------- middleware --------
 def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
-    from sqlalchemy import text as _text
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
@@ -210,23 +252,29 @@ def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
-        if path == "/api/notes_diag" and method in ("GET","HEAD"):
+        # --- NUEVO: fallback de publicación ---
+        if path == "/api/notes" and method == "POST":
             try:
-                with _engine().begin() as cx:
-                    dialect = cx.engine.dialect.name
-                    if dialect.startswith("sqlite"):
-                        cols = [dict(r) for r in cx.execute(_text("PRAGMA table_info(note)")).mappings().all()]
-                    else:
-                        q = _text("""
-                            SELECT column_name, data_type
-                            FROM information_schema.columns
-                            WHERE table_name = 'note' AND table_schema = current_schema()
-                            ORDER BY ordinal_position
-                        """)
-                        cols = [dict(r) for r in cx.execute(q).mappings().all()]
-                status, headers, body = _json(200, {"ok": True, "dialect": dialect, "columns": cols})
+                # soporta JSON o form-urlencoded
+                ctype = environ.get("CONTENT_TYPE","")
+                length = int(environ.get("CONTENT_LENGTH","0") or "0")
+                raw = environ["wsgi.input"].read(length) if length > 0 else b""
+                data = {}
+                if "application/json" in ctype:
+                    try: data = json.loads(raw.decode("utf-8") or "{}")
+                    except Exception: data = {}
+                else:
+                    # parse simple x-www-form-urlencoded: a=b&c=d
+                    try:
+                        from urllib.parse import parse_qs
+                        qd = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
+                        data = {k: v[0] for k,v in qd.items()}
+                    except Exception:
+                        data = {}
+                code, payload = _insert_note(data)
             except Exception as e:
-                status, headers, body = _json(500, {"ok": False, "error": str(e)})
+                code, payload = 500, {"ok": False, "error": str(e)}
+            status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
         return inner_app(environ, start_response)
