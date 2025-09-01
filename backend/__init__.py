@@ -1,6 +1,5 @@
 import os
 from flask import send_from_directory, abort
-from __future__ import annotations
 import os
 from flask import Flask
 from flask_limiter import Limiter

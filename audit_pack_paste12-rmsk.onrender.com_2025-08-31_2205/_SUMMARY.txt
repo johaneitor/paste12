@@ -1,0 +1,8 @@
+REMOTE AUDIT SUMMARY — https://paste12-rmsk.onrender.com — 2025-08-31_2205
+Health:   200
+Index:    404
+Notes:    500
+Like:     404
+Reports:  404
+AliasRpt: 404
+CORS:     404

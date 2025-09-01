@@ -45,3 +45,30 @@ tools/*.sh
 
 # trash de limpieza
 .trash_*/
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+
+# venv / entorno
+.venv/
+venv/
+env/
+.env
+.envrc
+
+# SO / editor
+.DS_Store
+Thumbs.db
+
+# DB local
+*.db
+
+# carpetas de basura / backups locales
+.trash_*/
+backups_*/
+
+# runtime local
+.pid_waitress
