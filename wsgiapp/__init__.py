@@ -34,15 +34,15 @@ try:
             cx.execute(text("""
                 CREATE TABLE IF NOT EXISTS note(
                     id SERIAL PRIMARY KEY,
-                    title TEXT,
-                    url TEXT,
+                    title   TEXT,
+                    url     TEXT,
                     summary TEXT,
                     content TEXT,
-                    text TEXT,
+                    text    TEXT,
                     timestamp TIMESTAMPTZ DEFAULT NOW(),
                     expires_at TIMESTAMPTZ,
-                    likes INT DEFAULT 0,
-                    views INT DEFAULT 0,
+                    likes   INT DEFAULT 0,
+                    views   INT DEFAULT 0,
                     reports INT DEFAULT 0,
                     author_fp VARCHAR(64)
                 )
@@ -83,13 +83,10 @@ def _engine():
     return create_engine(url, pool_pre_ping=True)
 
 def _dialect(conn) -> str:
-    try:
-        return conn.engine.dialect.name
+    try:    return conn.engine.dialect.name
     except Exception:
-        try:
-            return conn.dialect.name
-        except Exception:
-            return "postgresql"
+        try:    return conn.dialect.name
+        except Exception: return "postgresql"
 
 def _columns(conn) -> set:
     from sqlalchemy import text as _text
@@ -134,7 +131,7 @@ def _notes_query(qs: str):
         limit     = max(1, min(_get("limit", int, 20), 100))
         cursor_ts = _get("cursor_ts", str, None)
         cursor_id = _get("cursor_id", int, None)
-        with _engine().connect() as cx:  # lectura
+        with _engine().connect() as cx:
             cols = _columns(cx)
             sql = _build_select(cols, with_where=bool(cursor_ts and cursor_id))
             args = {"lim": limit}
@@ -151,6 +148,36 @@ def _notes_query(qs: str):
     except Exception as e:
         return 500, {"ok": False, "error": str(e)}
 
+def _get_note(note_id: int):
+    from sqlalchemy import text as _text
+    try:
+        with _engine().connect() as cx:
+            cols = _columns(cx)
+            sql  = _build_select(cols, with_where=False)
+            row  = cx.execute(_text("SELECT * FROM ("+sql+") x WHERE id=:id"), {"id": note_id, "lim": 1}).mappings().first()
+        if not row:
+            return 404, {"ok": False, "error": "not_found"}
+        return 200, {"ok": True, "item": _normalize_row(dict(row))}
+    except Exception as e:
+        return 500, {"ok": False, "error": str(e)}
+
+def _bump(note_id: int, column: str):
+    from sqlalchemy import text as _text
+    if column not in ("likes","views","reports"):
+        return 400, {"ok": False, "error": "bad_column"}
+    try:
+        with _engine().begin() as cx:
+            row = cx.execute(_text(
+                f"UPDATE note SET {column}=COALESCE({column},0)+1 WHERE id=:id "
+                "RETURNING id, likes, views, reports"
+            ), {"id": note_id}).first()
+        if not row:
+            return 404, {"ok": False, "error": "not_found"}
+        rid, likes, views, reports = row
+        return 200, {"ok": True, "id": rid, "likes": likes, "views": views, "reports": reports}
+    except Exception as e:
+        return 500, {"ok": False, "error": str(e)}
+
 def _insert_note(payload: dict):
     from sqlalchemy import text as _text
     text_val = (payload.get("text") or "").strip()
@@ -160,7 +187,7 @@ def _insert_note(payload: dict):
     now = datetime.now(timezone.utc)
     exp = now + timedelta(hours=ttl_hours)
     try:
-        with _engine().begin() as cx:  # escritura
+        with _engine().begin() as cx:
             cols = _columns(cx)
             body_col = "text" if "text" in cols else ("content" if "content" in cols else ("summary" if "summary" in cols else None))
             if body_col is None:
@@ -188,7 +215,7 @@ def _insert_note(payload: dict):
 
             cols2 = _columns(cx)
             sel = _build_select(cols2, with_where=False)
-            row = cx.execute(_text(sel + " OFFSET 0"), {"lim": 1}).mappings().first()
+            row = cx.execute(_text("SELECT * FROM ("+sel+") x WHERE id=:id"), {"id": new_id, "lim": 1}).mappings().first()
             item = _normalize_row(dict(row)) if row else {"id": new_id, "text": text_val}
         return 201, {"ok": True, "item": item}
     except Exception as e:
@@ -219,7 +246,7 @@ def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
 
-        # Health siempre disponible para Render
+        # Health para Render
         if path == "/api/health" and method in ("GET","HEAD"):
             status, headers, body = _json(200, {"ok": True})
             return _finish(start_response, status, headers, body, method)
@@ -229,6 +256,7 @@ def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
             status, headers, body = _serve_index_html()
             return _finish(start_response, status, headers, body, method)
 
+        # Deploy stamp
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
             data = {"ok": True,
                     "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
@@ -236,11 +264,13 @@ def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
             status, headers, body = _json(200, data)
             return _finish(start_response, status, headers, body, method)
 
+        # Feed
         if path in ("/api/notes", "/api/notes_fallback") and method in ("GET","HEAD"):
             code, payload = _notes_query(qs)
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
+        # Crear nota
         if path == "/api/notes" and method == "POST":
             try:
                 ctype = environ.get("CONTENT_TYPE","")
@@ -263,6 +293,31 @@ def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
+        # Nota por id y acciones (like/view/report) ------------- (ARREGLADO)
+        if path.startswith("/api/notes/"):
+            parts = path.rstrip("/").split("/")
+            # esperado: ["", "api", "notes", "<id>"]  ó  ["", "api", "notes", "<id>", "<action>"]
+            if len(parts) >= 4 and parts[3].isdigit():
+                note_id = int(parts[3])
+                action  = parts[4] if len(parts) >= 5 else ""
+
+                # GET /api/notes/<id>
+                if action == "" and method in ("GET","HEAD"):
+                    code, payload = _get_note(note_id)
+                    status, headers, body = _json(code, payload)
+                    return _finish(start_response, status, headers, body, method)
+
+                # POST /api/notes/<id>/(like|view|report)
+                if method == "POST" and action:
+                    col = {"like":"likes", "view":"views", "report":"reports"}.get(action)
+                    if not col:
+                        status, headers, body = _json(400, {"ok": False, "error": "bad_action"})
+                        return _finish(start_response, status, headers, body, method)
+                    code, payload = _bump(note_id, col)
+                    status, headers, body = _json(code, payload)
+                    return _finish(start_response, status, headers, body, method)
+
+        # resto: app real si existe
         if inner_app is not None:
             return inner_app(environ, start_response)
 
