@@ -3,7 +3,6 @@ from importlib import import_module
 from typing import Callable, Tuple
 from datetime import datetime, timedelta, timezone
 
-# --- asegurar repo en sys.path ---
 _THIS = os.path.abspath(__file__)
 _REPO_DIR = os.path.dirname(os.path.dirname(_THIS))
 if _REPO_DIR not in sys.path:
@@ -147,33 +146,45 @@ def _notes_query(qs: str):
         return 500, {"ok": False, "error": str(e)}
 
 def _insert_note(payload: dict):
-    """Fallback de POST /api/notes: inserta una nota minimal."""
+    """Fallback de POST /api/notes: inserta una nota minimal y setea contadores=0 si existen."""
     from sqlalchemy import text as _text
     text_val = (payload.get("text") or "").strip()
     if not text_val:
         return 400, {"ok": False, "error": "text_required"}
-    ttl_hours = int(os.environ.get("NOTE_TTL_HOURS", "12") or "12")
+    try:
+        ttl_hours = int(payload.get("ttl_hours") or os.environ.get("NOTE_TTL_HOURS", "12") or "12")
+    except Exception:
+        ttl_hours = 12
+    ttl_hours = 12 if ttl_hours <= 0 else ttl_hours
     now = datetime.now(timezone.utc)
     exp = now + timedelta(hours=ttl_hours)
     try:
         with _engine().begin() as cx:
             cols = _columns(cx)
-            # Elegir columna destino para el cuerpo
             body_col = "text" if "text" in cols else ("content" if "content" in cols else ("summary" if "summary" in cols else None))
             if body_col is None:
                 return 500, {"ok": False, "error": "no_textual_column"}
+
             fields, marks, args = [body_col], [":body"], {"body": text_val}
+
+            # Timestamps / autor
             if "timestamp" in cols:
                 fields.append("timestamp"); marks.append(":ts"); args["ts"] = now
             if "expires_at" in cols:
                 fields.append("expires_at"); marks.append(":exp"); args["exp"] = exp
             if "author_fp" in cols:
                 fields.append("author_fp"); marks.append(":fp"); args["fp"] = payload.get("author_fp")
+
+            # CONTADORES: si existen, los seteamos explícitamente a 0 (evita NOT NULL sin DEFAULT)
+            for c in ("likes","views","reports"):
+                if c in cols:
+                    fields.append(c); marks.append(f":{c}"); args[c] = 0
+
             sql = f"INSERT INTO note({', '.join(fields)}) VALUES ({', '.join(marks)})"
-            # Intentar RETURNING id (Postgres). Si falla, caemos a last insert.
+            # Intentar RETURNING id (PG)
             id_val = None
             try:
-                row = cx.execute(_text(sql + " RETURNING id")).first()
+                row = cx.execute(_text(sql + " RETURNING id"), args).first()
                 if row: id_val = row[0]
             except Exception:
                 cx.execute(_text(sql), args)
@@ -181,7 +192,8 @@ def _insert_note(payload: dict):
                     id_val = cx.execute(_text("SELECT lastval()")).scalar()
                 except Exception:
                     id_val = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
-            # Leer la fila creada con el SELECT dinámico
+
+            # Leer la fila creada
             cols2 = _columns(cx)
             sel = _build_select(cols2, with_where=False) + " OFFSET 0"
             row = cx.execute(_text(f"SELECT * FROM ({sel}) x WHERE id=:id"), {"id": id_val, "lim": 1}).mappings().first()
@@ -190,7 +202,6 @@ def _insert_note(payload: dict):
     except Exception as e:
         return 500, {"ok": False, "error": str(e)}
 
-# -------- servir index.html en fallback --------
 def _try_read(path):
     try:
         with open(path, "rb") as f:
@@ -216,7 +227,7 @@ def _serve_index_html():
 <html><head><meta charset="utf-8"><title>paste12</title></head>
 <body style="font-family: system-ui, sans-serif; margin: 2rem;">
 <h1>paste12</h1>
-<p>Backend vivo (bridge fallback). Endpoints:</p>
+<p>Backend vivo (bridge). Endpoints:</p>
 <ul>
   <li><a href="/api/notes">/api/notes</a></li>
   <li><a href="/api/notes_fallback">/api/notes_fallback</a></li>
@@ -226,15 +237,14 @@ def _serve_index_html():
 </body></html>"""
     return _html(200, html)
 
-# -------- middleware --------
-def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
+def _middleware(inner_app: Callable) -> Callable:
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
 
-        # raíz amigable solo cuando estamos en fallback
-        if is_fallback and path in ("/", "/index.html") and method in ("GET","HEAD"):
+        # raíz: SIEMPRE servimos nuestro index (evita duplicados)
+        if path in ("/", "/index.html") and method in ("GET","HEAD"):
             status, headers, body = _serve_index_html()
             return _finish(start_response, status, headers, body, method)
 
@@ -252,10 +262,8 @@ def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
-        # --- NUEVO: fallback de publicación ---
         if path == "/api/notes" and method == "POST":
             try:
-                # soporta JSON o form-urlencoded
                 ctype = environ.get("CONTENT_TYPE","")
                 length = int(environ.get("CONTENT_LENGTH","0") or "0")
                 raw = environ["wsgi.input"].read(length) if length > 0 else b""
@@ -264,7 +272,6 @@ def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
                     try: data = json.loads(raw.decode("utf-8") or "{}")
                     except Exception: data = {}
                 else:
-                    # parse simple x-www-form-urlencoded: a=b&c=d
                     try:
                         from urllib.parse import parse_qs
                         qd = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
@@ -292,6 +299,7 @@ def _fallback_app():
     return _app
 
 _inner = _resolve_app()
-_is_fallback = _inner is None
-_inner = _inner or _fallback_app()
-app  = _middleware(_inner, _is_fallback)
+if _inner is None:
+    _inner = _fallback_app()
+app = _middleware(_inner)
+__all__ = ["app"]
