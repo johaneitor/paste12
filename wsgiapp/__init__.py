@@ -1,4 +1,4 @@
-import os, sys, json, mimetypes
+import os, sys, json, mimetypes, hashlib
 from importlib import import_module
 from typing import Callable, Tuple
 from datetime import datetime, timedelta, timezone
@@ -22,35 +22,64 @@ def _resolve_app():
         except Exception as e:
             last_err = e
     print(f"[wsgiapp] WARNING: no pude resolver APP_MODULE (probados {CANDIDATES}). Último error: {last_err!r}")
+    # seguimos con None => fallback total de rutas comunes
     return None
 
-# --- bootstrap DB (idempotente, Postgres) ---
-try:
+# --- bootstrap DB idempotente (nota + logs) ---
+def _bootstrap_db():
     from sqlalchemy import create_engine, text
-    url = os.environ.get("DATABASE_URL", "")
-    if url.startswith("postgres"):
-        eng = create_engine(url, pool_pre_ping=True)
-        with eng.begin() as cx:
-            cx.execute(text("""
-                CREATE TABLE IF NOT EXISTS note(
-                    id SERIAL PRIMARY KEY,
-                    title   TEXT,
-                    url     TEXT,
-                    summary TEXT,
-                    content TEXT,
-                    text    TEXT,
-                    timestamp TIMESTAMPTZ DEFAULT NOW(),
-                    expires_at TIMESTAMPTZ,
-                    likes   INT DEFAULT 0,
-                    views   INT DEFAULT 0,
-                    reports INT DEFAULT 0,
-                    author_fp VARCHAR(64)
-                )
-            """))
-            for col in ("likes","views","reports"):
-                cx.execute(text(f"ALTER TABLE note ALTER COLUMN {col} SET DEFAULT 0"))
-except Exception as e:
-    print(f"[wsgiapp] Bootstrap DB omitido: {e}")
+    url = os.environ.get("DATABASE_URL", "") or os.environ.get("SQLALCHEMY_DATABASE_URI","")
+    if not url:
+        return
+    eng = create_engine(url, pool_pre_ping=True)
+    with eng.begin() as cx:
+        # tabla principal "note" (campos opcionales)
+        cx.execute(text("""
+            CREATE TABLE IF NOT EXISTS note(
+                id SERIAL PRIMARY KEY,
+                -- campos "tipo artículo"
+                title TEXT,
+                url TEXT,
+                summary TEXT,
+                content TEXT,
+                -- campo "tipo texto rápido"
+                text TEXT,
+                timestamp TIMESTAMPTZ DEFAULT NOW(),
+                expires_at TIMESTAMPTZ,
+                likes INT DEFAULT 0,
+                views INT DEFAULT 0,
+                reports INT DEFAULT 0,
+                author_fp VARCHAR(64)
+            )
+        """))
+        # logs de reportes (único por persona)
+        cx.execute(text("""
+            CREATE TABLE IF NOT EXISTS report_log(
+                id SERIAL PRIMARY KEY,
+                note_id INT NOT NULL,
+                fingerprint VARCHAR(128) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """))
+        # unique (note_id, fingerprint)
+        try:
+            cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_report_note_fp ON report_log (note_id, fingerprint)"))
+        except Exception:
+            pass
+        # opcional: logs de likes (si después quieres de-dupe de likes)
+        cx.execute(text("""
+            CREATE TABLE IF NOT EXISTS like_log(
+                id SERIAL PRIMARY KEY,
+                note_id INT NOT NULL,
+                fingerprint VARCHAR(128) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """))
+        try:
+            cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_like_note_fp ON like_log (note_id, fingerprint)"))
+        except Exception:
+            pass
+_bootstrap_db()
 
 # --- utils JSON/HTML/WSGI ---
 def _json(status: int, data: dict) -> Tuple[str, list, bytes]:
@@ -66,8 +95,11 @@ def _html(status: int, body_html: str, ctype="text/html; charset=utf-8"):
     headers = [("Content-Type", ctype), ("Content-Length", str(len(body)))]
     return status_line, headers, body
 
-def _finish(start_response, status, headers, body, method):
-    headers = list(headers) + [("X-WSGI-Bridge", "1")]
+def _finish(start_response, status, headers, body, method, extra_headers=None):
+    headers = list(headers)
+    if extra_headers:
+        headers += extra_headers
+    headers.append(("X-WSGI-Bridge", "1"))
     if method == "HEAD":
         headers = [(k, ("0" if k.lower()=="content-length" else v)) for k,v in headers]
         start_response(status, headers)
@@ -82,16 +114,21 @@ def _engine():
         raise RuntimeError("DATABASE_URL/SQLALCHEMY_DATABASE_URI no definido")
     return create_engine(url, pool_pre_ping=True)
 
-def _dialect(conn) -> str:
-    try:    return conn.engine.dialect.name
-    except Exception:
-        try:    return conn.dialect.name
-        except Exception: return "postgresql"
+def _fingerprint(environ) -> str:
+    # preferir cabecera explícita si viene del front
+    fp = environ.get("HTTP_X_FP")
+    if fp: return fp[:128]
+    ip = (environ.get("HTTP_X_FORWARDED_FOR","").split(",")[0].strip() or
+          environ.get("REMOTE_ADDR","") or "0.0.0.0")
+    ua = environ.get("HTTP_USER_AGENT","")
+    seed = f"{ip}|{ua}"
+    return hashlib.sha1(seed.encode("utf-8")).hexdigest()
 
+# -------- notas: columnas dinámicas / payload unificado --------
 def _columns(conn) -> set:
     from sqlalchemy import text as _text
-    d = _dialect(conn)
-    if d.startswith("sqlite"):
+    dialect = conn.engine.dialect.name
+    if dialect.startswith("sqlite"):
         rows = conn.execute(_text("PRAGMA table_info(note)")).mappings().all()
         return {r["name"] for r in rows}
     else:
@@ -131,7 +168,7 @@ def _notes_query(qs: str):
         limit     = max(1, min(_get("limit", int, 20), 100))
         cursor_ts = _get("cursor_ts", str, None)
         cursor_id = _get("cursor_id", int, None)
-        with _engine().connect() as cx:
+        with _engine().begin() as cx:
             cols = _columns(cx)
             sql = _build_select(cols, with_where=bool(cursor_ts and cursor_id))
             args = {"lim": limit}
@@ -144,41 +181,12 @@ def _notes_query(qs: str):
             last = items[-1]
             if last.get("timestamp") is not None and last.get("id") is not None:
                 next_cursor = {"cursor_ts": str(last["timestamp"]), "cursor_id": last["id"]}
-        return 200, {"ok": True, "items": items, "next": next_cursor}
+        return 200, {"ok": True, "items": items, "next": next_cursor}, next_cursor
     except Exception as e:
-        return 500, {"ok": False, "error": str(e)}
-
-def _get_note(note_id: int):
-    from sqlalchemy import text as _text
-    try:
-        with _engine().connect() as cx:
-            cols = _columns(cx)
-            sql  = _build_select(cols, with_where=False)
-            row  = cx.execute(_text("SELECT * FROM ("+sql+") x WHERE id=:id"), {"id": note_id, "lim": 1}).mappings().first()
-        if not row:
-            return 404, {"ok": False, "error": "not_found"}
-        return 200, {"ok": True, "item": _normalize_row(dict(row))}
-    except Exception as e:
-        return 500, {"ok": False, "error": str(e)}
-
-def _bump(note_id: int, column: str):
-    from sqlalchemy import text as _text
-    if column not in ("likes","views","reports"):
-        return 400, {"ok": False, "error": "bad_column"}
-    try:
-        with _engine().begin() as cx:
-            row = cx.execute(_text(
-                f"UPDATE note SET {column}=COALESCE({column},0)+1 WHERE id=:id "
-                "RETURNING id, likes, views, reports"
-            ), {"id": note_id}).first()
-        if not row:
-            return 404, {"ok": False, "error": "not_found"}
-        rid, likes, views, reports = row
-        return 200, {"ok": True, "id": rid, "likes": likes, "views": views, "reports": reports}
-    except Exception as e:
-        return 500, {"ok": False, "error": str(e)}
+        return 500, {"ok": False, "error": str(e)}, None
 
 def _insert_note(payload: dict):
+    """Fallback de POST /api/notes: inserta una nota minimal."""
     from sqlalchemy import text as _text
     text_val = (payload.get("text") or "").strip()
     if not text_val:
@@ -192,36 +200,75 @@ def _insert_note(payload: dict):
             body_col = "text" if "text" in cols else ("content" if "content" in cols else ("summary" if "summary" in cols else None))
             if body_col is None:
                 return 500, {"ok": False, "error": "no_textual_column"}
-
             fields, marks, args = [body_col], [":body"], {"body": text_val}
-            if "timestamp"  in cols: fields += ["timestamp"];  marks += [":ts"];  args["ts"]  = now
-            if "expires_at" in cols: fields += ["expires_at"]; marks += [":exp"]; args["exp"] = exp
-            if "author_fp"  in cols: fields += ["author_fp"];  marks += [":fp"];  args["fp"]  = payload.get("author_fp")
-            for k in ("likes","views","reports"):
-                if k in cols:
-                    fields.append(k); marks.append(":zero"); args["zero"] = 0
-
+            if "timestamp" in cols:
+                fields.append("timestamp"); marks.append(":ts"); args["ts"] = now
+            if "expires_at" in cols:
+                fields.append("expires_at"); marks.append(":exp"); args["exp"] = exp
+            if "author_fp" in cols and payload.get("author_fp"):
+                fields.append("author_fp"); marks.append(":fp"); args["fp"] = payload.get("author_fp")
             sql = f"INSERT INTO note({', '.join(fields)}) VALUES ({', '.join(marks)})"
-            new_id = None
+            # RETURNING id si disponible
+            id_val = None
             try:
                 row = cx.execute(_text(sql + " RETURNING id"), args).first()
-                if row: new_id = row[0]
+                if row: id_val = row[0]
             except Exception:
                 cx.execute(_text(sql), args)
                 try:
-                    new_id = cx.execute(_text("SELECT lastval()")).scalar()
+                    id_val = cx.execute(_text("SELECT lastval()")).scalar()
                 except Exception:
-                    new_id = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
-
+                    id_val = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
+            # seleccionar item creado
             cols2 = _columns(cx)
-            sel = _build_select(cols2, with_where=False)
-            row = cx.execute(_text("SELECT * FROM ("+sel+") x WHERE id=:id"), {"id": new_id, "lim": 1}).mappings().first()
-            item = _normalize_row(dict(row)) if row else {"id": new_id, "text": text_val}
+            sel = _build_select(cols2, with_where=False) + " OFFSET 0"
+            row = cx.execute(_text(f"SELECT * FROM ({sel}) x WHERE id=:id"), {"id": id_val, "lim": 1}).mappings().first()
+            item = _normalize_row(dict(row)) if row else {"id": id_val, "text": text_val, "likes": 0, "views": 0, "reports": 0}
         return 201, {"ok": True, "item": item}
     except Exception as e:
         return 500, {"ok": False, "error": str(e)}
 
-# --- servir index pastel cuando se fuerza ---
+def _inc_simple(note_id: int, column: str):
+    """Incremento simple (para view/like si no hacemos de-dupe aquí)."""
+    from sqlalchemy import text as _text
+    with _engine().begin() as cx:
+        cx.execute(_text(f"UPDATE note SET {column}=COALESCE({column},0)+1 WHERE id=:id"), {"id": note_id})
+        row = cx.execute(_text("SELECT id, likes, views, reports FROM note WHERE id=:id"), {"id": note_id}).mappings().first()
+        if not row:
+            return 404, {"ok": False, "error": "not_found"}
+        d = dict(row)
+        d["ok"] = True
+        return 200, d
+
+def _report_once(note_id: int, fp: str, threshold: int):
+    """Inserta en report_log con de-dupe y borra la nota al alcanzar threshold."""
+    from sqlalchemy import text as _text
+    with _engine().begin() as cx:
+        dialect = cx.connection.engine.dialect.name
+        if dialect.startswith("sqlite"):
+            ins = _text("INSERT OR IGNORE INTO report_log(note_id, fingerprint, created_at) VALUES (:id,:fp,CURRENT_TIMESTAMP)")
+        else:
+            ins = _text("INSERT INTO report_log(note_id, fingerprint, created_at) VALUES (:id,:fp,NOW()) ON CONFLICT (note_id,fingerprint) DO NOTHING")
+        cx.execute(ins, {"id": note_id, "fp": fp})
+        # actualizar contadores reales desde report_log
+        count = cx.execute(_text("SELECT COUNT(*) AS c FROM report_log WHERE note_id=:id"), {"id": note_id}).scalar()
+        cx.execute(_text("UPDATE note SET reports=:c WHERE id=:id"), {"id": note_id, "c": int(count or 0)})
+        removed = False
+        if count is not None and int(count) >= threshold:
+            cx.execute(_text("DELETE FROM note WHERE id=:id"), {"id": note_id})
+            removed = True
+            # borramos también los logs asociados opcionalmente
+            cx.execute(_text("DELETE FROM report_log WHERE note_id=:id"), {"id": note_id})
+            cx.execute(_text("DELETE FROM like_log   WHERE note_id=:id"), {"id": note_id})
+            return 200, {"ok": True, "id": note_id, "likes": 0, "views": 0, "reports": int(count), "removed": True}
+        # si no se removió, devolver snapshot
+        row = cx.execute(_text("SELECT id, likes, views, reports FROM note WHERE id=:id"), {"id": note_id}).mappings().first()
+        if not row:
+            return 404, {"ok": False, "error": "not_found"}
+        d = dict(row); d["ok"] = True; d["removed"] = False
+        return 200, d
+
+# -------- servir index.html o páginas estáticas --------
 def _try_read(path):
     try:
         with open(path, "rb") as f:
@@ -230,47 +277,97 @@ def _try_read(path):
         return None
 
 def _serve_index_html():
-    force = os.environ.get("FORCE_BRIDGE_INDEX", "")
-    if str(force).strip() not in ("", "0", "false", "False"):
-        p = os.path.join(_REPO_DIR, "backend", "static", "index.html")
-        body = _try_read(p)
-        if body is not None:
-            ctype = mimetypes.guess_type(p)[0] or "text/html"
-            return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
-    return _html(200, "<!doctype html><h1>OK</h1>")  # fallback mínimo
+    override = os.environ.get("WSGI_BRIDGE_INDEX")
+    candidates = [override] if override else [
+        os.path.join(_REPO_DIR, "public", "index.html"),
+        os.path.join(_REPO_DIR, "frontend", "index.html"),
+        os.path.join(_REPO_DIR, "backend", "static", "index.html"),
+        os.path.join(_REPO_DIR, "index.html"),
+    ]
+    for p in candidates:
+        if p and os.path.isfile(p):
+            body = _try_read(p)
+            if body is not None:
+                ctype = mimetypes.guess_type(p)[0] or "text/html"
+                return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
+    html = """<!doctype html><html><head><meta charset="utf-8"><title>paste12</title></head>
+<body style="font-family: system-ui, sans-serif; margin: 2rem;">
+<h1>paste12</h1><p>Backend vivo (bridge fallback).</p>
+<ul>
+  <li><a href="/api/notes">/api/notes</a></li>
+  <li><a href="/api/notes_fallback">/api/notes_fallback</a></li>
+  <li><a href="/api/notes_diag">/api/notes_diag</a></li>
+  <li><a href="/api/deploy-stamp">/api/deploy-stamp</a></li>
+</ul></body></html>"""
+    return _html(200, html)
 
-# --- middleware ---
-def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
+_TERMS_HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Términos</title>
+<style>body{font-family:system-ui;margin:24px;line-height:1.55;max-width:860px}
+h1{background:linear-gradient(90deg,#8fd3d0,#ffb38a,#f9a3c7);-webkit-background-clip:text;color:transparent}</style></head>
+<body><h1>Términos y Condiciones</h1>
+<p>Este servicio se ofrece “tal cual”. No garantizamos disponibilidad ni integridad del contenido publicado.</p>
+<p>Contenido inapropiado o ilegal podrá ser removido. No uses el servicio para spam ni para infringir derechos.</p>
+<p>Al usarlo, aceptás estos términos.</p>
+</body></html>"""
+
+_PRIVACY_HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Privacidad</title>
+<style>body{font-family:system-ui;margin:24px;line-height:1.55;max-width:860px}
+h1{background:linear-gradient(90deg,#8fd3d0,#ffb38a,#f9a3c7);-webkit-background-clip:text;color:transparent}</style></head>
+<body><h1>Política de Privacidad</h1>
+<p>Guardamos datos mínimos para operar (p. ej., texto de notas y métricas agregadas).</p>
+<p>Para limitar reportes repetidos generamos una <em>huella</em> técnica basada en IP y User-Agent; no es identificación personal.</p>
+<p>Podemos almacenar <code>cookies/localStorage</code> para mejorar la experiencia. No vendemos tu información.</p>
+</body></html>"""
+
+# -------- middleware --------
+def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
 
-        # Health para Render
+        # raíz HTML (cuando estamos en fallback o forzado por config)
+        if path in ("/", "/index.html") and method in ("GET","HEAD"):
+            # si hay app real y no se forzó index, dejamos pasar
+            if inner_app is None or os.environ.get("FORCE_BRIDGE_INDEX") == "1":
+                status, headers, body = _serve_index_html()
+                return _finish(start_response, status, headers, body, method)
+            # de lo contrario lo maneja la app real
+        # páginas estáticas mínimas
+        if path == "/terms" and method in ("GET","HEAD"):
+            status, headers, body = _html(200, _TERMS_HTML)
+            return _finish(start_response, status, headers, body, method)
+        if path == "/privacy" and method in ("GET","HEAD"):
+            status, headers, body = _html(200, _PRIVACY_HTML)
+            return _finish(start_response, status, headers, body, method)
+
+        # health para Render
         if path == "/api/health" and method in ("GET","HEAD"):
             status, headers, body = _json(200, {"ok": True})
             return _finish(start_response, status, headers, body, method)
 
-        # raíz amigable si forzamos index pastel
-        if is_force_index and path in ("/", "/index.html") and method in ("GET","HEAD"):
-            status, headers, body = _serve_index_html()
-            return _finish(start_response, status, headers, body, method)
-
-        # Deploy stamp
+        # deploy stamp
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
-            data = {"ok": True,
-                    "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
-                    "stamp": os.environ.get("DEPLOY_STAMP") or ""}
+            data = {
+                "ok": True,
+                "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
+                "stamp": os.environ.get("DEPLOY_STAMP") or "",
+            }
             status, headers, body = _json(200, data)
             return _finish(start_response, status, headers, body, method)
 
-        # Feed
+        # feed (GET) con headers de paginación
         if path in ("/api/notes", "/api/notes_fallback") and method in ("GET","HEAD"):
-            code, payload = _notes_query(qs)
+            code, payload, nxt = _notes_query(qs)
             status, headers, body = _json(code, payload)
-            return _finish(start_response, status, headers, body, method)
+            extra = []
+            if nxt and nxt.get("cursor_ts") and nxt.get("cursor_id"):
+                link = f'</api/notes?cursor_ts={nxt["cursor_ts"]}&cursor_id={nxt["cursor_id"]}>; rel="next"'
+                extra.append(("Link", link))
+                extra.append(("X-Next-Cursor", json.dumps(nxt)))
+            return _finish(start_response, status, headers, body, method, extra_headers=extra)
 
-        # Crear nota
+        # crear nota (POST)
         if path == "/api/notes" and method == "POST":
             try:
                 ctype = environ.get("CONTENT_TYPE","")
@@ -281,51 +378,66 @@ def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
                     try: data = json.loads(raw.decode("utf-8") or "{}")
                     except Exception: data = {}
                 else:
-                    try:
-                        from urllib.parse import parse_qs
-                        qd = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
-                        data = {k: v[0] for k,v in qd.items()}
-                    except Exception:
-                        data = {}
+                    from urllib.parse import parse_qs
+                    qd = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
+                    data = {k: v[0] for k,v in qd.items()}
                 code, payload = _insert_note(data)
             except Exception as e:
                 code, payload = 500, {"ok": False, "error": str(e)}
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
-        # Nota por id y acciones (like/view/report) ------------- (ARREGLADO)
-        if path.startswith("/api/notes/"):
-            parts = path.rstrip("/").split("/")
-            # esperado: ["", "api", "notes", "<id>"]  ó  ["", "api", "notes", "<id>", "<action>"]
-            if len(parts) >= 4 and parts[3].isdigit():
-                note_id = int(parts[3])
-                action  = parts[4] if len(parts) >= 5 else ""
+        # like/view/report (fallbacks)
+        # /api/notes/<id>/like|view|report
+        if path.startswith("/api/notes/") and method == "POST":
+            tail = path.removeprefix("/api/notes/")
+            # formatos esperados: "<id>/like" etc.
+            try:
+                sid, action = tail.split("/", 1)
+                note_id = int(sid)
+            except Exception:
+                note_id = None; action = ""
+            if note_id:
+                if action == "like":
+                    code, payload = _inc_simple(note_id, "likes")
+                elif action == "view":
+                    code, payload = _inc_simple(note_id, "views")
+                elif action == "report":
+                    threshold = int(os.environ.get("REPORT_THRESHOLD", "5") or "5")
+                    fp = _fingerprint(environ)
+                    code, payload = _report_once(note_id, fp, threshold)
+                else:
+                    code, payload = 404, {"ok": False, "error": "unknown_action"}
+                status, headers, body = _json(code, payload)
+                return _finish(start_response, status, headers, body, method)
 
-                # GET /api/notes/<id>
-                if action == "" and method in ("GET","HEAD"):
-                    code, payload = _get_note(note_id)
-                    status, headers, body = _json(code, payload)
-                    return _finish(start_response, status, headers, body, method)
+        # obtener una nota puntual (fallback)
+        if path.startswith("/api/notes/") and method == "GET":
+            tail = path.removeprefix("/api/notes/")
+            try:
+                note_id = int(tail)
+            except Exception:
+                note_id = None
+            if note_id:
+                from sqlalchemy import text as _text
+                with _engine().begin() as cx:
+                    cols = _columns(cx)
+                    sel = _build_select(cols, with_where=False) + " OFFSET 0"
+                    row = cx.execute(_text(f"SELECT * FROM ({sel}) x WHERE id=:id"), {"id": note_id, "lim": 1}).mappings().first()
+                    if not row:
+                        status, headers, body = _json(404, {"ok": False, "error": "not_found"})
+                    else:
+                        status, headers, body = _json(200, {"ok": True, "item": _normalize_row(dict(row))})
+                return _finish(start_response, status, headers, body, method)
 
-                # POST /api/notes/<id>/(like|view|report)
-                if method == "POST" and action:
-                    col = {"like":"likes", "view":"views", "report":"reports"}.get(action)
-                    if not col:
-                        status, headers, body = _json(400, {"ok": False, "error": "bad_action"})
-                        return _finish(start_response, status, headers, body, method)
-                    code, payload = _bump(note_id, col)
-                    status, headers, body = _json(code, payload)
-                    return _finish(start_response, status, headers, body, method)
-
-        # resto: app real si existe
+        # resto → app real si existe
         if inner_app is not None:
             return inner_app(environ, start_response)
-
-        status, headers, body = _json(404, {"ok": False, "error": "app not resolved"})
+        # si no hay app real, 404 básico
+        status, headers, body = _json(404, {"ok": False, "error": "not_found"})
         return _finish(start_response, status, headers, body, method)
     return _app
 
-_inner = _resolve_app()
-_force = os.environ.get("FORCE_BRIDGE_INDEX", "")
-force_index = str(_force).strip() not in ("", "0", "false", "False")
-app = _middleware(_inner, force_index)
+# app final (patched_app) + middleware
+_app = _resolve_app()
+app  = _middleware(_app, is_fallback=(_app is None))
