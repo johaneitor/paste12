@@ -276,7 +276,9 @@ def _serve_index_html():
             body = _try_read(p)
             if body is not None:
                 ctype = mimetypes.guess_type(p)[0] or "text/html"
-                return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
+                status, headers, body = _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
+                headers = list(headers) + [("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")]
+                return status, headers, body
     html = """<!doctype html><html><head><meta charset="utf-8"><title>paste12</title></head>
 <body style="font-family: system-ui, sans-serif; margin: 2rem;">
 <h1>paste12</h1><p>Backend vivo (bridge fallback).</p>
@@ -286,7 +288,9 @@ def _serve_index_html():
   <li><a href="/api/notes_diag">/api/notes_diag</a></li>
   <li><a href="/api/deploy-stamp">/api/deploy-stamp</a></li>
 </ul></body></html>"""
-    return _html(200, html)
+    status, headers, body = _html(200, html)
+            headers = list(headers) + [("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")]
+            return status, headers, body
 
 _TERMS_HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Términos</title>
 <style>body{font-family:system-ui;margin:24px;line-height:1.55;max-width:860px}
