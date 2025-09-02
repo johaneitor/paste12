@@ -24,7 +24,7 @@ def _resolve_app():
     print(f"[wsgiapp] WARNING: no pude resolver APP_MODULE (probados {CANDIDATES}). Último error: {last_err!r}")
     return None
 
-# --- bootstrap DB idempotente (Postgres) ---
+# --- bootstrap DB (idempotente, Postgres) ---
 try:
     from sqlalchemy import create_engine, text
     url = os.environ.get("DATABASE_URL", "")
@@ -47,7 +47,6 @@ try:
                     author_fp VARCHAR(64)
                 )
             """))
-            # reforzar defaults por si existen columnas sin default
             for col in ("likes","views","reports"):
                 cx.execute(text(f"ALTER TABLE note ALTER COLUMN {col} SET DEFAULT 0"))
 except Exception as e:
@@ -83,20 +82,14 @@ def _engine():
         raise RuntimeError("DATABASE_URL/SQLALCHEMY_DATABASE_URI no definido")
     return create_engine(url, pool_pre_ping=True)
 
-# --- helpers SQL ---
 def _dialect(conn) -> str:
-    # tolerante: sirve tanto con SQLAlchemy Connection como si fuera algo raro
     try:
         return conn.engine.dialect.name
     except Exception:
         try:
             return conn.dialect.name
         except Exception:
-            try:
-                mod = getattr(getattr(conn, "connection", None), "__class__", type(None)).__module__
-                return "postgresql" if "psycopg2" in str(mod) else "sqlite"
-            except Exception:
-                return "postgresql"
+            return "postgresql"
 
 def _columns(conn) -> set:
     from sqlalchemy import text as _text
@@ -141,7 +134,7 @@ def _notes_query(qs: str):
         limit     = max(1, min(_get("limit", int, 20), 100))
         cursor_ts = _get("cursor_ts", str, None)
         cursor_id = _get("cursor_id", int, None)
-        with _engine().connect() as cx:  # solo lectura
+        with _engine().connect() as cx:  # lectura
             cols = _columns(cx)
             sql = _build_select(cols, with_where=bool(cursor_ts and cursor_id))
             args = {"lim": limit}
@@ -159,7 +152,6 @@ def _notes_query(qs: str):
         return 500, {"ok": False, "error": str(e)}
 
 def _insert_note(payload: dict):
-    """Fallback de POST /api/notes: inserta una nota minimal."""
     from sqlalchemy import text as _text
     text_val = (payload.get("text") or "").strip()
     if not text_val:
@@ -168,7 +160,7 @@ def _insert_note(payload: dict):
     now = datetime.now(timezone.utc)
     exp = now + timedelta(hours=ttl_hours)
     try:
-        with _engine().begin() as cx:  # escritura (autocommit al salir)
+        with _engine().begin() as cx:  # escritura
             cols = _columns(cx)
             body_col = "text" if "text" in cols else ("content" if "content" in cols else ("summary" if "summary" in cols else None))
             if body_col is None:
@@ -178,7 +170,6 @@ def _insert_note(payload: dict):
             if "timestamp"  in cols: fields += ["timestamp"];  marks += [":ts"];  args["ts"]  = now
             if "expires_at" in cols: fields += ["expires_at"]; marks += [":exp"]; args["exp"] = exp
             if "author_fp"  in cols: fields += ["author_fp"];  marks += [":fp"];  args["fp"]  = payload.get("author_fp")
-            # defaults defensivos por si hay columnas NOT NULL sin default
             for k in ("likes","views","reports"):
                 if k in cols:
                     fields.append(k); marks.append(":zero"); args["zero"] = 0
@@ -195,7 +186,6 @@ def _insert_note(payload: dict):
                 except Exception:
                     new_id = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
 
-            # leer la fila creada
             cols2 = _columns(cx)
             sel = _build_select(cols2, with_where=False)
             row = cx.execute(_text(sel + " OFFSET 0"), {"lim": 1}).mappings().first()
@@ -204,7 +194,7 @@ def _insert_note(payload: dict):
     except Exception as e:
         return 500, {"ok": False, "error": str(e)}
 
-# -------- servir index.html en fallback --------
+# --- servir index pastel cuando se fuerza ---
 def _try_read(path):
     try:
         with open(path, "rb") as f:
@@ -213,7 +203,6 @@ def _try_read(path):
         return None
 
 def _serve_index_html():
-    # si está seteado FORCE_BRIDGE_INDEX, usamos siempre el pastel de backend/static/index.html
     force = os.environ.get("FORCE_BRIDGE_INDEX", "")
     if str(force).strip() not in ("", "0", "false", "False"):
         p = os.path.join(_REPO_DIR, "backend", "static", "index.html")
@@ -221,51 +210,29 @@ def _serve_index_html():
         if body is not None:
             ctype = mimetypes.guess_type(p)[0] or "text/html"
             return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
+    return _html(200, "<!doctype html><h1>OK</h1>")  # fallback mínimo
 
-    candidates = [
-        os.path.join(_REPO_DIR, "public", "index.html"),
-        os.path.join(_REPO_DIR, "frontend", "index.html"),
-        os.path.join(_REPO_DIR, "backend", "static", "index.html"),
-        os.path.join(_REPO_DIR, "index.html"),
-    ]
-    for p in candidates:
-        if p and os.path.isfile(p):
-            body = _try_read(p)
-            if body is not None:
-                ctype = mimetypes.guess_type(p)[0] or "text/html"
-                return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
-    html = """<!doctype html>
-<html><head><meta charset="utf-8"><title>paste12</title></head>
-<body style="font-family: system-ui, sans-serif; margin: 2rem;">
-<h1>paste12</h1>
-<p>Backend vivo (bridge fallback). Endpoints:</p>
-<ul>
-  <li><a href="/api/notes">/api/notes</a></li>
-  <li><a href="/api/notes_fallback">/api/notes_fallback</a></li>
-  <li><a href="/api/notes_diag">/api/notes_diag</a></li>
-  <li><a href="/api/deploy-stamp">/api/deploy-stamp</a></li>
-</ul>
-</body></html>"""
-    return _html(200, html)
-
-# -------- middleware --------
+# --- middleware ---
 def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
 
-        # raíz amigable cuando se fuerza el index pastel
+        # Health siempre disponible para Render
+        if path == "/api/health" and method in ("GET","HEAD"):
+            status, headers, body = _json(200, {"ok": True})
+            return _finish(start_response, status, headers, body, method)
+
+        # raíz amigable si forzamos index pastel
         if is_force_index and path in ("/", "/index.html") and method in ("GET","HEAD"):
             status, headers, body = _serve_index_html()
             return _finish(start_response, status, headers, body, method)
 
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
-            data = {
-                "ok": True,
-                "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
-                "stamp": os.environ.get("DEPLOY_STAMP") or "",
-            }
+            data = {"ok": True,
+                    "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
+                    "stamp": os.environ.get("DEPLOY_STAMP") or ""}
             status, headers, body = _json(200, data)
             return _finish(start_response, status, headers, body, method)
 
@@ -296,16 +263,14 @@ def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
-        # resto → app real si existe
         if inner_app is not None:
             return inner_app(environ, start_response)
 
-        # si no hay app real, 404 json
         status, headers, body = _json(404, {"ok": False, "error": "app not resolved"})
         return _finish(start_response, status, headers, body, method)
     return _app
 
-_inner = _resolve_app()  # puede ser None
+_inner = _resolve_app()
 _force = os.environ.get("FORCE_BRIDGE_INDEX", "")
 force_index = str(_force).strip() not in ("", "0", "false", "False")
 app = _middleware(_inner, force_index)
