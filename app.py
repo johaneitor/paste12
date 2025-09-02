@@ -42,3 +42,29 @@ if __name__ == "__main__":
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", "8000"))
     app.run(host=host, port=port)
+
+# --- Root index pastel + no-store ---
+try:
+    from flask import send_from_directory, current_app, make_response, request
+
+    # Reemplaza el root, o define uno si no existía
+    @app.get("/")
+    def root_index():
+        static_dir = current_app.static_folder or "backend/static"
+        resp = make_response(send_from_directory(static_dir, "index.html"))
+        # evita cache en la raíz
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return resp
+
+    # Cinturón y tirantes: si otra vista sirve '/', igual marcamos no-store
+    @app.after_request
+    def _no_store_root(resp):
+        try:
+            if request.path in ("/", "/index.html"):
+                # si ya trae Cache-Control, lo reemplazamos por no-store
+                resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        except Exception:
+            pass
+        return resp
+except Exception as _e:
+    print("[app] Nota: no pude instalar root_index/no-store:", _e)
