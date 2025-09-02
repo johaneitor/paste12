@@ -360,6 +360,11 @@ candidates = [override] if override else [
     os.path.join(_REPO_DIR, "public", "index.html"),
     os.path.join(_REPO_DIR, "frontend", "index.html"),
     os.path.join(_REPO_DIR, "index.html"),
+] if override else [
+    os.path.join(_REPO_DIR, "backend", "static", "index.html"),
+    os.path.join(_REPO_DIR, "public", "index.html"),
+    os.path.join(_REPO_DIR, "frontend", "index.html"),
+    os.path.join(_REPO_DIR, "index.html"),
 ]
  if override else [
         os.path.join(_REPO_DIR, "public", "index.html"),
