@@ -3,7 +3,6 @@ from importlib import import_module
 from typing import Callable, Tuple
 from datetime import datetime, timedelta, timezone
 
-# --- asegurar repo en sys.path ---
 _THIS = os.path.abspath(__file__)
 _REPO_DIR = os.path.dirname(os.path.dirname(_THIS))
 if _REPO_DIR not in sys.path:
@@ -22,10 +21,8 @@ def _resolve_app():
         except Exception as e:
             last_err = e
     print(f"[wsgiapp] WARNING: no pude resolver APP_MODULE (probados {CANDIDATES}). Último error: {last_err!r}")
-    # seguimos con None => fallback total de rutas comunes
     return None
 
-# --- bootstrap DB idempotente (nota + logs) ---
 def _bootstrap_db():
     from sqlalchemy import create_engine, text
     url = os.environ.get("DATABASE_URL", "") or os.environ.get("SQLALCHEMY_DATABASE_URI","")
@@ -33,16 +30,10 @@ def _bootstrap_db():
         return
     eng = create_engine(url, pool_pre_ping=True)
     with eng.begin() as cx:
-        # tabla principal "note" (campos opcionales)
         cx.execute(text("""
             CREATE TABLE IF NOT EXISTS note(
                 id SERIAL PRIMARY KEY,
-                -- campos "tipo artículo"
-                title TEXT,
-                url TEXT,
-                summary TEXT,
-                content TEXT,
-                -- campo "tipo texto rápido"
+                title TEXT, url TEXT, summary TEXT, content TEXT,
                 text TEXT,
                 timestamp TIMESTAMPTZ DEFAULT NOW(),
                 expires_at TIMESTAMPTZ,
@@ -52,7 +43,6 @@ def _bootstrap_db():
                 author_fp VARCHAR(64)
             )
         """))
-        # logs de reportes (único por persona)
         cx.execute(text("""
             CREATE TABLE IF NOT EXISTS report_log(
                 id SERIAL PRIMARY KEY,
@@ -61,12 +51,6 @@ def _bootstrap_db():
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
         """))
-        # unique (note_id, fingerprint)
-        try:
-            cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_report_note_fp ON report_log (note_id, fingerprint)"))
-        except Exception:
-            pass
-        # opcional: logs de likes (si después quieres de-dupe de likes)
         cx.execute(text("""
             CREATE TABLE IF NOT EXISTS like_log(
                 id SERIAL PRIMARY KEY,
@@ -75,13 +59,13 @@ def _bootstrap_db():
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
         """))
-        try:
-            cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_like_note_fp ON like_log (note_id, fingerprint)"))
-        except Exception:
-            pass
+        # índices (pueden ya existir)
+        try: cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_report_note_fp ON report_log (note_id, fingerprint)"))
+        except Exception: pass
+        try: cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_like_note_fp ON like_log (note_id, fingerprint)"))
+        except Exception: pass
 _bootstrap_db()
 
-# --- utils JSON/HTML/WSGI ---
 def _json(status: int, data: dict) -> Tuple[str, list, bytes]:
     body = json.dumps(data, default=str).encode("utf-8")
     status_line = f"{status} " + ("OK" if status == 200 else "ERROR")
@@ -115,16 +99,13 @@ def _engine():
     return create_engine(url, pool_pre_ping=True)
 
 def _fingerprint(environ) -> str:
-    # preferir cabecera explícita si viene del front
     fp = environ.get("HTTP_X_FP")
     if fp: return fp[:128]
     ip = (environ.get("HTTP_X_FORWARDED_FOR","").split(",")[0].strip() or
           environ.get("REMOTE_ADDR","") or "0.0.0.0")
     ua = environ.get("HTTP_USER_AGENT","")
-    seed = f"{ip}|{ua}"
-    return hashlib.sha1(seed.encode("utf-8")).hexdigest()
+    return hashlib.sha1(f"{ip}|{ua}".encode("utf-8")).hexdigest()
 
-# -------- notas: columnas dinámicas / payload unificado --------
 def _columns(conn) -> set:
     from sqlalchemy import text as _text
     dialect = conn.engine.dialect.name
@@ -186,7 +167,6 @@ def _notes_query(qs: str):
         return 500, {"ok": False, "error": str(e)}, None
 
 def _insert_note(payload: dict):
-    """Fallback de POST /api/notes: inserta una nota minimal."""
     from sqlalchemy import text as _text
     text_val = (payload.get("text") or "").strip()
     if not text_val:
@@ -208,7 +188,6 @@ def _insert_note(payload: dict):
             if "author_fp" in cols and payload.get("author_fp"):
                 fields.append("author_fp"); marks.append(":fp"); args["fp"] = payload.get("author_fp")
             sql = f"INSERT INTO note({', '.join(fields)}) VALUES ({', '.join(marks)})"
-            # RETURNING id si disponible
             id_val = None
             try:
                 row = cx.execute(_text(sql + " RETURNING id"), args).first()
@@ -219,7 +198,6 @@ def _insert_note(payload: dict):
                     id_val = cx.execute(_text("SELECT lastval()")).scalar()
                 except Exception:
                     id_val = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
-            # seleccionar item creado
             cols2 = _columns(cx)
             sel = _build_select(cols2, with_where=False) + " OFFSET 0"
             row = cx.execute(_text(f"SELECT * FROM ({sel}) x WHERE id=:id"), {"id": id_val, "lim": 1}).mappings().first()
@@ -229,46 +207,46 @@ def _insert_note(payload: dict):
         return 500, {"ok": False, "error": str(e)}
 
 def _inc_simple(note_id: int, column: str):
-    """Incremento simple (para view/like si no hacemos de-dupe aquí)."""
     from sqlalchemy import text as _text
     with _engine().begin() as cx:
         cx.execute(_text(f"UPDATE note SET {column}=COALESCE({column},0)+1 WHERE id=:id"), {"id": note_id})
         row = cx.execute(_text("SELECT id, likes, views, reports FROM note WHERE id=:id"), {"id": note_id}).mappings().first()
         if not row:
             return 404, {"ok": False, "error": "not_found"}
-        d = dict(row)
-        d["ok"] = True
+        d = dict(row); d["ok"] = True
         return 200, d
 
 def _report_once(note_id: int, fp: str, threshold: int):
-    """Inserta en report_log con de-dupe y borra la nota al alcanzar threshold."""
+    """Dedupe por fingerprint y borra al alcanzar el umbral (sin ON CONFLICT)."""
     from sqlalchemy import text as _text
     with _engine().begin() as cx:
-        dialect = cx.connection.engine.dialect.name
-        if dialect.startswith("sqlite"):
-            ins = _text("INSERT OR IGNORE INTO report_log(note_id, fingerprint, created_at) VALUES (:id,:fp,CURRENT_TIMESTAMP)")
-        else:
-            ins = _text("INSERT INTO report_log(note_id, fingerprint, created_at) VALUES (:id,:fp,NOW()) ON CONFLICT (note_id,fingerprint) DO NOTHING")
-        cx.execute(ins, {"id": note_id, "fp": fp})
-        # actualizar contadores reales desde report_log
-        count = cx.execute(_text("SELECT COUNT(*) AS c FROM report_log WHERE note_id=:id"), {"id": note_id}).scalar()
-        cx.execute(_text("UPDATE note SET reports=:c WHERE id=:id"), {"id": note_id, "c": int(count or 0)})
-        removed = False
-        if count is not None and int(count) >= threshold:
+        # ¿ya reportó esta persona?
+        exists = cx.execute(_text(
+            "SELECT 1 FROM report_log WHERE note_id=:id AND fingerprint=:fp LIMIT 1"
+        ), {"id": note_id, "fp": fp}).scalar()
+        if not exists:
+            cx.execute(_text(
+                "INSERT INTO report_log(note_id, fingerprint, created_at) VALUES (:id,:fp, NOW())"
+            ), {"id": note_id, "fp": fp})
+        # sincronizar contador en note
+        count = cx.execute(_text("SELECT COUNT(*) FROM report_log WHERE note_id=:id"), {"id": note_id}).scalar() or 0
+        cx.execute(_text("UPDATE note SET reports=:c WHERE id=:id"), {"id": note_id, "c": int(count)})
+        # ¿debe eliminarse?
+        if int(count) >= threshold:
             cx.execute(_text("DELETE FROM note WHERE id=:id"), {"id": note_id})
-            removed = True
-            # borramos también los logs asociados opcionalmente
+            # limpiar logs asociados (mejor consistencia)
             cx.execute(_text("DELETE FROM report_log WHERE note_id=:id"), {"id": note_id})
-            cx.execute(_text("DELETE FROM like_log   WHERE note_id=:id"), {"id": note_id})
+            try:
+                cx.execute(_text("DELETE FROM like_log WHERE note_id=:id"), {"id": note_id})
+            except Exception:
+                pass
             return 200, {"ok": True, "id": note_id, "likes": 0, "views": 0, "reports": int(count), "removed": True}
-        # si no se removió, devolver snapshot
         row = cx.execute(_text("SELECT id, likes, views, reports FROM note WHERE id=:id"), {"id": note_id}).mappings().first()
         if not row:
             return 404, {"ok": False, "error": "not_found"}
         d = dict(row); d["ok"] = True; d["removed"] = False
         return 200, d
 
-# -------- servir index.html o páginas estáticas --------
 def _try_read(path):
     try:
         with open(path, "rb") as f:
@@ -319,21 +297,17 @@ h1{background:linear-gradient(90deg,#8fd3d0,#ffb38a,#f9a3c7);-webkit-background-
 <p>Podemos almacenar <code>cookies/localStorage</code> para mejorar la experiencia. No vendemos tu información.</p>
 </body></html>"""
 
-# -------- middleware --------
 def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
 
-        # raíz HTML (cuando estamos en fallback o forzado por config)
         if path in ("/", "/index.html") and method in ("GET","HEAD"):
-            # si hay app real y no se forzó index, dejamos pasar
             if inner_app is None or os.environ.get("FORCE_BRIDGE_INDEX") == "1":
                 status, headers, body = _serve_index_html()
                 return _finish(start_response, status, headers, body, method)
-            # de lo contrario lo maneja la app real
-        # páginas estáticas mínimas
+
         if path == "/terms" and method in ("GET","HEAD"):
             status, headers, body = _html(200, _TERMS_HTML)
             return _finish(start_response, status, headers, body, method)
@@ -341,12 +315,10 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
             status, headers, body = _html(200, _PRIVACY_HTML)
             return _finish(start_response, status, headers, body, method)
 
-        # health para Render
         if path == "/api/health" and method in ("GET","HEAD"):
             status, headers, body = _json(200, {"ok": True})
             return _finish(start_response, status, headers, body, method)
 
-        # deploy stamp
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
             data = {
                 "ok": True,
@@ -356,18 +328,18 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
             status, headers, body = _json(200, data)
             return _finish(start_response, status, headers, body, method)
 
-        # feed (GET) con headers de paginación
         if path in ("/api/notes", "/api/notes_fallback") and method in ("GET","HEAD"):
             code, payload, nxt = _notes_query(qs)
             status, headers, body = _json(code, payload)
             extra = []
             if nxt and nxt.get("cursor_ts") and nxt.get("cursor_id"):
-                link = f'</api/notes?cursor_ts={nxt["cursor_ts"]}&cursor_id={nxt["cursor_id"]}>; rel="next"'
+                from urllib.parse import quote
+                ts_q = quote(str(nxt["cursor_ts"]), safe="")
+                link = f'</api/notes?cursor_ts={ts_q}&cursor_id={nxt["cursor_id"]}>; rel="next"'
                 extra.append(("Link", link))
                 extra.append(("X-Next-Cursor", json.dumps(nxt)))
             return _finish(start_response, status, headers, body, method, extra_headers=extra)
 
-        # crear nota (POST)
         if path == "/api/notes" and method == "POST":
             try:
                 ctype = environ.get("CONTENT_TYPE","")
@@ -387,11 +359,8 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
-        # like/view/report (fallbacks)
-        # /api/notes/<id>/like|view|report
         if path.startswith("/api/notes/") and method == "POST":
             tail = path.removeprefix("/api/notes/")
-            # formatos esperados: "<id>/like" etc.
             try:
                 sid, action = tail.split("/", 1)
                 note_id = int(sid)
@@ -411,7 +380,6 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                 status, headers, body = _json(code, payload)
                 return _finish(start_response, status, headers, body, method)
 
-        # obtener una nota puntual (fallback)
         if path.startswith("/api/notes/") and method == "GET":
             tail = path.removeprefix("/api/notes/")
             try:
@@ -430,14 +398,11 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                         status, headers, body = _json(200, {"ok": True, "item": _normalize_row(dict(row))})
                 return _finish(start_response, status, headers, body, method)
 
-        # resto → app real si existe
         if inner_app is not None:
             return inner_app(environ, start_response)
-        # si no hay app real, 404 básico
         status, headers, body = _json(404, {"ok": False, "error": "not_found"})
         return _finish(start_response, status, headers, body, method)
     return _app
 
-# app final (patched_app) + middleware
 _app = _resolve_app()
 app  = _middleware(_app, is_fallback=(_app is None))
