@@ -512,3 +512,24 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
 
 _app = _resolve_app()
 app  = _middleware(_app, is_fallback=(_app is None))
+app = _root_force_mw(app)
+
+
+
+# --- middleware final: fuerza '/' desde el bridge si FORCE_BRIDGE_INDEX está activo ---
+def _root_force_mw(inner):
+    def _mw(environ, start_response):
+        path   = environ.get("PATH_INFO", "") or ""
+        method = (environ.get("REQUEST_METHOD", "GET") or "GET").upper()
+        _force = os.getenv("FORCE_BRIDGE_INDEX","").strip().lower() in ("1","true","yes","on")
+        if _force and path in ("/","/index.html") and method in ("GET","HEAD"):
+            status, headers, body = _serve_index_html()
+            # Garantizar no-store y marcar fuente
+            headers = [(k, v) for (k, v) in headers if k.lower() != "cache-control"]
+            headers += [
+                ("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"),
+                ("X-Index-Source", "bridge"),
+            ]
+            return _finish(start_response, status, headers, body, method)
+        return inner(environ, start_response)
+    return _mw
