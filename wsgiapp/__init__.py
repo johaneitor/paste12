@@ -3,6 +3,7 @@ from importlib import import_module
 from typing import Callable, Tuple
 from datetime import datetime, timedelta, timezone
 
+# --- asegurar repo en sys.path ---
 _THIS = os.path.abspath(__file__)
 _REPO_DIR = os.path.dirname(os.path.dirname(_THIS))
 if _REPO_DIR not in sys.path:
@@ -46,15 +47,14 @@ try:
                     author_fp VARCHAR(64)
                 )
             """))
-            cx.execute(text("ALTER TABLE note ADD COLUMN IF NOT EXISTS author_fp VARCHAR(64)"))
-            cx.execute(text("CREATE INDEX IF NOT EXISTS idx_note_timestamp ON note (timestamp DESC, id DESC)"))
-            cx.execute(text("CREATE INDEX IF NOT EXISTS idx_note_likes ON note (likes)"))
-            cx.execute(text("CREATE INDEX IF NOT EXISTS idx_note_views ON note (views)"))
-            cx.execute(text("CREATE INDEX IF NOT EXISTS idx_note_reports ON note (reports)"))
+            # reforzar defaults por si existen columnas sin default
+            for col in ("likes","views","reports"):
+                cx.execute(text(f"ALTER TABLE note ALTER COLUMN {col} SET DEFAULT 0"))
 except Exception as e:
     print(f"[wsgiapp] Bootstrap DB omitido: {e}")
 
-def _json(status: int, data: dict):
+# --- utils JSON/HTML/WSGI ---
+def _json(status: int, data: dict) -> Tuple[str, list, bytes]:
     body = json.dumps(data, default=str).encode("utf-8")
     status_line = f"{status} " + ("OK" if status == 200 else "ERROR")
     headers = [("Content-Type", "application/json; charset=utf-8"),
@@ -83,10 +83,25 @@ def _engine():
         raise RuntimeError("DATABASE_URL/SQLALCHEMY_DATABASE_URI no definido")
     return create_engine(url, pool_pre_ping=True)
 
+# --- helpers SQL ---
+def _dialect(conn) -> str:
+    # tolerante: sirve tanto con SQLAlchemy Connection como si fuera algo raro
+    try:
+        return conn.engine.dialect.name
+    except Exception:
+        try:
+            return conn.dialect.name
+        except Exception:
+            try:
+                mod = getattr(getattr(conn, "connection", None), "__class__", type(None)).__module__
+                return "postgresql" if "psycopg2" in str(mod) else "sqlite"
+            except Exception:
+                return "postgresql"
+
 def _columns(conn) -> set:
     from sqlalchemy import text as _text
-    dialect = conn.connection.engine.dialect.name
-    if dialect.startswith("sqlite"):
+    d = _dialect(conn)
+    if d.startswith("sqlite"):
         rows = conn.execute(_text("PRAGMA table_info(note)")).mappings().all()
         return {r["name"] for r in rows}
     else:
@@ -126,7 +141,7 @@ def _notes_query(qs: str):
         limit     = max(1, min(_get("limit", int, 20), 100))
         cursor_ts = _get("cursor_ts", str, None)
         cursor_id = _get("cursor_id", int, None)
-        with _engine().begin() as cx:
+        with _engine().connect() as cx:  # solo lectura
             cols = _columns(cx)
             sql = _build_select(cols, with_where=bool(cursor_ts and cursor_id))
             args = {"lim": limit}
@@ -144,45 +159,52 @@ def _notes_query(qs: str):
         return 500, {"ok": False, "error": str(e)}
 
 def _insert_note(payload: dict):
+    """Fallback de POST /api/notes: inserta una nota minimal."""
     from sqlalchemy import text as _text
     text_val = (payload.get("text") or "").strip()
     if not text_val:
         return 400, {"ok": False, "error": "text_required"}
-    ttl_hours = int(os.environ.get("NOTE_TTL_HOURS", "12") or "12")
+    ttl_hours = int(payload.get("ttl_hours") or os.environ.get("NOTE_TTL_HOURS", "12") or "12")
     now = datetime.now(timezone.utc)
     exp = now + timedelta(hours=ttl_hours)
     try:
-        with _engine().begin() as cx:
+        with _engine().begin() as cx:  # escritura (autocommit al salir)
             cols = _columns(cx)
             body_col = "text" if "text" in cols else ("content" if "content" in cols else ("summary" if "summary" in cols else None))
             if body_col is None:
                 return 500, {"ok": False, "error": "no_textual_column"}
+
             fields, marks, args = [body_col], [":body"], {"body": text_val}
-            if "timestamp" in cols:
-                fields.append("timestamp"); marks.append(":ts"); args["ts"] = now
-            if "expires_at" in cols:
-                fields.append("expires_at"); marks.append(":exp"); args["exp"] = exp
-            if "author_fp" in cols:
-                fields.append("author_fp"); marks.append(":fp"); args["fp"] = payload.get("author_fp")
+            if "timestamp"  in cols: fields += ["timestamp"];  marks += [":ts"];  args["ts"]  = now
+            if "expires_at" in cols: fields += ["expires_at"]; marks += [":exp"]; args["exp"] = exp
+            if "author_fp"  in cols: fields += ["author_fp"];  marks += [":fp"];  args["fp"]  = payload.get("author_fp")
+            # defaults defensivos por si hay columnas NOT NULL sin default
+            for k in ("likes","views","reports"):
+                if k in cols:
+                    fields.append(k); marks.append(":zero"); args["zero"] = 0
+
             sql = f"INSERT INTO note({', '.join(fields)}) VALUES ({', '.join(marks)})"
-            id_val = None
+            new_id = None
             try:
-                row = cx.execute(_text(sql + " RETURNING id")).first()
-                if row: id_val = row[0]
+                row = cx.execute(_text(sql + " RETURNING id"), args).first()
+                if row: new_id = row[0]
             except Exception:
                 cx.execute(_text(sql), args)
                 try:
-                    id_val = cx.execute(_text("SELECT lastval()")).scalar()
+                    new_id = cx.execute(_text("SELECT lastval()")).scalar()
                 except Exception:
-                    id_val = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
+                    new_id = cx.execute(_text("SELECT MAX(id) FROM note")).scalar()
+
+            # leer la fila creada
             cols2 = _columns(cx)
-            sel = _build_select(cols2, with_where=False) + " OFFSET 0"
-            row = cx.execute(_text(f"SELECT * FROM ({sel}) x WHERE id=:id"), {"id": id_val, "lim": 1}).mappings().first()
-            item = _normalize_row(dict(row)) if row else {"id": id_val, "text": text_val}
+            sel = _build_select(cols2, with_where=False)
+            row = cx.execute(_text(sel + " OFFSET 0"), {"lim": 1}).mappings().first()
+            item = _normalize_row(dict(row)) if row else {"id": new_id, "text": text_val}
         return 201, {"ok": True, "item": item}
     except Exception as e:
         return 500, {"ok": False, "error": str(e)}
 
+# -------- servir index.html en fallback --------
 def _try_read(path):
     try:
         with open(path, "rb") as f:
@@ -191,8 +213,16 @@ def _try_read(path):
         return None
 
 def _serve_index_html():
-    override = os.environ.get("WSGI_BRIDGE_INDEX")
-    candidates = [override] if override else [
+    # si está seteado FORCE_BRIDGE_INDEX, usamos siempre el pastel de backend/static/index.html
+    force = os.environ.get("FORCE_BRIDGE_INDEX", "")
+    if str(force).strip() not in ("", "0", "false", "False"):
+        p = os.path.join(_REPO_DIR, "backend", "static", "index.html")
+        body = _try_read(p)
+        if body is not None:
+            ctype = mimetypes.guess_type(p)[0] or "text/html"
+            return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
+
+    candidates = [
         os.path.join(_REPO_DIR, "public", "index.html"),
         os.path.join(_REPO_DIR, "frontend", "index.html"),
         os.path.join(_REPO_DIR, "backend", "static", "index.html"),
@@ -204,21 +234,29 @@ def _serve_index_html():
             if body is not None:
                 ctype = mimetypes.guess_type(p)[0] or "text/html"
                 return _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
-    html = """<!doctype html><html><head><meta charset="utf-8"><title>paste12</title></head>
+    html = """<!doctype html>
+<html><head><meta charset="utf-8"><title>paste12</title></head>
 <body style="font-family: system-ui, sans-serif; margin: 2rem;">
-<h1>paste12</h1><p>Backend vivo (bridge fallback).</p></body></html>"""
+<h1>paste12</h1>
+<p>Backend vivo (bridge fallback). Endpoints:</p>
+<ul>
+  <li><a href="/api/notes">/api/notes</a></li>
+  <li><a href="/api/notes_fallback">/api/notes_fallback</a></li>
+  <li><a href="/api/notes_diag">/api/notes_diag</a></li>
+  <li><a href="/api/deploy-stamp">/api/deploy-stamp</a></li>
+</ul>
+</body></html>"""
     return _html(200, html)
 
-def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
-    # NUEVO: permitimos forzar el index pastel aun si no estamos en fallback
-    force_index = os.getenv("FORCE_BRIDGE_INDEX", "0").lower() in ("1","true","yes")
+# -------- middleware --------
+def _middleware(inner_app: Callable, is_force_index: bool) -> Callable:
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
 
-        # raíz -> nuestro index si estamos en fallback O si se fuerza por env
-        if (is_fallback or force_index) and path in ("/", "/index.html") and method in ("GET","HEAD"):
+        # raíz amigable cuando se fuerza el index pastel
+        if is_force_index and path in ("/", "/index.html") and method in ("GET","HEAD"):
             status, headers, body = _serve_index_html()
             return _finish(start_response, status, headers, body, method)
 
@@ -258,17 +296,16 @@ def _middleware(inner_app: Callable, is_fallback: bool) -> Callable:
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
 
-        return inner_app(environ, start_response)
+        # resto → app real si existe
+        if inner_app is not None:
+            return inner_app(environ, start_response)
+
+        # si no hay app real, 404 json
+        status, headers, body = _json(404, {"ok": False, "error": "app not resolved"})
+        return _finish(start_response, status, headers, body, method)
     return _app
 
-_inner = _resolve_app()
-is_fallback = _inner is None
-
-if _inner is None:
-    # si no resolvió, respondemos algo mínimo y dejamos el bridge manejar "/"
-    def _noop(environ, start_response):
-        status, headers, body = _json(200, {"ok": False, "error": "app not resolved"})
-        return _finish(start_response, status, headers, body, environ.get("REQUEST_METHOD","GET"))
-    _inner = _noop
-
-app  = _middleware(_inner, is_fallback)
+_inner = _resolve_app()  # puede ser None
+_force = os.environ.get("FORCE_BRIDGE_INDEX", "")
+force_index = str(_force).strip() not in ("", "0", "false", "False")
+app = _middleware(_inner, force_index)
