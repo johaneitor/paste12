@@ -355,7 +355,12 @@ window.addEventListener('DOMContentLoaded', ()=>{ const u = new URL(location.hre
         headers = list(headers) + [("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")]
         return status, headers, body
     override = os.environ.get("WSGI_BRIDGE_INDEX")
-candidates = [override] if override else [
+    candidates = [override] if override else [
+        os.path.join(_REPO_DIR, "backend", "static", "index.html"),
+        os.path.join(_REPO_DIR, "public", "index.html"),
+        os.path.join(_REPO_DIR, "frontend", "index.html"),
+        os.path.join(_REPO_DIR, "index.html"),
+    ] if override else [
     os.path.join(_REPO_DIR, "backend", "static", "index.html"),
     os.path.join(_REPO_DIR, "public", "index.html"),
     os.path.join(_REPO_DIR, "frontend", "index.html"),
