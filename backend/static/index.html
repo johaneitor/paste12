@@ -6,56 +6,37 @@
 <title>Notas</title>
 <style>
   :root{
-    --bg:#fffdfc;
-    --fg:#24323f;
-    --muted:#6b7a86;
-    --teal:#8fd3d0;     /* verde turquesa pastel */
-    --peach:#ffb38a;    /* naranja pastel */
-    --pink:#f9a3c7;     /* rosa pastel */
-    --card:#ffffff;
-    --ring: rgba(36,50,63,.15);
+    --bg:#fffdfc; --fg:#24323f; --muted:#6b7a86;
+    --teal:#8fd3d0;   /* turquesa pastel */
+    --peach:#ffb38a;  /* naranja pastel */
+    --pink:#f9a3c7;   /* rosa pastel */
+    --card:#ffffff; --ring: rgba(36,50,63,.15);
   }
   *{box-sizing:border-box}
-  body{
-    margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    background:linear-gradient(180deg, var(--bg), #fff);
-    color:var(--fg);
-  }
-  header{
-    position:sticky; top:0; z-index:10;
-    background:linear-gradient(90deg, var(--teal), var(--peach), var(--pink));
-    color:#17323a; padding:16px 20px; box-shadow:0 2px 12px var(--ring);
-  }
-  h1{margin:0; font-size:clamp(20px,3.2vw,28px)}
-  .container{max-width:860px; margin:20px auto; padding:0 16px}
-  .card{
-    background:var(--card); border:1px solid #eee; border-radius:16px; padding:14px;
-    box-shadow:0 4px 20px var(--ring);
-  }
-  textarea, input[type="text"]{
-    width:100%; padding:12px 14px; border-radius:12px; border:1px solid #e6eef2; outline:none;
-    font-size:16px; background:#fff; color:var(--fg);
-  }
-  textarea:focus, input:focus{ border-color:#b5dfe0; box-shadow:0 0 0 4px rgba(143,211,208,.25) }
-  .row{display:flex; gap:10px; margin-top:10px}
-  .btn{
-    appearance:none; border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer;
-    background:linear-gradient(90deg, var(--teal), var(--peach));
-    color:#14333a; box-shadow:0 6px 18px var(--ring);
-  }
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(180deg,var(--bg),#fff);color:var(--fg)}
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(90deg,var(--teal),var(--peach),var(--pink));color:#17323a;padding:16px 20px;box-shadow:0 2px 12px var(--ring)}
+  h1{margin:0;font-size:clamp(20px,3.2vw,28px)}
+  .container{max-width:860px;margin:20px auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid #eee;border-radius:16px;padding:14px;box-shadow:0 4px 20px var(--ring)}
+  textarea,input[type="text"]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #e6eef2;outline:none;font-size:16px;background:#fff;color:var(--fg)}
+  textarea:focus,input:focus{border-color:#b5dfe0;box-shadow:0 0 0 4px rgba(143,211,208,.25)}
+  .row{display:flex;gap:10px;margin-top:10px}
+  .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer;background:linear-gradient(90deg,var(--teal),var(--peach));color:#14333a;box-shadow:0 6px 18px var(--ring)}
   .btn:active{transform:translateY(1px)}
-  .list{margin-top:18px; display:grid; gap:12px}
-  .note{
-    background:#fff; border:1px solid #eef2f5; border-radius:14px; padding:12px 14px;
-  }
-  .note .meta{color:var(--muted); font-size:12px; margin-top:6px}
-  footer{
-    margin:40px 0 28px; color:var(--muted); text-align:center; font-size:14px;
-  }
-  footer a{ color:#0b7c8a; text-decoration:underline }
-  .hidden{display:none}
-  .error{ color:#9a2b2b; margin-top:8px }
-  .ok{ color:#0a6f57; margin-top:8px }
+  .list{margin-top:18px;display:grid;gap:12px}
+  .note{background:#fff;border:1px solid #eef2f5;border-radius:14px;padding:12px 14px}
+  .note .meta{color:var(--muted);font-size:12px;margin-top:6px}
+  .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .chip{border:1px solid #e6eef2;border-radius:12px;padding:6px 10px;background:#fff;cursor:pointer}
+  .menu{position:relative}
+  .menu > button{border:1px solid #e6eef2;background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer}
+  .menu-list{position:absolute;right:0;top:36px;background:#fff;border:1px solid #e6eef2;border-radius:12px;box-shadow:0 8px 24px var(--ring);padding:6px;min-width:160px}
+  .menu-list[hidden]{display:none}
+  .menu-list button{width:100%;text-align:left;background:#fff;border:0;padding:10px;border-radius:8px;cursor:pointer}
+  .menu-list button:hover{background:#f6fbfb}
+  footer{margin:40px 0 28px;color:var(--muted);text-align:center;font-size:14px}
+  footer a{color:#0b7c8a;text-decoration:underline}
+  .hidden{display:none}.error{color:#9a2b2b;margin-top:8px}.ok{color:#0a6f57;margin-top:8px}
 </style>
 </head>
 <body>
@@ -74,71 +55,152 @@
     <section class="list" id="list"></section>
 
     <footer>
-      <span>Usamos cookies/localStorage (p. ej., para contar vistas).</span>
-      <br/>
-      <a href="/terms">Términos y Condiciones</a> ·
-      <a href="/privacy">Política de Privacidad</a>
+      <span>Usamos cookies/localStorage (p. ej., para contar vistas).</span><br/>
+      <a href="/terms">Términos y Condiciones</a> · <a href="/privacy">Política de Privacidad</a>
     </footer>
   </main>
 
 <script>
 const $ = (s)=>document.querySelector(s);
 const api = (p)=> (p.startsWith('/')?p:'/api/'+p);
-function fmtDate(iso){
-  try{ return new Date(iso).toLocaleString(); }catch(_){ return iso }
+
+// Fingerprint persistente
+function ensureFp(){
+  let fp = localStorage.getItem('p12_fp');
+  if(!fp){ fp = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) + String(Date.now()); fp = btoa(fp).replace(/=+/g,''); localStorage.setItem('p12_fp', fp); }
+  return fp;
 }
+const FP = ensureFp();
+const JSON_HEADERS = {'Accept':'application/json','Content-Type':'application/json','X-Author-Fp': FP};
+
+function fmtDate(iso){ try{ return new Date(iso).toLocaleString(); }catch(_){ return iso } }
+function esc(s){ return String(s||'').replace(/[&<>"]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m])) }
+
 function renderItem(it){
   const text = it.text || it.content || it.summary || '';
+  const id = it.id ?? '-';
   return `
-    <article class="note">
-      <div>${text?text.replace(/</g,'&lt;'):'(sin texto)'}</div>
-      <div class="meta">
-        #${it.id ?? '-'} · ${fmtDate(it.timestamp)} · ❤ ${it.likes ?? 0} · 👁️ ${it.views ?? 0} · 🚩 ${it.reports ?? 0}
+    <article class="note" data-id="${id}">
+      <div class="body">${esc(text) || '(sin texto)'}</div>
+      <div class="meta">#${id} · ${fmtDate(it.timestamp)} · ❤ <span class="likes">${it.likes ?? 0}</span> · 👁️ <span class="views">${it.views ?? 0}</span> · 🚩 <span class="reports">${it.reports ?? 0}</span></div>
+      <div class="actions">
+        <button class="chip btn-like" data-id="${id}">❤ Me gusta</button>
+        <div class="menu">
+          <button class="btn-menu" aria-haspopup="true" aria-expanded="false">⋯</button>
+          <div class="menu-list" hidden>
+            <button data-act="share" data-id="${id}">Compartir</button>
+            <button data-act="report" data-id="${id}">Reportar</button>
+          </div>
+        </div>
       </div>
     </article>
   `;
 }
+
 function renderList(items){
   $('#list').innerHTML = (items||[]).map(renderItem).join('') || '<div class="note">No hay notas aún.</div>';
+  observeViews();
 }
+
+// --- cargar feed ---
 async function load(){
   try{
     const r = await fetch(api('notes'), {headers:{'Accept':'application/json'}});
     const j = await r.json();
-    renderList(Array.isArray(j)?j : (j.items || []));
+    renderList(Array.isArray(j)? j : (j.items || []));
   }catch(e){
     $('#list').innerHTML = '<div class="note">Error cargando notas.</div>';
   }
 }
+
+// --- publicar ---
 async function publish(){
   const text = $('#text').value.trim();
   const ttlh = parseInt($('#ttl').value.trim()||'');
-  if(!text){ flash('Escribí algo antes de publicar', false); return }
+  if(!text){ return flash('Escribí algo antes de publicar', false); }
+  const body = { text };
+  if(Number.isFinite(ttlh) && ttlh>0) body.ttl_hours = ttlh;
   try{
-    const body = { text };
-    if(Number.isFinite(ttlh) && ttlh>0) body.ttl_hours = ttlh; // el bridge ignora si no lo usa
-    const r = await fetch(api('notes'), {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify(body)
-    });
+    const r = await fetch(api('notes'), { method:'POST', headers: JSON_HEADERS, body: JSON.stringify(body) });
     const j = await r.json();
-    if(!r.ok || !j.ok){ throw new Error(j.error || 'error') }
+    if(!r.ok || !j.ok) throw new Error(j.error || 'error');
     $('#text').value=''; $('#ttl').value='';
     flash('Publicado ✅', true);
-    // prepend sin recargar todo
     const it = j.item || null;
-    if(it){
-      const cur = $('#list').innerHTML;
-      $('#list').innerHTML = renderItem(it) + cur;
-    }else{
-      load();
-    }
-  }catch(e){
-    console.error(e);
-    flash('No se pudo publicar', false);
+    if(it){ $('#list').insertAdjacentHTML('afterbegin', renderItem(it)); observeViewsFor($('#list').firstElementChild); }
+  }catch(e){ console.error(e); flash('No se pudo publicar', false); }
+}
+
+// --- like / report / share ---
+async function like(id, card){
+  if(localStorage.getItem('liked:'+id)) return;
+  const r = await fetch(api(`notes/${id}/like`), {method:'POST', headers: {'Accept':'application/json','X-Author-Fp': FP}});
+  const j = await r.json().catch(()=>({}));
+  if(j?.ok){ localStorage.setItem('liked:'+id,'1'); const el = card.querySelector('.likes'); if(el) el.textContent = j.likes; }
+}
+async function report(id, card){
+  if(localStorage.getItem('reported:'+id)) return;
+  const r = await fetch(api(`notes/${id}/report`), {method:'POST', headers: JSON_HEADERS, body: JSON.stringify({reason:'spam'})});
+  const j = await r.json().catch(()=>({}));
+  if(j?.ok){
+    localStorage.setItem('reported:'+id,'1');
+    if(j.removed){ card.remove(); flash('Contenido ocultado por reportes', true); }
+    else { const el = card.querySelector('.reports'); if(el) el.textContent = j.reports; flash('Gracias por reportar', true); }
   }
 }
+async function share(id){
+  const url = location.origin + '/?id='+id;
+  if(navigator.share && (!navigator.canShare || navigator.canShare({url}))){ try{ await navigator.share({title:'Nota #'+id, url}); return; }catch(_){ } }
+  try{ await navigator.clipboard.writeText(url); flash('Enlace copiado', true); }catch(_){ alert(url); }
+}
+
+// --- vistas (IntersectionObserver) ---
+function observeViews(){
+  document.querySelectorAll('.note').forEach(observeViewsFor);
+}
+function observeViewsFor(card){
+  const id = card.getAttribute('data-id');
+  const key = 'viewed:'+new Date().toISOString().slice(0,10)+':'+id;
+  if(localStorage.getItem(key)) return;
+  const io = new IntersectionObserver(async (entries, obs)=>{
+    if(entries.some(e=>e.isIntersecting)){
+      obs.disconnect();
+      try{
+        const r = await fetch(api(`notes/${id}/view`), {method:'POST', headers:{'Accept':'application/json','X-Author-Fp': FP}});
+        const j = await r.json().catch(()=>({}));
+        if(j?.ok){ localStorage.setItem(key,'1'); const el = card.querySelector('.views'); if(el) el.textContent = j.views; }
+      }catch(_){ /* ignore */ }
+    }
+  }, {threshold: 0.6});
+  io.observe(card);
+}
+
+// --- menú ⋯ (delegación de eventos) ---
+$('#list').addEventListener('click', (ev)=>{
+  const card = ev.target.closest('.note');
+  if(!card) return;
+  const id = card.getAttribute('data-id');
+
+  if(ev.target.closest('.btn-like')){ like(id, card); return; }
+
+  const btnMenu = ev.target.closest('.btn-menu');
+  if(btnMenu){
+    const menu = card.querySelector('.menu-list');
+    const open = menu.hasAttribute('hidden') ? false : true;
+    menu.toggleAttribute('hidden', open);
+    btnMenu.setAttribute('aria-expanded', String(!open));
+    return;
+  }
+  const item = ev.target.closest('.menu-list button');
+  if(item){
+    const act = item.getAttribute('data-act');
+    card.querySelector('.menu-list')?.setAttribute('hidden','');
+    if(act==='share') share(id);
+    if(act==='report') report(id, card);
+  }
+});
+
+// UX helpers
 function flash(msg, ok){
   const el = $('#msg');
   el.className = ok ? 'ok' : 'error';
