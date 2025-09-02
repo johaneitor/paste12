@@ -217,10 +217,10 @@ def _inc_simple(note_id: int, column: str):
         return 200, d
 
 def _report_once(note_id: int, fp: str, threshold: int):
-    """Dedupe por fingerprint y borra al alcanzar el umbral (sin ON CONFLICT)."""
+    """Dedupe por fingerprint y borra al alcanzar el umbral. Orden seguro de borrado (logs -> nota)."""
     from sqlalchemy import text as _text
     with _engine().begin() as cx:
-        # ¿ya reportó esta persona?
+        # 1) ¿ya reportó esta persona?
         exists = cx.execute(_text(
             "SELECT 1 FROM report_log WHERE note_id=:id AND fingerprint=:fp LIMIT 1"
         ), {"id": note_id, "fp": fp}).scalar()
@@ -228,25 +228,34 @@ def _report_once(note_id: int, fp: str, threshold: int):
             cx.execute(_text(
                 "INSERT INTO report_log(note_id, fingerprint, created_at) VALUES (:id,:fp, NOW())"
             ), {"id": note_id, "fp": fp})
-        # sincronizar contador en note
-        count = cx.execute(_text("SELECT COUNT(*) FROM report_log WHERE note_id=:id"), {"id": note_id}).scalar() or 0
-        cx.execute(_text("UPDATE note SET reports=:c WHERE id=:id"), {"id": note_id, "c": int(count)})
-        # ¿debe eliminarse?
-        if int(count) >= threshold:
-            cx.execute(_text("DELETE FROM note WHERE id=:id"), {"id": note_id})
-            # limpiar logs asociados (mejor consistencia)
-            cx.execute(_text("DELETE FROM report_log WHERE note_id=:id"), {"id": note_id})
+
+        # 2) Sincronizar contador
+        count = int(cx.execute(_text(
+            "SELECT COUNT(*) FROM report_log WHERE note_id=:id"
+        ), {"id": note_id}).scalar() or 0)
+        cx.execute(_text("UPDATE note SET reports=:c WHERE id=:id"), {"id": note_id, "c": count})
+
+        # 3) Umbral alcanzado → borrar primero logs (evita FK), luego la nota
+        if count >= threshold:
             try:
-                cx.execute(_text("DELETE FROM like_log WHERE note_id=:id"), {"id": note_id})
-            except Exception:
-                pass
-            return 200, {"ok": True, "id": note_id, "likes": 0, "views": 0, "reports": int(count), "removed": True}
-        row = cx.execute(_text("SELECT id, likes, views, reports FROM note WHERE id=:id"), {"id": note_id}).mappings().first()
+                cx.execute(_text("DELETE FROM report_log WHERE note_id=:id"), {"id": note_id})
+                try:
+                    cx.execute(_text("DELETE FROM like_log WHERE note_id=:id"), {"id": note_id})
+                except Exception:
+                    pass
+                cx.execute(_text("DELETE FROM note WHERE id=:id"), {"id": note_id})
+            except Exception as e:
+                return 500, {"ok": False, "error": f"remove_failed: {e}"}
+            return 200, {"ok": True, "id": note_id, "likes": 0, "views": 0, "reports": count, "removed": True}
+
+        # 4) Caso normal
+        row = cx.execute(_text(
+            "SELECT id, likes, views, reports FROM note WHERE id=:id"
+        ), {"id": note_id}).mappings().first()
         if not row:
             return 404, {"ok": False, "error": "not_found"}
         d = dict(row); d["ok"] = True; d["removed"] = False
         return 200, d
-
 def _try_read(path):
     try:
         with open(path, "rb") as f:
@@ -374,7 +383,10 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                 elif action == "report":
                     threshold = int(os.environ.get("REPORT_THRESHOLD", "5") or "5")
                     fp = _fingerprint(environ)
-                    code, payload = _report_once(note_id, fp, threshold)
+                    try:
+                        code, payload = _report_once(note_id, fp, threshold)
+                    except Exception as e:
+                        code, payload = 500, {"ok": False, "error": f"report_failed: {e}"}
                 else:
                     code, payload = 404, {"ok": False, "error": "unknown_action"}
                 status, headers, body = _json(code, payload)
