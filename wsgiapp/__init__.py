@@ -265,14 +265,13 @@ def _try_read(path):
 
 def _serve_index_html():
     override = os.environ.get("WSGI_BRIDGE_INDEX")
-    # Orden de preferencia: backend/static -> public -> frontend -> raíz del repo
     if override:
         candidates = [override]
     else:
         candidates = [
             os.path.join(_REPO_DIR, "backend", "static", "index.html"),
-            os.path.join(_REPO_DIR, "public",  "index.html"),
-            os.path.join(_REPO_DIR, "frontend","index.html"),
+            os.path.join(_REPO_DIR, "public", "index.html"),
+            os.path.join(_REPO_DIR, "frontend", "index.html"),
             os.path.join(_REPO_DIR, "index.html"),
         ]
     for p in candidates:
@@ -281,16 +280,15 @@ def _serve_index_html():
             if body is not None:
                 ctype = mimetypes.guess_type(p)[0] or "text/html"
                 status, headers, body = _html(200, body.decode("utf-8", "ignore"), f"{ctype}; charset=utf-8")
-                # Forzar no-store en raíz servida por el bridge
-                headers = [(k,v) for (k,v) in headers if k.lower()!="cache-control"] + [
-                    ("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-                ]
+                headers = [(k,v) for (k,v) in headers if k.lower()!="cache-control"]
+                headers += [("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"),
+                            ("X-Index-Source", "bridge")]
                 return status, headers, body
-
-    # Fallback mínimo embebido (sin archivo)
-    html = """<!doctype html><html><head><meta charset="utf-8"><title>paste12</title></head>
+    html = """<!doctype html>
+<html><head><meta charset="utf-8"><title>paste12</title></head>
 <body style="font-family: system-ui, sans-serif; margin: 2rem;">
-<h1>paste12</h1><p>Backend vivo (bridge fallback). Endpoints:</p>
+<h1>paste12</h1>
+<p>Backend vivo (bridge fallback). Endpoints:</p>
 <ul>
   <li><a href="/api/notes">/api/notes</a></li>
   <li><a href="/api/notes_fallback">/api/notes_fallback</a></li>
@@ -299,11 +297,10 @@ def _serve_index_html():
 </ul>
 </body></html>"""
     status, headers, body = _html(200, html)
-    headers = [(k,v) for (k,v) in headers if k.lower()!="cache-control"] + [
-        ("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-    ]
+    headers = [(k,v) for (k,v) in headers if k.lower()!="cache-control"]
+    headers += [("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"),
+                ("X-Index-Source", "bridge")]
     return status, headers, body
-
 
 _TERMS_HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Términos</title>
 <style>body{font-family:system-ui;margin:24px;line-height:1.55;max-width:860px}
