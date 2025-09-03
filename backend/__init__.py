@@ -1,4 +1,5 @@
 import os
+from flask import request, make_response
 from flask import send_from_directory, abort
 import os
 from flask import Flask
@@ -119,3 +120,38 @@ def _setup_root(app):
     for fname, ep in (("favicon.svg","favicon_svg"), ("favicon.ico","favicon_ico"),
                       ("robots.txt","robots_txt"), ("ads.txt","ads_txt")):
         app.add_url_rule(f"/{fname}", endpoint=ep, view_func=(lambda f=fname: _serve_root_file(f)))
+
+
+# --- pastel root (idempotente): sirve backend/static/index.html en "/" ---
+def _serve_pastel_root():
+    try:
+        here = os.path.dirname(__file__)
+        p = os.path.join(here, "static", "index.html")
+        with open(p, "rb") as f:
+            data = f.read()
+    except Exception:
+        return None  # dejar que siga el ruteo normal
+    resp = make_response(data, 200)
+    resp.headers["Content-Type"] = "text/html; charset=utf-8"
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["X-Index-Source"] = "app-base"
+    return resp
+
+try:
+    # 'app' debe existir en este módulo (Flask app)
+    app
+    if not getattr(app, "_pastel_root_installed", False):
+        @app.before_request
+        def _pastel_root_intercept():
+            # intercepta solo GET/HEAD de "/" o "/index.html"
+            m = (request.method or "GET").upper()
+            if request.path in ("/", "/index.html") and m in ("GET", "HEAD"):
+                resp = _serve_pastel_root()
+                if resp is not None and m == "HEAD":
+                    # sin cuerpo en HEAD
+                    resp.set_data(b"")
+                return resp  # corta el ruteo
+        app._pastel_root_installed = True
+except NameError:
+    # si no hay 'app', no hacemos nada (ambiente no esperado)
+    pass
