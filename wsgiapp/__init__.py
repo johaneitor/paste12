@@ -432,7 +432,16 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
 
 _app = _resolve_app()
 app  = _middleware(_app, is_fallback=(_app is None))
-app = _root_force_mw(app)
+try:
+    _root_force_mw  # noqa
+except NameError:
+    pass
+else:
+    try:
+        app = _root_force_mw(app)
+    except Exception:
+        pass
+
 
 
 
