@@ -383,60 +383,141 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
             return _finish(start_response, status, headers, body, method)
 
         if path.startswith("/api/notes/") and method == "POST":
-            tail = path.removeprefix("/api/notes/")
-            try:
-                sid, action = tail.split("/", 1)
-                note_id = int(sid)
-            except Exception:
-                note_id = None; action = ""
-            if note_id:
-                if action == "like":
-                    code, payload = _inc_simple(note_id, "likes")
-                elif action == 'like':
 
-    # Like con dedupe por fingerprint (1 por persona)
-    try:
-        # fingerprint: header X-FP o REMOTE_ADDR|User-Agent
-        fp = (env.get('HTTP_X_FP') or '').strip()
-        if not fp:
-            ip = env.get('REMOTE_ADDR','').strip()
-            ua = env.get('HTTP_USER_AGENT','').strip()
-            fp = f"{ip}|{ua}" if (ip or ua) else 'anon'
-        with _engine().begin() as cx:
-            from sqlalchemy import text as _text
-            # Si ya había like registrado, no sumamos
-            seen = cx.execute(_text(
-                "SELECT 1 FROM like_log WHERE note_id=:id AND fingerprint=:fp LIMIT 1"
-            ), {"id": note_id, "fp": fp}).first()
-            if not seen:
-                try:
-                    cx.execute(_text(
-                        "INSERT INTO like_log(note_id, fingerprint, created_at) VALUES (:id, :fp, NOW())"
-                    ), {"id": note_id, "fp": fp})
-                except Exception:
-                    # Si colisiona unique, ignoramos
-                    pass
-                cx.execute(_text("UPDATE note SET likes = COALESCE(likes,0)+1 WHERE id=:id"), {"id": note_id})
-            counts = cx.execute(_text("SELECT likes, views, reports FROM note WHERE id=:id"), {"id": note_id}).first()
-            likes = int(counts[0] or 0)
-            views = int(counts[1] or 0)
-            reports = int(counts[2] or 0)
-        return 200, {"ok": True, "id": note_id, "likes": likes, "views": views, "reports": reports}
-    except Exception as e:
-        return 500, {"ok": False, "error": str(e)}
-    
-elif action == "view":
-                    code, payload = _inc_simple(note_id, "views")
-                elif action == "report":
-                    threshold = int(os.environ.get("REPORT_THRESHOLD", "5") or "5")
-                    fp = _fingerprint(environ)
+            tail = path.removeprefix("/api/notes/")
+
+            try:
+
+                sid, action = tail.split("/", 1)
+
+                note_id = int(sid)
+
+            except Exception:
+
+                note_id = None
+
+                action = ""
+
+            if note_id:
+
+                if action == "like":
+
+                    # Like con dedupe 1×persona (log + índice único)
+
                     try:
-                        code, payload = _report_once(note_id, fp, threshold)
+
+                        from sqlalchemy import text as _text
+
+                        with _engine().begin() as cx:
+
+                            # Tabla e índice (no-op si existen)
+
+                            try:
+
+                                cx.execute(_text("""
+
+                                    CREATE TABLE IF NOT EXISTS like_log(
+
+                                        id SERIAL PRIMARY KEY,
+
+                                        note_id INTEGER NOT NULL REFERENCES note(id) ON DELETE CASCADE,
+
+                                        fingerprint VARCHAR(128) NOT NULL,
+
+                                        created_at TIMESTAMPTZ DEFAULT NOW()
+
+                                    )
+
+                                """))
+
+                                cx.execute(_text("""
+
+                                    CREATE UNIQUE INDEX IF NOT EXISTS uq_like_note_fp
+
+                                    ON like_log(note_id, fingerprint)
+
+                                """))
+
+                            except Exception:
+
+                                pass
+
+                            fp = _fingerprint(environ)
+
+                            inserted = False
+
+                            try:
+
+                                cx.execute(_text(
+
+                                    "INSERT INTO like_log(note_id, fingerprint, created_at) VALUES (:id,:fp, NOW())"
+
+                                ), {"id": note_id, "fp": fp})
+
+                                inserted = True
+
+                            except Exception:
+
+                                inserted = False
+
+                            if inserted:
+
+                                cx.execute(_text(
+
+                                    "UPDATE note SET likes = COALESCE(likes,0)+1 WHERE id=:id"
+
+                                ), {"id": note_id})
+
+                            row = cx.execute(_text(
+
+                                "SELECT COALESCE(likes,0), COALESCE(views,0), COALESCE(reports,0) FROM note WHERE id=:id"
+
+                            ), {"id": note_id}).first()
+
+                            likes  = int(row[0] or 0)
+
+                            views  = int(row[1] or 0)
+
+                            reports= int(row[2] or 0)
+
+                        code, payload = 200, {"ok": True, "id": note_id, "likes": likes, "views": views, "reports": reports, "deduped": (not inserted)}
+
                     except Exception as e:
+
+                        code, payload = 500, {"ok": False, "error": str(e)}
+
+                elif action == "view":
+
+                    code, payload = _inc_simple(note_id, "views")
+
+                elif action == "report":
+
+                    try:
+
+                        import os
+
+                        threshold = int(os.environ.get("REPORT_THRESHOLD", "5") or "5")
+
+                    except Exception:
+
+                        threshold = 5
+
+                    fp = _fingerprint(environ)
+
+                    try:
+
+                        code, payload = _report_once(note_id, fp, threshold)
+
+                    except Exception as e:
+
                         code, payload = 500, {"ok": False, "error": f"report_failed: {e}"}
+
                 else:
+
                     code, payload = 404, {"ok": False, "error": "unknown_action"}
+
                 status, headers, body = _json(code, payload)
+
                 return _finish(start_response, status, headers, body, method)
 
         if path.startswith("/api/notes/") and method == "GET":
