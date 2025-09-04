@@ -392,7 +392,40 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
             if note_id:
                 if action == "like":
                     code, payload = _inc_simple(note_id, "likes")
-                elif action == "view":
+                elif action == 'like':
+
+    # Like con dedupe por fingerprint (1 por persona)
+    try:
+        # fingerprint: header X-FP o REMOTE_ADDR|User-Agent
+        fp = (env.get('HTTP_X_FP') or '').strip()
+        if not fp:
+            ip = env.get('REMOTE_ADDR','').strip()
+            ua = env.get('HTTP_USER_AGENT','').strip()
+            fp = f"{ip}|{ua}" if (ip or ua) else 'anon'
+        with _engine().begin() as cx:
+            from sqlalchemy import text as _text
+            # Si ya había like registrado, no sumamos
+            seen = cx.execute(_text(
+                "SELECT 1 FROM like_log WHERE note_id=:id AND fingerprint=:fp LIMIT 1"
+            ), {"id": note_id, "fp": fp}).first()
+            if not seen:
+                try:
+                    cx.execute(_text(
+                        "INSERT INTO like_log(note_id, fingerprint, created_at) VALUES (:id, :fp, NOW())"
+                    ), {"id": note_id, "fp": fp})
+                except Exception:
+                    # Si colisiona unique, ignoramos
+                    pass
+                cx.execute(_text("UPDATE note SET likes = COALESCE(likes,0)+1 WHERE id=:id"), {"id": note_id})
+            counts = cx.execute(_text("SELECT likes, views, reports FROM note WHERE id=:id"), {"id": note_id}).first()
+            likes = int(counts[0] or 0)
+            views = int(counts[1] or 0)
+            reports = int(counts[2] or 0)
+        return 200, {"ok": True, "id": note_id, "likes": likes, "views": views, "reports": reports}
+    except Exception as e:
+        return 500, {"ok": False, "error": str(e)}
+    
+elif action == "view":
                     code, payload = _inc_simple(note_id, "views")
                 elif action == "report":
                     threshold = int(os.environ.get("REPORT_THRESHOLD", "5") or "5")
