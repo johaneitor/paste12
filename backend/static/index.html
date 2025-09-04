@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Notas</title>
+<title>Paste12</title>
 <style>
+.brand{margin:0; font-size:clamp(22px,3.4vw,30px)}
+  .tagline{margin:6px 0 0; font-size:14px; color:#17323a; font-weight:600; opacity:.9}
+
   :root{
     --bg:#fffdfc; --fg:#24323f; --muted:#6b7a86;
     --teal:#8fd3d0;   /* turquesa pastel */
@@ -41,7 +44,10 @@
 </style>
 </head>
 <body>
-  <header><h1>Notas</h1></header>
+  <header>
+    <h1 class="brand">Paste12</h1>
+    <p class="tagline" id="tagline">Reta a un amigo · Dime un secreto · Confiesa algo · Manda un reto · Anónimo o no, tú decides</p>
+  </header>
   <main class="container">
     <section class="card">
       <label for="text" style="font-weight:600;">Escribe tu nota…</label>
@@ -238,6 +244,23 @@ window.addEventListener('DOMContentLoaded', ()=>{
   }catch(_){}
 })();
 /* view-observer:end */
+</script>
+<script>
+(function(){
+  const el = document.getElementById('tagline');
+  if(!el) return;
+  const lines = [
+    "Reta a un amigo",
+    "Dime un secreto",
+    "Confiesa algo",
+    "Manda un reto",
+    "Anónimo o no, tú decides"
+  ];
+  let i = Math.floor(Math.random()*lines.length);
+  function set(){ el.textContent = lines[i]; i = (i+1) % lines.length; }
+  set();
+  setInterval(set, 5000);
+})();
 </script>
 </body>
 </html>
