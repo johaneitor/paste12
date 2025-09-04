@@ -7,11 +7,9 @@ html = IDX.read_text(encoding="utf-8")
 if re.search(r'<div\s+id="tagline"\b', html, re.I):
     print("OK: tagline ya presente"); sys.exit(0)
 tag = '<div id="tagline">Reta a un amigo · Dime un secreto · Confiesa algo</div>'
-# 1) pegar justo después del primer h1.brand (Paste12)
 new, n = re.subn(r'(<h1[^>]*class="[^"]*\bbrand\b[^"]*"[^>]*>\s*Paste12\s*</h1>)',
                  r'\1\n  '+tag, html, count=1, flags=re.I)
 if n == 0:
-    # 2) si no hay h1.brand, inserto ambos en <body>
     new, n = re.subn(r'(<body\b[^>]*>)',
                      r'\1\n<header><h1 class="brand">Paste12</h1>\n  '+tag+r'</header>',
                      html, count=1, flags=re.I)
