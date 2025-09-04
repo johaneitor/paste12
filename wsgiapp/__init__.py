@@ -972,3 +972,42 @@ except NameError:
     except Exception:
         pass
     _LIKES_GUARD_FINAL = True
+
+# === PATCH:likes_dedupe BEGIN ===
+# Parche encapsulado: apagado por defecto. Actívalo con ENABLE_PATCH_LIKES_DEDUPE=1
+class _Patch_likes_dedupe:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def _enabled(self, environ):
+        val = (environ.get("ENABLE_PATCH_LIKES_DEDUPE") or "") or (environ.get("HTTP_ENABLE_PATCH_LIKES_DEDUPE") or "")
+        return str(val).strip().lower() in ("1","true","yes","on")
+
+    def __call__(self, environ, start_response):
+        try:
+            if not self._enabled(environ):
+                return self.inner(environ, start_response)
+            path = (environ.get("PATH_INFO","") or "")
+            # Encapsulación por prefijo exacto (no toca otras rutas)
+            if path.startswith("/api/notes"):
+                # >>>>>>>>>>>>>>> ZONA DE PARCHE (edita aquí) <<<<<<<<<<<<<<<
+                # Por defecto, no hace nada: deja pasar tal cual.
+                # Ejemplo: podrías leer/reescribir headers o desviar a un handler específico.
+                # return tu_handler(environ, start_response)
+                # -----------------------------------------------------------
+                pass
+        except Exception:
+            # Pase seguro ante errores del parche
+            pass
+        return self.inner(environ, start_response)
+
+# Envolver una sola vez (outermost, reversible quitando este bloque)
+try:
+    _PATCH_WRAPPED_LIKES_DEDUPE
+except NameError:
+    try:
+        app = _Patch_likes_dedupe(app)
+    except Exception:
+        pass
+    _PATCH_WRAPPED_LIKES_DEDUPE = True
+# === PATCH:likes_dedupe END ===
