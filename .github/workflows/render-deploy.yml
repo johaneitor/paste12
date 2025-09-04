@@ -1,0 +1,22 @@
+name: Render Deploy
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -e
+          test -n "$RENDER_API_KEY" || { echo "Falta secret RENDER_API_KEY"; exit 1; }
+          test -n "$RENDER_SERVICE_ID" || { echo "Falta secret RENDER_SERVICE_ID"; exit 1; }
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -d '{"clearCache":true}'
