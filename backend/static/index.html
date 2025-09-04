@@ -183,5 +183,61 @@ window.addEventListener('DOMContentLoaded', ()=>{
   load();
 });
 </script>
+<script>
+/* view-observer:start */
+(function(){
+  try{
+    const seen = new Set();
+    // Cargar vistos previos (limitar a 500 ids para no crecer sin control)
+    try {
+      (JSON.parse(localStorage.getItem('seen_views')||'[]')||[]).slice(-500).forEach(id=>seen.add(String(id)));
+    } catch(_) {}
+    const save = () => {
+      try { localStorage.setItem('seen_views', JSON.stringify([...seen].slice(-500))); } catch(_){}
+    };
+
+    // Fingerprint simple para backend (opcional)
+    const fp = (navigator.userAgent||'') + '|' + (navigator.language||'') + '|' +
+               (Intl.DateTimeFormat().resolvedOptions().timeZone||'');
+
+    const obs = new IntersectionObserver((entries)=>{
+      entries.forEach(async (entry)=>{
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const id = (el.getAttribute('data-id')||'').trim();
+        if (!id || seen.has(id)) { obs.unobserve(el); return; }
+        seen.add(id); save();
+        try{
+          const res = await fetch(api('notes/'+id+'/view'), {method:'POST', headers:{'X-FP': fp}});
+          let j = {};
+          try { j = await res.json(); } catch(_){}
+          if (res.ok && (j.ok || j.id)) {
+            const span = el.querySelector('.views');
+            if (span) {
+              const m = /(\d+)/.exec(span.textContent||'0'); const cur = m?parseInt(m[1],10):0;
+              span.textContent = '👁️ ' + (cur+1);
+            }
+          }
+        }catch(_){}
+        obs.unobserve(el);
+      });
+    }, {root: null, threshold: 0.6});
+
+    function attach(){
+      document.querySelectorAll('article.note[data-id]').forEach(el=>{
+        if (!el.dataset.observing) { el.dataset.observing = '1'; obs.observe(el); }
+      });
+    }
+    const list = document.getElementById('list');
+    if (list) {
+      const mo = new MutationObserver(attach);
+      mo.observe(list, {childList:true});
+    }
+    // Primera pasada
+    attach();
+  }catch(_){}
+})();
+/* view-observer:end */
+</script>
 </body>
 </html>
