@@ -54,10 +54,23 @@
 .summary-more-btn:hover{text-decoration:underline}
 </style>
 
+<style id="brand-colors">
+  :root{
+    --brand-teal:#14b8a6;    /* teal-500 */
+    --brand-orange:#f97316;  /* orange-500 */
+  }
+  .brand-gradient{
+    background: linear-gradient(90deg, var(--brand-teal), var(--brand-orange));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+</style>
 </head>
 <body>
   <header>
-    <h1 class="brand">Paste12</h1>
+    <h1 class="brand-gradient brand">Paste12</h1>
+  <h2 id="tagline-rot"></h2>
   <h2 id="tagline-rot"></h2>
   
   <p class="tagline" id="tagline">Reta a un amigo · Dime un secreto · Confiesa algo · Manda un reto · Anónimo o no, tú decides</p>
