@@ -1304,3 +1304,49 @@ except NameError:
     except Exception:
         pass
     SUMMARY_PREVIEW_WRAPPED_V2 = True
+
+
+# === APPEND-ONLY: Guard para /api/deploy-stamp (a prueba de fallos) ===
+class _DeployStampGuard:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __call__(self, environ, start_response):
+        try:
+            path   = (environ.get("PATH_INFO") or "")
+            method = (environ.get("REQUEST_METHOD") or "GET").upper()
+            if method == "GET" and path == "/api/deploy-stamp":
+                commit = (os.environ.get("RENDER_GIT_COMMIT")
+                          or os.environ.get("COMMIT")
+                          or os.environ.get("GIT_COMMIT")
+                          or "")
+                # Intentamos leer .deploystamp si existe
+                stamp = ""
+                try:
+                    import pathlib
+                    f = pathlib.Path(".deploystamp")
+                    if f.exists():
+                        stamp = f.read_text(encoding="utf-8").strip()
+                except Exception:
+                    pass
+                body = json.dumps({"ok": True, "commit": commit, "stamp": stamp}).encode("utf-8")
+                start_response("200 OK", [
+                    ("Content-Type","application/json; charset=utf-8"),
+                    ("Content-Length", str(len(body))),
+                    ("X-WSGI-Bridge","1"),
+                ])
+                return [body]
+        except Exception:
+            # si algo pasa, seguimos al inner
+            pass
+        return self.inner(environ, start_response)
+
+# --- envolver outermost: deploy-stamp guard ---
+try:
+    DEPLOYSTAMP_GUARD_WRAPPED
+except NameError:
+    try:
+        app = _DeployStampGuard(app)
+    except Exception:
+        pass
+    DEPLOYSTAMP_GUARD_WRAPPED = True
