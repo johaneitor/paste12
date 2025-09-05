@@ -58,7 +58,8 @@
 <body>
   <header>
     <h1 class="brand">Paste12</h1>
-  <div id="tagline">Reta a un amigo · Dime un secreto · Confiesa algo</div>
+  <h2 id="tagline-rot"></h2>
+  
   <p class="tagline" id="tagline">Reta a un amigo · Dime un secreto · Confiesa algo · Manda un reto · Anónimo o no, tú decides</p>
   </header>
   <main class="container">
@@ -351,6 +352,49 @@ window.addEventListener('DOMContentLoaded', ()=>{
   try{
     mo.observe(document.body, {childList:true, subtree:true});
   }catch(e){}
+})();
+</script>
+
+
+<!-- TAGLINE-ROTATOR -->
+<script>
+(function(){
+  if (window.__taglineRotatorInstalled) return;
+  window.__taglineRotatorInstalled = true;
+
+  try {
+    var el = document.getElementById('tagline-rot');
+    if (!el) return;
+
+    // Frases base (puedes editarlas aquí)
+    var phrases = [
+      "Reta a un amigo",
+      "Dime un secreto",
+      "Confiesa algo",
+      "Manda un reto",
+      "Anónimo o no, tú decides"
+    ];
+
+    // Si el H2 ya trae texto (por SSR), úsalo como primer valor
+    var initial = (el.textContent || "").trim();
+    if (initial && phrases.indexOf(initial) === -1) {
+      phrases.unshift(initial);
+    }
+
+    var i = 0;
+    function tick(){
+      el.textContent = phrases[i];
+      i = (i + 1) % phrases.length;
+    }
+    tick();
+    // Evitar múltiple timers si el DOM se hidrata dos veces
+    if (!el.dataset.rotStarted){
+      el.dataset.rotStarted = "1";
+      setInterval(tick, 3500);
+    }
+  } catch (e) {
+    // silencio por seguridad
+  }
 })();
 </script>
 
