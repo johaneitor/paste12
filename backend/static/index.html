@@ -411,5 +411,50 @@ window.addEventListener('DOMContentLoaded', ()=>{
 })();
 </script>
 
+<script id="max-pages-guard">
+(function(){
+  if (window.__MAX_PAGES_GUARD__) return; window.__MAX_PAGES_GUARD__=true;
+  const MAX_PAGES = 200;
+  let pageCount = 1;
+  // Exponer contador por si la UI ya tiene su propio loader
+  window.PASTE12_MAX_PAGES = MAX_PAGES;
+  window.PASTE12_pageCount = () => pageCount;
+
+  // Interceptar clicks en botones "más" comunes
+  function guardMore(evt){
+    if (pageCount >= MAX_PAGES) {
+      evt && evt.preventDefault();
+      console.warn("Max pages reached:", MAX_PAGES);
+      const b = evt && evt.currentTarget;
+      if (b) { b.setAttribute('disabled',''); b.textContent = "Límite de páginas (200)"; }
+      return false;
+    }
+    pageCount++;
+    return true;
+  }
+  // Delegación: botones con clase .act.more (heurística presente en la UI)
+  document.addEventListener('click', function(e){
+    const el = e.target.closest && e.target.closest('.act.more');
+    if (!el) return;
+    if (!guardMore(e)) return;
+  }, true);
+
+  // Interceptar fetch de “siguiente página” si el frontend usa fetch()
+  const _fetch = window.fetch;
+  window.fetch = function(url, init){
+    try{
+      if (typeof url === 'string' && /\/api\/notes\?/.test(url)) {
+        if (pageCount >= MAX_PAGES) {
+          return Promise.resolve(new Response(JSON.stringify({ok:false,error:"max_pages_reached"}),{
+            status: 429, headers: {'Content-Type':'application/json'}
+          }));
+        }
+        pageCount++;
+      }
+    }catch(_){}
+    return _fetch.apply(this, arguments);
+  };
+})();
+</script>
 </body>
 </html>
