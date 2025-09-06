@@ -1,3 +1,6 @@
+
+from sqlalchemy import text as _text
+T = _text
 import os, sys, json, mimetypes, hashlib
 from importlib import import_module
 from typing import Callable, Tuple
