@@ -1589,9 +1589,14 @@ class _LikesGuardSafeTxn:
         return "anon"
 
     def _bootstrap_like(self, cx):
-        # Idempotente: tabla + índice único (o PK compuesta)
-        try:
-            cx.execute(T("""
+        global _LIKE_LOG_BOOTSTRAPPED
+        if _LIKE_LOG_BOOTSTRAPPED:
+            return
+        with _LIKE_BOOTSTRAP_LOCK:
+            if _LIKE_LOG_BOOTSTRAPPED:
+                return
+            try:
+                cx.execute(T("""
 CREATE TABLE IF NOT EXISTS like_log(
   note_id INTEGER NOT NULL REFERENCES note(id) ON DELETE CASCADE,
   fingerprint VARCHAR(128) NOT NULL,
@@ -1599,15 +1604,16 @@ CREATE TABLE IF NOT EXISTS like_log(
   PRIMARY KEY (note_id, fingerprint)
 )
 """))
-        except Exception:
-            pass
-        try:
-            cx.execute(T("""
+            except Exception:
+                pass
+            try:
+                cx.execute(T("""
 CREATE UNIQUE INDEX IF NOT EXISTS uq_like_note_fp
 ON like_log(note_id, fingerprint)
-"""))
-        except Exception:
-            pass
+""")) 
+            except Exception:
+                pass
+            _LIKE_LOG_BOOTSTRAPPED = True
 
     def _handle(self, env, start_response, note_id):
         try:
@@ -1665,3 +1671,11 @@ except NameError:
     except Exception:
         pass
     _LIKES_GUARD_SAFETXN = True
+
+# -- like_log bootstrap sentinel (one-time) --
+try:
+    _LIKE_LOG_BOOTSTRAPPED
+except NameError:
+    _LIKE_LOG_BOOTSTRAPPED = False
+    import threading as _LIKETH
+    _LIKE_BOOTSTRAP_LOCK = _LIKETH.Lock()
