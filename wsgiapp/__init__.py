@@ -499,3 +499,23 @@ else:
     except Exception:
         # no rompas el entrypoint si el mw falla
         pass
+
+# --- Guard final: garantiza que 'app' exista a nivel módulo ---
+try:
+    app  # noqa: F821
+except NameError:
+    try:
+        _app = _resolve_app()  # type: ignore[name-defined]
+    except Exception:
+        _app = None
+    try:
+        app = _middleware(_app, is_fallback=(_app is None))  # type: ignore[name-defined]
+    except Exception:
+        # Fallback mínimo y seguro (sirve health y 404 JSON)
+        def app(environ, start_response):  # type: ignore[no-redef]
+            path = (environ.get("PATH_INFO") or "")
+            if path == "/api/health":
+                start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
+                return [b'{"ok": true}']
+            start_response("404 Not Found", [("Content-Type","application/json; charset=utf-8")])
+            return [b'{"ok": false, "error": "not_found"}']
