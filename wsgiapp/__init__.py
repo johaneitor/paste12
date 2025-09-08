@@ -480,46 +480,22 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                 else:
                     status, headers, body = _json(200, {"ok": True, "item": _normalize_row(dict(row))})  # type: ignore[name-defined]
                 return _finish(start_response, status, headers, body, method)  # type: ignore[name-defined]
-        if inner_app is not None:
-            return inner_app(environ, start_response)
-        status, headers, body = _json(404, {"ok": False, "error": "not_found"})
-        return _finish(start_response, status, headers, body, method)
-        return _app
-        
-_app = _resolve_app()
-app  = _middleware(_app, is_fallback=(_app is None))
-# Intenta aplicar un root middleware externo si existe
+
+# --- WSGI entrypoint (nivel módulo) ---
+try:
+    _app = _resolve_app()  # type: ignore[name-defined]
+except Exception:
+    _app = None  # fallback
+app  = _middleware(_app, is_fallback=(_app is None))  # type: ignore[name-defined]
+
+# Aplica _root_force_mw si existe (CORS/OPTIONS y otros hooks)
 try:
     _root_force_mw  # noqa: F821
 except NameError:
     pass
 else:
     try:
-        app = _root_force_mw(app)
+        app = _root_force_mw(app)  # type: ignore[name-defined]
     except Exception:
+        # no rompas el entrypoint si el mw falla
         pass
-
-# --- middleware final: fuerza '/' desde el bridge si FORCE_BRIDGE_INDEX está activo ---
-def _root_force_mw(inner):
-    import os
-    def _mw(environ, start_response):
-        path   = environ.get("PATH_INFO", "") or ""
-        method = (environ.get("REQUEST_METHOD", "GET") or "GET").upper()
-        _force = os.getenv("FORCE_BRIDGE_INDEX","").strip().lower() in ("1","true","yes","on")
-        if _force and path in ("/","/index.html") and method in ("GET","HEAD"):
-            status, headers, body = _serve_index_html()
-            # Garantizar no-store y marcar fuente
-            headers = [(k, v) for (k, v) in headers if k.lower() != "cache-control"]
-            headers += [
-                ("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"),
-                ("X-Index-Source", "bridge"),
-            ]
-            return _finish(start_response, status, headers, body, method)
-        return inner(environ, start_response)
-    return _mw
-
-class _ForceRootIndexWrapper:
-    def __init__(self, inner):
-        self.inner = inner
-    def __call__(self, environ, start_response):
-        return _root_force_mw(self.inner)(environ, start_response)
