@@ -339,8 +339,26 @@ h1{background:linear-gradient(90deg,#8fd3d0,#ffb38a,#f9a3c7);-webkit-background-
 </body></html>"""
 
 def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
-    pass
     def _app(environ, start_response):
+        # Preflight CORS/OPTIONS para /api/*
+        if method == "OPTIONS" and path.startswith("/api/"):
+            origin = environ.get("HTTP_ORIGIN")
+            hdrs = [
+                ("Content-Type", "application/json; charset=utf-8"),
+                ("Access-Control-Allow-Methods", "GET,POST,OPTIONS"),
+                ("Access-Control-Allow-Headers", "Content-Type, Accept"),
+                ("Access-Control-Max-Age", "600"),
+            ]
+            if origin:
+                hdrs += [
+                    ("Access-Control-Allow-Origin", origin),
+                    ("Vary", "Origin"),
+                    ("Access-Control-Allow-Credentials", "true"),
+                    ("Access-Control-Expose-Headers", "Link, X-Next-Cursor, X-Summary-Applied, X-Summary-Limit"),
+                ]
+            start_response("204 No Content", hdrs)
+            return [b""]
+
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
@@ -481,6 +499,7 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                     status, headers, body = _json(200, {"ok": True, "item": _normalize_row(dict(row))})  # type: ignore[name-defined]
                 return _finish(start_response, status, headers, body, method)  # type: ignore[name-defined]
 
+    return _app
 # --- WSGI entrypoint (nivel módulo) ---
 try:
     _app = _resolve_app()  # type: ignore[name-defined]
