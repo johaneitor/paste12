@@ -502,6 +502,55 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                 return _finish(start_response, status, headers, body, method)  # type: ignore[name-defined]
 
     return _app
+def _compose_with_ext(app):
+    """
+    Monta apps externas bajo prefijos, a partir de EXT_APPS.
+    Formatos aceptados (separar múltiples por comas):
+      - "mipkg.mod:app@/ext/foo"
+      - "mipkg.mod:create_app@/ext/bar"  (si callable, se invoca sin args)
+    """
+    import os, importlib
+    spec = (os.environ.get("EXT_APPS") or "").strip()
+    if not spec:
+        return app
+    mounts = []
+    for raw in [s.strip() for s in spec.split(",") if s.strip()]:
+        if "@/" not in raw:  # validación mínima
+            continue
+        left, prefix = raw.split("@", 1)
+        mod, _, attr = left.partition(":")
+        try:
+            m = importlib.import_module(mod)
+            target = getattr(m, attr or "app", None)
+            if callable(target):
+                try:
+                    # si es factoría devuelve la app; si es ya una app, dejar tal cual
+                    import inspect
+                    if inspect.signature(target).parameters:
+                        ext = target  # requiere args → asumimos ya es WSGI
+                    else:
+                        maybe = target()
+                        ext = maybe if callable(maybe) else target
+                except Exception:
+                    ext = target
+            else:
+                raise RuntimeError("objeto no callable")
+            mounts.append((prefix, ext))
+        except Exception:
+            # ignorar entradas inválidas
+            pass
+
+    if not mounts:
+        return app
+
+    def _router(environ, start_response):
+        path = (environ.get("PATH_INFO") or "")
+        for pref, ext in mounts:
+            if path.startswith(pref):
+                return ext(environ, start_response)
+        return app(environ, start_response)
+    return _router
+
 # --- WSGI entrypoint (nivel módulo) ---
 try:
     _app = _resolve_app()  # type: ignore[name-defined]
