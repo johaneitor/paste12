@@ -367,8 +367,8 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
             hdrs = [
                 ("Content-Type", "application/json; charset=utf-8"),
                 ("Access-Control-Allow-Methods", "GET,POST,OPTIONS"),
-                ("Access-Control-Allow-Headers", "Content-Type, Accept"),
-                ("Access-Control-Max-Age", "600"),
+                ("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization"),
+                ("Access-Control-Max-Age", "1800"),
             ]
             if origin:
                 hdrs += [
@@ -392,6 +392,14 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
 
         if path in ("/api/notes", "/api/notes_fallback") and method in ("GET","HEAD"):
             code, payload, nxt = _notes_query(qs)
+            try:
+                import os
+                _MAX_LIMIT = int(os.environ.get('MAX_LIMIT', '100') or '100')
+                if isinstance(payload, dict) and isinstance(payload.get('items'), list):
+                    payload['items'] = payload['items'][:_MAX_LIMIT]
+            except Exception:
+                pass
+
             status, headers, body = _json(code, payload)
             extra = []
             if nxt and nxt.get("cursor_ts") and nxt.get("cursor_id"):
