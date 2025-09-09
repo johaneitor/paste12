@@ -507,6 +507,44 @@ try:
     _app = _resolve_app()  # type: ignore[name-defined]
 except Exception:
     _app = None  # fallback
+
+def _root_force_mw(inner):
+    # Envuelve la app para inyectar CORS en TODAS las respuestas cuando hay Origin
+    def _mw(environ, start_response):
+        origin = environ.get("HTTP_ORIGIN")
+        # interceptamos la respuesta para poder ajustar headers
+        status_holder = {"status": "200 OK"}
+        headers_holder = {"headers": []}
+        def sr(status, headers, exc_info=None):
+            status_holder["status"] = status
+            headers_holder["headers"] = list(headers)
+            # wsgi exige devolver un write(); pero no lo usamos
+            return (lambda data: None)
+        body_iter = inner(environ, sr)
+        body = b"".join(body_iter) if hasattr(body_iter, "__iter__") else (body_iter or b"")
+        headers = headers_holder["headers"]
+
+        # remueve Content-Length para no romper si cambiamos headers
+        headers = [(k, v) for (k, v) in headers if k.lower() != "content-length"]
+
+        if origin:
+            # upsert helpers
+            low = {k.lower(): i for i, (k, _) in enumerate(headers)}
+            def upsert(k, v):
+                i = low.get(k.lower())
+                if i is None:
+                    headers.append((k, v))
+                    low[k.lower()] = len(headers) - 1
+                else:
+                    k0, _ = headers[i]; headers[i] = (k0, v)
+            upsert("Access-Control-Allow-Origin", origin)  # eco del origin
+            upsert("Vary", "Origin")
+            upsert("Access-Control-Allow-Credentials", "true")
+            upsert("Access-Control-Expose-Headers", "Link, X-Next-Cursor, X-Summary-Applied, X-Summary-Limit")
+
+        start_response(status_holder["status"], headers)
+        return [body]
+    return _mw
 app  = _middleware(_app, is_fallback=(_app is None))  # type: ignore[name-defined]
 
 # Aplica _root_force_mw si existe (CORS/OPTIONS y otros hooks)
