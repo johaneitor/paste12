@@ -340,7 +340,6 @@ h1{background:linear-gradient(90deg,#8fd3d0,#ffb38a,#f9a3c7);-webkit-background-
 
 def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
     def _app(environ, start_response):
-        # Preflight CORS/OPTIONS para /api/*
         if method == "OPTIONS" and path.startswith("/api/"):
             origin = environ.get("HTTP_ORIGIN")
             hdrs = [
@@ -362,6 +361,8 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
+
+        # Preflight CORS/OPTIONS para /api/*
 
         if path in ("/", "/index.html") and method in ("GET","HEAD"):
             if inner_app is None or os.environ.get("FORCE_BRIDGE_INDEX") == "1":
