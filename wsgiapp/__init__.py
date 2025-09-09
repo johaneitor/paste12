@@ -340,24 +340,6 @@ h1{background:linear-gradient(90deg,#8fd3d0,#ffb38a,#f9a3c7);-webkit-background-
 
 def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
     def _app(environ, start_response):
-        if method == "OPTIONS" and path.startswith("/api/"):
-            origin = environ.get("HTTP_ORIGIN")
-            hdrs = [
-                ("Content-Type", "application/json; charset=utf-8"),
-                ("Access-Control-Allow-Methods", "GET,POST,OPTIONS"),
-                ("Access-Control-Allow-Headers", "Content-Type, Accept"),
-                ("Access-Control-Max-Age", "600"),
-            ]
-            if origin:
-                hdrs += [
-                    ("Access-Control-Allow-Origin", origin),
-                    ("Vary", "Origin"),
-                    ("Access-Control-Allow-Credentials", "true"),
-                    ("Access-Control-Expose-Headers", "Link, X-Next-Cursor, X-Summary-Applied, X-Summary-Limit"),
-                ]
-            start_response("204 No Content", hdrs)
-            return [b""]
-
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
@@ -379,6 +361,25 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
         if path == "/api/health" and method in ("GET","HEAD"):
             status, headers, body = _json(200, {"ok": True})
             return _finish(start_response, status, headers, body, method)
+        # Preflight CORS/OPTIONS para /api/*
+        if method == "OPTIONS" and path.startswith("/api/"):
+            origin = environ.get("HTTP_ORIGIN")
+            hdrs = [
+                ("Content-Type", "application/json; charset=utf-8"),
+                ("Access-Control-Allow-Methods", "GET,POST,OPTIONS"),
+                ("Access-Control-Allow-Headers", "Content-Type, Accept"),
+                ("Access-Control-Max-Age", "600"),
+            ]
+            if origin:
+                hdrs += [
+                    ("Access-Control-Allow-Origin", origin),
+                    ("Vary", "Origin"),
+                    ("Access-Control-Allow-Credentials", "true"),
+                    ("Access-Control-Expose-Headers", "Link, X-Next-Cursor, X-Summary-Applied, X-Summary-Limit"),
+                ]
+            start_response("204 No Content", hdrs)
+            return [b""]
+
 
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
             data = {
