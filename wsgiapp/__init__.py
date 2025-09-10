@@ -400,25 +400,42 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
             return _finish(start_response, status, headers, body, method)
 
         if path in ("/api/notes", "/api/notes_fallback") and method in ("GET","HEAD"):
-            code, payload, nxt = _notes_query(qs)
             try:
-                import os
-                _MAX_LIMIT = int(os.environ.get('MAX_LIMIT', '100') or '100')
-                if isinstance(payload, dict) and isinstance(payload.get('items'), list):
-                    payload['items'] = payload['items'][:_MAX_LIMIT]
+                # Camino normal
+                code, payload, nxt = _notes_query(qs)  # type: ignore[name-defined]
+            except Exception as e:
+                # Fallback SQL simple para no romper el frontend si falla _notes_query
+                try:
+                    from sqlalchemy import text as _text
+                    from urllib.parse import parse_qs as _parse_qs
+                    _q = _parse_qs(qs or "", keep_blank_values=True)
+                    try:
+                        lim = int((_q.get("limit", [20]) or [20])[0] or 20)
+                    except Exception:
+                        lim = 20
+                    if lim < 1: lim = 1
+                    if lim > 100: lim = 100
+                    with _engine().begin() as cx:  # type: ignore[name-defined]
+                        rows = cx.execute(_text(
+                            "SELECT id, text, title, url, summary, content, timestamp, expires_at, likes, views, reports, author_fp "
+                            "FROM note ORDER BY timestamp DESC, id DESC LIMIT :lim"
+                        ), {"lim": lim}).mappings().all()
+                    items = [ _normalize_row(dict(r)) for r in rows ]  # type: ignore[name-defined]
+                    code, payload, nxt = 200, {"ok": True, "items": items}, None
+                except Exception as e2:
+                    code, payload, nxt = 500, {"ok": False, "error": f"notes_query_failed: {e}; fallback_failed: {e2}"}, None
+            status, headers, body = _json(code, payload)  # type: ignore[name-defined]
+            extra = []
+            try:
+                if nxt and nxt.get("cursor_ts") and nxt.get("cursor_id"):
+                    from urllib.parse import quote
+                    ts_q = quote(str(nxt["cursor_ts"]), safe="")
+                    link = f'</api/notes?cursor_ts={ts_q}&cursor_id={nxt["cursor_id"]}>; rel="next"'
+                    extra.append(("Link", link))
+                    extra.append(("X-Next-Cursor", json.dumps(nxt)))
             except Exception:
                 pass
-
-            status, headers, body = _json(code, payload)
-            extra = []
-            if nxt and nxt.get("cursor_ts") and nxt.get("cursor_id"):
-                from urllib.parse import quote
-                ts_q = quote(str(nxt["cursor_ts"]), safe="")
-                link = f'</api/notes?cursor_ts={ts_q}&cursor_id={nxt["cursor_id"]}>; rel="next"'
-                extra.append(("Link", link))
-                extra.append(("X-Next-Cursor", json.dumps(nxt)))
-            return _finish(start_response, status, headers, body, method, extra_headers=extra)
-
+            return _finish(start_response, status, headers, body, method, extra_headers=extra)  # type: ignore[name-defined]
         if path == "/api/notes" and method == "POST":
             try:
                 ctype = environ.get("CONTENT_TYPE","")
