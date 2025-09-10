@@ -385,12 +385,17 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
 
 
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
-            data = {
-                "ok": True,
-                "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "",
-                "stamp": os.environ.get("DEPLOY_STAMP") or "",
-            }
-            status, headers, body = _json(200, data)
+            try:
+                import os, json  # local, por robustez en runtime
+                commit = (os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "")
+                date   = (os.environ.get("DEPLOY_STAMP") or os.environ.get("RENDER_DEPLOY") or "")
+                if not date:
+                    date = _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+                # Respuesta compatible: {deploy:{commit,date}} y también {commit,date}
+                payload = {"ok": True, "deploy": {"commit": commit, "date": date}, "commit": commit, "date": date}
+                status, headers, body = _json(200, payload)
+            except Exception as e:
+                status, headers, body = _json(500, {"ok": False, "error": f"deploy_stamp: {e}"})
             return _finish(start_response, status, headers, body, method)
 
         if path in ("/api/notes", "/api/notes_fallback") and method in ("GET","HEAD"):
