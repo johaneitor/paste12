@@ -368,7 +368,7 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                 ("Content-Type", "application/json; charset=utf-8"),
                 ("Access-Control-Allow-Methods", "GET,POST,OPTIONS"),
                 ("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization"),
-                ("Access-Control-Max-Age", "1800"),
+                ("Access-Control-Max-Age", "86400"),
             ]
             if origin:
                 hdrs += [
@@ -377,6 +377,9 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                     ("Access-Control-Allow-Credentials", "true"),
                     ("Access-Control-Expose-Headers", "Link, X-Next-Cursor, X-Summary-Applied, X-Summary-Limit"),
                 ]
+            req_hdrs = environ.get("HTTP_ACCESS_CONTROL_REQUEST_HEADERS")
+            if req_hdrs:
+                hdrs = [(k,v) for (k,v) in hdrs if k.lower() != "access-control-allow-headers"] + [("Access-Control-Allow-Headers", req_hdrs)]
             start_response("204 No Content", hdrs)
             return [b""]
 
