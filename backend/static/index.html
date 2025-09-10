@@ -937,19 +937,22 @@ fetchPage('/api/notes?limit=10');
 
 
 
-<!-- MINI-SHIM v3.2 START -->
+
+
+
+<!-- MINI-SHIM v3.3 START -->
 <script>
 (()=>{'use strict';
-const Q = new URLSearchParams(location.search);
-if(!Q.has('shim')) return;   // ACTIVACIÓN EXPLÍCITA
+const Q=new URLSearchParams(location.search);
+if(!Q.has('shim')) return;
 
-// Opcional: desregistrar SW si hay ?nosw=1
+// SW off si debug/nosw
 if((Q.has('nosw')||Q.has('debug')) && 'serviceWorker' in navigator){
-  try{ navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())); }catch(e){}
-  try{ if(caches&&caches.keys) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))); }catch(e){}
+  try{navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));}catch(e){}
+  try{if(caches&&caches.keys) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)));}catch(e){}
 }
-// Quitar banners de "nueva versión disponible"
-for(const n of Array.from(document.querySelectorAll('div,section')).slice(0,200)){
+// Oculta banners de actualización
+for(const n of Array.from(document.querySelectorAll('div,section'))){
   const tx=(n.textContent||'').toLowerCase();
   if(tx.includes('nueva versión disponible')||tx.includes('actualiza para ver')){ n.remove(); }
 }
@@ -960,31 +963,50 @@ const FEED='[data-notes],[data-feed],#notes,#feed';
 let feed=$(FEED) || (function(){const d=document.createElement('div'); d.id='feed'; document.body.appendChild(d); return d;})();
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// --- PUBLICAR (textarea cercano al botón "Publicar") ---
+// ===== Validación suave =====
+function validateText(s){ return (s||'').trim().length >= 12; }
+function showInlineError(el,msg){
+  let box=el.closest('form,section,article,div');
+  if(!box) box=document.body;
+  let e=box.querySelector('#shim-err');
+  if(!e){ e=document.createElement('div'); e.id='shim-err'; e.style.cssText='margin:.5rem 0;color:#b91c1c;font-size:.9rem'; box.insertBefore(e, box.firstChild);}
+  e.textContent=msg||'';
+}
+
+// ===== Publicar =====
 for(const f of $$('form')){ if(f.querySelector('textarea')) f.addEventListener('submit',e=>{e.preventDefault();e.stopImmediatePropagation();},{capture:true}); }
 const pubBtns=$$('button,[role="button"]').filter(b=>/publicar/i.test(b.textContent||''));
 for(const b of pubBtns){ b.type='button'; b.addEventListener('click', async (ev)=>{
   ev.preventDefault(); ev.stopImmediatePropagation();
   const scope=b.closest('form,section,article,div')||document;
   const ta=scope.querySelector('textarea')||document.querySelector('textarea');
-  const sel=scope.querySelector('select[name*="hour"],select[name*="hora"],select')||null;
-  const text=(ta&&ta.value||'').trim(); const hours=(sel&&parseInt(sel.value,10))||12;
-  if(!text){ alert('Escribí tu nota.'); return; }
-  let ok=false, j=null;
-  try{
-    const r=await fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({text, hours})});
-    if(r.ok){ j=await r.json(); ok=true; }
-  }catch(e){}
-  if(!ok){
-    const body=new URLSearchParams({text, hours:String(hours)}).toString();
-    const r2=await fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
-    if(r2.ok){ j=await r2.json(); ok=true; }
+  const sel=scope.querySelector('select')||null;
+  const text=(ta&&ta.value||'').trim(); const hours=parseInt((sel&&sel.value)||'12',10)||12;
+  if(!validateText(text)){ showInlineError(b,'Escribí un poco más (≥ 12 caracteres).'); return; }
+  showInlineError(b,''); // limpia
+
+  async function postJSON(){
+    return fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({text, hours})});
   }
-  if(!ok){ alert('No se pudo publicar (reintenta).'); return; }
-  const item=j.item||j; if(item && item.id){ const n=render(item,true); feed.prepend(n); attach(n); if(ta) ta.value=''; }
+  async function postForm(){
+    const body=new URLSearchParams({text, hours:String(hours)}).toString();
+    return fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+  }
+
+  let r=null, j=null;
+  try{ r=await postJSON(); }catch(e){}
+  if(!r || !r.ok){ try{ r=await postForm(); }catch(e){} }
+  if(!r || !r.ok){
+    let msg='No se pudo publicar (reintentá).';
+    try{ j=await r.json(); if(j && j.error){ if(/text_required/i.test(j.error)) msg='El texto es demasiado corto.'; else msg=j.error; } }catch(_){}
+    alert('Error publicando: '+msg); return;
+  }
+  try{ j=await r.json(); }catch(_){}
+  const item=j && (j.item||j);
+  if(item && item.id){ const n=render(item,true); feed.prepend(n); attach(n); if(ta) ta.value=''; }
 });}
 
-// --- ACCIONES (like/report/share) y "Ver más" ---
+// ===== Acciones y render =====
 function actionsHTML(it){
   const id=it.id, likes=it.likes??0, views=it.views??0;
   return `<div class="mini-actions" data-mini="1" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
@@ -1011,7 +1033,6 @@ function render(item,hl=false){
   return el;
 }
 function attach(scope=document){
-  // Añade acciones si faltan
   for(const card of $$('[data-id]:not([data-mini-patched])', scope)){
     if(!card.querySelector('[data-mini]')){
       const id=card.getAttribute('data-id') || (card.textContent||'').match(/#(\d+)/)?.[1];
@@ -1022,14 +1043,13 @@ function attach(scope=document){
     }
     card.setAttribute('data-mini-patched','1');
   }
-  // listeners
   for(const b of $$('.mini-like', scope)){ b.onclick=async ()=>{ const id=b.getAttribute('data-id'); try{ const r=await fetch(`/api/notes/${id}/like`,{method:'POST',credentials:'include'}); const j=await r.json(); const s=b.querySelector('[data-like]'); if(s&&j&&typeof j.likes!=='undefined') s.textContent=j.likes; }catch(e){} }; }
   for(const b of $$('.mini-report', scope)){ b.onclick=async ()=>{ const id=b.getAttribute('data-id'); b.disabled=true; try{ await fetch(`/api/notes/${id}/report`,{method:'POST',credentials:'include'}); b.textContent='✅ Reportado'; }catch(e){ b.disabled=false; } }; }
   for(const b of $$('.mini-share', scope)){ b.onclick=async ()=>{ const id=b.getAttribute('data-id'); const url=new URL(location.href); url.hash=`note-${id}`; if(navigator.share){ try{ await navigator.share({title:'Paste12',text:`#${id}`,url:String(url)});}catch(e){} } else { try{ await navigator.clipboard.writeText(String(url)); b.textContent='📋 Copiado'; setTimeout(()=>b.textContent='🔗 Compartir',1200);}catch(e){} } }; }
 }
 attach(document);
 
-// "Ver más" => GET /api/notes/:id
+// "Ver más" → GET completo y toggling
 document.addEventListener('click', async (e)=>{
   const t=e.target; if(!t) return;
   const txt=(t.textContent||'').trim().toLowerCase();
@@ -1038,12 +1058,13 @@ document.addEventListener('click', async (e)=>{
     const card=t.closest('[data-id]'); if(!card) return;
     const id=card.getAttribute('data-id') || (card.textContent||'').match(/#(\d+)/)?.[1];
     const box=card.querySelector('.mini-text')||card;
-    if(!id || box.getAttribute('data-full')==='1') return;
-    try{ const r=await fetch(`/api/notes/${id}`,{credentials:'include'}); const j=await r.json(); const it=j.item||j; if(it&&it.text){ box.textContent=it.text; box.setAttribute('data-full','1'); }}catch(_){}
+    if(!id) return;
+    if(box.getAttribute('data-full')==='1'){ box.setAttribute('data-full','0'); t.textContent='Ver más'; box.style.maxHeight='4.5em'; box.style.overflow='hidden'; return; }
+    try{ const r=await fetch(`/api/notes/${id}`,{credentials:'include'}); const j=await r.json(); const it=j.item||j; if(it&&it.text){ box.textContent=it.text; box.setAttribute('data-full','1'); box.style.maxHeight='none'; t.textContent='Ver menos'; }}catch(_){}
   }
 },{capture:true});
 
-// --- Paginación keyset ---
+// Paginación
 let nextURL=null, loading=false;
 function parseNextFromHeaders(res){
   const link=res.headers.get('Link')||res.headers.get('link'); if(!link) return null;
@@ -1072,11 +1093,10 @@ function ensureLoadMore(err=false){
   btn.onclick=()=>{ if(!loading) fetchPage(nextURL); };
   feed.appendChild(btn);
 }
-// kickoff
 fetchPage('/api/notes?limit=10');
 })();
 </script>
-<!-- MINI-SHIM v3.2 END -->
+<!-- MINI-SHIM v3.3 END -->
 
 </body>
 </html>
