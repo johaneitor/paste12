@@ -386,6 +386,7 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
 
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
             try:
+                import os, json, datetime as _dt  # local, robusto
                 import os, json  # local, por robustez en runtime
                 commit = (os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("COMMIT") or "")
                 date   = (os.environ.get("DEPLOY_STAMP") or os.environ.get("RENDER_DEPLOY") or "")
