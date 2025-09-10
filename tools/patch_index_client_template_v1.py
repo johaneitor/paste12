@@ -1,171 +1,16 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta name="ads-client" content="ca-pub-XXXXXXXXXXXXXXX">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>paste12</title>
-  <link rel="stylesheet" href="/css/styles.css">
-  <!-- Ads (sólo cambia tu client y slot cuando tengas el ID) -->
-  <link rel="preconnect" href="https://pagead2.googlesyndication.com">
-  <link rel="preconnect" href="https://googleads.g.doubleclick.net">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
-</head>
-<body>
-  <header class="topbar">
-    <h1 style="margin:0">Notas</h1>
-  </header>
+#!/usr/bin/env python3
+import re, sys, pathlib, shutil
 
-  <!-- Bloque de anuncio responsivo -->
-  <section class="adwrap" style="max-width:860px;margin:12px auto">
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-         data-ad-slot="1234567890"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-  </section>
+CANDS = [pathlib.Path(p) for p in (
+    "backend/static/index.html",
+    "frontend/index.html",
+    "index.html",
+)]
+targets = [p for p in CANDS if p.exists()]
+if not targets:
+    print("✗ No encontré index.html (backend/static/, frontend/, o raíz)."); sys.exit(2)
 
-  <main class="container">
-    <form id="noteForm" style="display:grid;gap:8px;margin-top:8px">
-      <textarea name="text" placeholder="Escribe tu nota…" required></textarea>
-      <input type="number" id="hours" name="hours" value="24" min="1" max="720">
-      <button type="submit">Publicar</button>
-      <span id="status"></span>
-    </form>
-    <ul id="notes" style="list-style:none;padding:0;margin:16px 0"></ul>
-    <section id="ad-below-form" class="ad-slot"><!-- ad slot --></section>
-  
-  <button id="loadMore" class="load-more" style="display:none;margin:12px auto;padding:8px 14px;border:1px solid #253044;border-radius:10px;background:#0d1320;color:#eaf2ff">Cargar más</button>
-
-</main>
-  <footer class="site">
-    <a href="/terms.html">Términos y Condiciones</a> · <a href="/privacy.html">Política de Privacidad</a>
-  </footer>
-
-  <footer class="footer">
-    <a href="/terms.html">Términos</a> ·
-    <a href="/privacy.html">Privacidad</a>
-  </footer>
-
-  <!-- Consentimiento -->
-  <div id="consent" class="consent is-hidden" aria-hidden="true"
-       style="position:fixed;left:0;right:0;bottom:0;padding:10px 14px;display:flex;gap:10px;align-items:center;z-index:9998">
-    Usamos cookies/localStorage (por ejemplo, para contar vistas y mostrar anuncios).
-    Al continuar aceptás nuestros <a href="/terms.html">Términos</a> y
-    <a href="/privacy.html">Política de Privacidad</a>.
-    <button id="consentAccept" style="margin-left:auto">Aceptar</button>
-  </div>
-
-  <script src="/js/app.js?v=3"></script>
-  <script>
-  // Banner de consentimiento fiable
-  document.addEventListener('DOMContentLoaded', function(){
-    try{
-      var c = document.getElementById('consent');
-      var b = document.getElementById('consentAccept');
-      var has = (localStorage.getItem('consent') === '1');
-      if (has) { c.classList.add('is-hidden'); c.setAttribute('hidden',''); c.setAttribute('aria-hidden','true'); }
-      else     { c.classList.remove('is-hidden'); c.removeAttribute('hidden'); c.setAttribute('aria-hidden','false'); }
-      b && b.addEventListener('click', function(){
-        try{ localStorage.setItem('consent','1'); }catch(e){}
-        c.classList.add('is-hidden'); c.setAttribute('hidden',''); c.setAttribute('aria-hidden','true');
-      });
-    }catch(e){}
-  });
-  </script>
-
-<!-- p12 debug bootstrap -->
-<script id="debug-bootstrap-p12">
-(function () {
-  try {
-    var p = new URLSearchParams(location.search);
-    if (!p.has('debug')) return;
-
-    // 1) Desregistrar SW antiguos (no rompe si no hay)
-    if ('serviceWorker' in navigator) {
-      try {
-        navigator.serviceWorker.getRegistrations().then(function(rs){
-          rs.forEach(function(r){ r.unregister(); });
-        });
-      } catch (_e) {}
-    }
-
-    // 2) UI mínima de diagnóstico
-    function addBox() {
-      var box = document.createElement('div');
-      box.style.cssText = 'position:fixed;right:12px;bottom:12px;padding:10px 12px;background:#111;color:#fff;font:12px/1.4 system-ui;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:42ch;z-index:99999';
-      box.innerHTML = '<b>p12 debug</b><div id="p12d"></div>';
-      document.body.appendChild(box);
-      return box.querySelector('#p12d');
-    }
-    function log(k,v){
-      var el = document.createElement('div');
-      el.textContent = k + ': ' + v;
-      root.appendChild(el);
-    }
-
-    var root = addBox();
-
-    // 3) checks rápidos
-    fetch('/api/health').then(function(r){ log('health', r.status); }).catch(function(){ log('health','ERR'); });
-
-    fetch('/api/deploy-stamp')
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        var c = ((j && j.deploy && j.deploy.commit) || j.commit || '').slice(0,7);
-        var d = ((j && j.deploy && j.deploy.date)   || j.date   || '');
-        log('deploy', c + ' @ ' + d);
-      })
-      .catch(function(){ log('deploy','ERR'); });
-
-    fetch('/api/notes?limit=3', {headers:{'Accept':'application/json'}})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        var n = (Array.isArray(j) ? j.length : ((j && j.items && j.items.length) || 0));
-        log('notes', n + ' items');
-      })
-      .catch(function(){ log('notes','ERR'); });
-
-  } catch (_e) {}
-})();
-</script>
-
-
-<!-- p12 PE shim (solo ?pe=1) -->
-<script id="pe-shim-p12">
-(function(){
-  try {
-    var p = new URLSearchParams(location.search);
-    if (!p.has('pe')) return;
-
-    var root = document.createElement('div');
-    root.style.cssText = 'margin:16px;padding:12px;border:1px dashed #aaa;border-radius:10px;background:#fafafa';
-    root.innerHTML = '<b>PE shim</b> — listado mínimo de /api/notes';
-    var list = document.createElement('div');
-    list.style.cssText = 'margin-top:8px;font:14px system-ui';
-    root.appendChild(list);
-    (document.body || document.documentElement).appendChild(root);
-
-    fetch('/api/notes?limit=5',{headers:{'Accept':'application/json'}})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        var items = (j && j.items) || [];
-        if (!items.length) { list.textContent = '(sin items)'; return; }
-        var ul = document.createElement('ul');
-        items.forEach(function(it){
-          var li = document.createElement('li');
-          li.textContent = '#'+it.id+': '+(it.text || it.summary || '(sin texto)');
-          ul.appendChild(li);
-        });
-        list.appendChild(ul);
-      })
-      .catch(function(){ list.textContent = 'error cargando'; });
-  } catch (_e) {}
-})();
-</script>
-
+SCRIPT = r'''
 <script id="p12-client-template" data-ver="1">
 (()=>{const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 async function unregisterSW(){try{if("serviceWorker"in navigator){(await navigator.serviceWorker.getRegistrations()).forEach(r=>r.unregister())}}catch{}}
@@ -356,47 +201,37 @@ moreBtn.addEventListener("click",()=>{ if(nextUrl) fetchPage(nextUrl).catch(()=>
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start);}else{start();}
 })();
 </script>
+'''.strip()+"\n"
 
+def inject(html: str) -> str:
+    # Reemplaza si ya existe nuestro script
+    m = re.search(r'(<script[^>]*id="p12-client-template"[^>]*>)(.*?)(</script>)', html, flags=re.I|re.S)
+    if m:
+        def repl(_m): return m.group(1) + "\n" + SCRIPT.split(">",1)[1]
+        return re.sub(r'(<script[^>]*id="p12-client-template"[^>]*>)(.*?)(</script>)', repl, html, flags=re.I|re.S, count=1)
+    # Si existe el viejo p12-min-client, lo reemplazamos para evitar doble render
+    m2 = re.search(r'(<script[^>]*id="p12-min-client"[^>]*>)(.*?)(</script>)', html, flags=re.I|re.S)
+    if m2:
+        def repl2(_m): return SCRIPT
+        return re.sub(r'(<script[^>]*id="p12-min-client"[^>]*>)(.*?)(</script>)', repl2, html, flags=re.I|re.S, count=1)
+    # Inserta antes de </body> preservando cierre (usar función para evitar escapes en replacement)
+    if re.search(r'</body\s*>', html, flags=re.I):
+        return re.sub(r'</body\s*>', lambda m: SCRIPT + m.group(0), html, flags=re.I, count=1)
+    # fallback: al final
+    return html.rstrip() + "\n" + SCRIPT
 
-</body>
-</html>
-\n<!-- deploy-stamp-banner -->
-<script>
-(function(){
-  var elId = "deploy-stamp-banner";
-  if (document.getElementById(elId)) return; // idempotente
+def patch_one(p: pathlib.Path):
+    html = p.read_text(encoding="utf-8")
+    out  = inject(html)
+    if out == html:
+        print(f"OK: {p} ya tenía el cliente (sin cambios)")
+        return
+    bak = p.with_suffix(".html.client_template.bak")
+    if not bak.exists():
+        shutil.copyfile(p, bak)
+    p.write_text(out, encoding="utf-8")
+    print(f"patched: cliente template-driven en {p} | backup={bak.name}")
 
-  function h(tag, attrs, text){ var e=document.createElement(tag);
-    if(attrs){ for(var k in attrs){ e.setAttribute(k, attrs[k]); } }
-    if(text){ e.textContent=text; } return e; }
-
-  function show(stamp){
-    var bar = h("div", {id: elId, style:
-      "position:fixed;left:16px;right:16px;bottom:16px;padding:12px 16px;"+
-      "background:#111;color:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);"+
-      "font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;"+
-      "display:flex;gap:12px;align-items:center;z-index:99999;"});
-    var msg = h("div", null, "Nueva versión disponible. Actualiza para ver los últimos cambios.");
-    var btn = h("button", {style:
-      "margin-left:auto;background:#00b894;color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;"+
-      "font-weight:600;"}, "Actualizar");
-    btn.onclick = function(){
-      try { localStorage.setItem("deployStamp", stamp || ""); } catch(_) {}
-      location.reload(true);
-    };
-    var x = h("button",{style:"margin-left:8px;background:#333;color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;"},"Cerrar");
-    x.onclick=function(){ bar.remove(); };
-    bar.appendChild(msg); bar.appendChild(btn); bar.appendChild(x);
-    document.body.appendChild(bar);
-  }
-
-  function same(a,b){return String(a||"").trim()===String(b||"").trim();}
-
-  fetch("/api/deploy-stamp",{credentials:"include"}).then(function(r){return r.json();}).then(function(j){
-    var cur = (j && (j.stamp||j.commit||"")) || "";
-    var prev = ""; try { prev = localStorage.getItem("deployStamp")||""; } catch(_) {}
-    if(!same(cur, prev) && cur){ show(cur); }
-  }).catch(function(_e){ /* silencioso */ });
-})();
-</script>
-\n
+for t in targets:
+    patch_one(t)
+print("OK.")
