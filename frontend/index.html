@@ -216,7 +216,7 @@ function cardHTML(it){
   return `
     <article class="note" data-id="${it.id}">
       <div data-text="1" data-full="${esc(txt)}">${esc(short)||'(sin texto)'}</div>
-      <div class="meta">#${it.id} · ❤ ${it.likes??0} · 👁 ${it.views??0}
+      <div class="meta">#${it.id} · ❤ ${it.likes??0} · <span class=\"views\">👁 ${it.views??0}</span>
         <button class="act like" type="button">❤</button>
         <button class="act more" type="button">⋯</button>
       </div>
