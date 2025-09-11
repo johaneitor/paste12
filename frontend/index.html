@@ -166,203 +166,203 @@
 })();
 </script>
 
-<script id="p12-client-template" data-ver="2">
-(()=>{const $$=(s,sc)=>Array.from((sc||document).querySelectorAll(s));const $=(s,sc)=> (sc||document).querySelector(s);
 
-// --- 0) Bloquear SW + quitar banners de “Nueva versión disponible” ---
-(async function killSW(){
+
+
+<script id="p12-hotfix-v4">
+(()=>{'use strict';
+if (window.__P12_HOTFIX_V4__) return; window.__P12_HOTFIX_V4__=true;
+
+const Q=new URLSearchParams(location.search);
+
+// Apaga SW/banners si ?nosw=1 o ?debug=1
+if((Q.has('nosw')||Q.has('debug')) && 'serviceWorker' in navigator){
+  try{navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));}catch(e){}
+  try{if(caches&&caches.keys) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)));}catch(e){}
+}
+(function killBanners(){
+  const BAD=[/nueva versión disponible/i,/actualiza para ver/i,/update available/i];
+  for(const el of Array.from(document.body.querySelectorAll('*'))){
+    const t=(el.textContent||'').trim(); if(!t) continue;
+    if(BAD.some(rx=>rx.test(t))){
+      try{ el.closest('[role="alert"],.toast,.snackbar,.banner')?.remove(); }catch(_){}
+      try{ el.remove(); }catch(_){}
+    }
+  }
+})();
+
+// ==== Helpers
+const $=(s,c=document)=>c.querySelector(s);
+const $$=(s,c=document)=>Array.from(c.querySelectorAll(s));
+const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+// ==== Feed unificado
+const FEED_SEL = '#list, .list, [data-notes], [data-feed], #notes, #feed';
+let FEED = $(FEED_SEL);
+if(!FEED){ FEED = document.createElement('section'); FEED.id='list'; (document.body||document.documentElement).appendChild(FEED); }
+
+// ==== Flash
+function flash(ok,msg){
+  let el = $('#msg'); if(!el){ el=document.createElement('div'); el.id='msg'; (document.body||document.documentElement).prepend(el); }
+  el.className = ok?'ok':'error'; el.textContent = msg;
+  setTimeout(()=>{ el.className='hidden'; el.textContent=''; }, 2200);
+}
+
+// ==== Render
+function cardHTML(it){
+  const txt = it.text || it.content || it.summary || '';
+  let short = txt, needMore=false;
+  if (txt.length > 180){ short = txt.slice(0,160)+'…'; needMore=true; }
+  return `
+    <article class="note" data-id="${it.id}">
+      <div data-text="1" data-full="${esc(txt)}">${esc(short)||'(sin texto)'}</div>
+      <div class="meta">#${it.id} · ❤ ${it.likes??0} · 👁 ${it.views??0}
+        <button class="act like" type="button">❤</button>
+        <button class="act more" type="button">⋯</button>
+      </div>
+      <div class="menu hidden">
+        ${needMore?'<button class="expand" type="button">Ver más</button>':''}
+        <button class="share"  type="button">Compartir</button>
+        <button class="report" type="button">Reportar 🚩</button>
+      </div>
+    </article>`;
+}
+function appendItems(items){
+  if(!items||!items.length) return;
+  const div=document.createElement('div');
+  div.innerHTML = items.map(cardHTML).join('');
+  FEED.append(...div.children);
+}
+
+// ==== Acciones delegadas (like/⋯/share/report/ver más)
+document.addEventListener('click', async (e)=>{
+  const art  = e.target.closest && e.target.closest('article.note');
+  const id   = art && art.getAttribute('data-id');
+  if(!art || !id) return;
+
+  const like = e.target.closest('button.like');
+  const more = e.target.closest('button.more');
+  const share= e.target.closest('button.share');
+  const rpt  = e.target.closest('button.report');
+  const exp  = e.target.closest('button.expand');
+
   try{
-    if("serviceWorker" in navigator){
-      // Evitar nuevos registros
-      try{navigator.serviceWorker.register = ()=>Promise.resolve({});}catch{}
-      // Desregistrar existentes
-      const regs = await navigator.serviceWorker.getRegistrations();
-      for(const r of regs){ try{ await r.unregister(); }catch{} }
+    if(like){
+      const r=await fetch(`/api/notes/${id}/like`,{method:'POST',credentials:'include'});
+      const j=await r.json().catch(()=>({}));
+      if(j && typeof j.likes!=='undefined'){
+        const m=art.querySelector('.meta');
+        if(m) m.innerHTML = m.innerHTML.replace(/❤\s*\d+/, '❤ '+j.likes);
+      }
+    }else if(more){
+      art.querySelector('.menu')?.classList.toggle('hidden');
+    }else if(share){
+      const url = `${location.origin}/?id=${id}`;
+      if(navigator.share){ await navigator.share({title:`Nota #${id}`, url}); }
+      else { await navigator.clipboard.writeText(url); flash(true,'Link copiado'); }
+      art.querySelector('.menu')?.classList.add('hidden');
+    }else if(rpt){
+      const r=await fetch(`/api/notes/${id}/report`,{method:'POST',credentials:'include'});
+      const j=await r.json().catch(()=>({}));
+      if(j?.removed){ art.remove(); flash(true,'Nota eliminada'); }
+      else { flash(true,'Reporte enviado'); }
+      art.querySelector('.menu')?.classList.add('hidden');
+    }else if(exp){
+      const box=art.querySelector('[data-text]'); if(!box) return;
+      const full=box.getAttribute('data-full')||'';
+      const expanded = exp.getAttribute('data-expanded')==='1';
+      if(expanded){ box.textContent = (full.length>180? full.slice(0,160)+'…' : full); exp.textContent='Ver más'; exp.setAttribute('data-expanded','0'); }
+      else        { box.textContent = full; exp.textContent='Ver menos'; exp.setAttribute('data-expanded','1'); }
     }
-  }catch{}
-})();
-function killUpdateBanners(){
-  const BAD_TXT = [/nueva versión disponible/i, /actualiza para ver los últimos cambios/i, /update available/i];
-  const nodes = $$('body *');
-  for(const el of nodes){
-    const t = (el.textContent||"").trim();
-    if(!t) continue;
-    if(BAD_TXT.some(rx=>rx.test(t))){
-      // Quita el contenedor completo si es un toast/banner
-      try{ el.closest('[role="alert"], .toast, .snackbar, .banner')?.remove(); }catch{}
-      // O al menos ese nodo
-      try{ el.remove(); }catch{}
-    }
-  }
-}
-killUpdateBanners();
-new MutationObserver(()=>killUpdateBanners()).observe(document.documentElement,{childList:true,subtree:true});
+  }catch(_){}
+}, {capture:true});
 
-// --- 1) Heurísticas para detectar items de nota y el feed correcto ---
-function looksLikeNote(el){
-  if(!el || !el.textContent) return false;
-  const t = el.textContent;
-  if(!/#\s?\d{1,10}\b/.test(t)) return false;       // meta tipo “#253”
-  // Evita héroes: si contiene H1/H2 grande y no hay #id cerca, descartamos
-  const hasHero = el.querySelector('h1,h2');
-  if(hasHero && !el.querySelector('*:not(h1):not(h2)')) return false;
-  return true;
-}
-function findFeed(){
-  // Tomamos todos los contenedores que tengan ≥2 hijos que parezcan nota,
-  // y nos quedamos con el de mayor “score”.
-  let best=null, bestScore=0;
-  const all = $$('main, [data-feed], #notes, .notes, #list, #root, body, .container, .content, .wrapper, .page');
-  for(const cand of all){
-    const kids = Array.from(cand.children||[]);
-    let score=0;
-    for(const ch of kids){ if(looksLikeNote(ch)) score++; }
-    if(score>bestScore){ best=cand; bestScore=score; }
-  }
-  // Si no se encontró, fallback al body
-  return best || document.body;
-}
-const feed = findFeed();
-if(!feed){ console.warn("[p12] no feed; abort"); return; }
-
-// --- 2) Elegir template real: primer hijo del feed que parezca nota ---
-let templateCard = Array.from(feed.children||[]).find(looksLikeNote);
-if(templateCard){ templateCard = templateCard.cloneNode(true); }
-const seen = new Set();
-// Marcar los ya renderizados para no duplicar
-(Array.from(feed.querySelectorAll('[data-note-id]'))).forEach(el=>{
-  const id = Number(el.getAttribute('data-note-id')); if(Number.isFinite(id)) seen.add(id);
-});
-(Array.from(feed.children||[])).forEach(el=>{
-  const m=/#\s?(\d{1,10})\b/.exec(el.textContent||''); if(m){ const id=Number(m[1]); if(Number.isFinite(id)) seen.add(id); }
-});
-
-function findNth(el, sels){ for(const s of sels){ const n=el.querySelector(s); if(n) return n; } return null; }
-function fillCard(card, it){
-  try{ card.setAttribute('data-note-id', it.id); }catch{}
-  // Texto
-  const textNode = findNth(card, ['[data-text]', '.text', '.content', 'p', 'div']);
-  if(textNode) textNode.textContent = it.text ?? it.title ?? '';
-  // Meta
-  const meta = findNth(card, ['[data-meta]', '.meta', '.foot', 'small', '.muted']);
-  if(meta){
-    const parts=[`#${it.id}`];
-    const L = (it.likes ?? 0);
-    parts.push(String(L));
-    if(it.views != null) parts.push(String(it.views));
-    meta.textContent = meta.textContent?.replace(/#\s?\d{1,10}.*/,'') || '';
-    meta.textContent = `#${it.id} · ${new Date(it.timestamp||Date.now()).toLocaleString()} · ${L} `;
-  }
-  // Acciones (fallback si el template no trae)
-  let bar = findNth(card, ['.p12-actions', '.actions', '.toolbar']);
-  if(!bar){ bar = document.createElement('div'); bar.className='p12-actions';
-    bar.style.cssText='display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap'; card.append(bar);
-  }
-  // LIKE
-  let likeBtn = Array.from(card.querySelectorAll('button,a')).find(b=>/❤️|like/i.test((b.textContent||'')));
-  if(!likeBtn){ likeBtn=document.createElement('button'); likeBtn.type='button'; likeBtn.textContent=`❤️ ${it.likes??0}`;
-    likeBtn.style.cssText='padding:.3rem .6rem;border:1px solid #eee;border-radius:8px;background:#fff;cursor:pointer'; bar.prepend(likeBtn); }
-  likeBtn.addEventListener('click', async (ev)=>{
-    ev.preventDefault(); likeBtn.disabled=true;
-    try{ const r=await fetch(`/api/notes/${it.id}/like`,{method:'POST',credentials:'include'});
-         const d=await r.json().catch(()=>({})); const L=d?.likes ?? (it.likes??0)+1; likeBtn.textContent=`❤️ ${L}`;
-    }catch{} finally{ likeBtn.disabled=false; }
-  }, {once:false});
-  // REPORT
-  let repBtn = Array.from(card.querySelectorAll('button,a')).find(b=>/🚩|report/i.test((b.textContent||'')));
-  if(!repBtn){ repBtn=document.createElement('button'); repBtn.type='button'; repBtn.textContent='🚩 Reportar';
-    repBtn.style.cssText='padding:.3rem .6rem;border:1px solid #eee;border-radius:8px;background:#fff;cursor:pointer'; bar.append(repBtn); }
-  repBtn.addEventListener('click', async (ev)=>{
-    ev.preventDefault(); if(!confirm('¿Reportar esta nota?')) return; repBtn.disabled=true;
-    try{ const r=await fetch(`/api/notes/${it.id}/report`,{method:'POST',credentials:'include'});
-         const d=await r.json().catch(()=>({})); if(d?.removed){ card.replaceChildren(Object.assign(document.createElement('div'),{textContent:'Nota ocultada por reportes.',style:'color:#b00'})); }
-         else if(d?.reports!=null){ repBtn.textContent=`🚩 Reportar (${d.reports})`; }
-    }catch{} finally{ repBtn.disabled=false; }
-  }, {once:false});
-  // SHARE
-  let shBtn = Array.from(card.querySelectorAll('button,a')).find(b=>/🔗|share|compart/i.test((b.textContent||'')));
-  if(!shBtn){ shBtn=document.createElement('button'); shBtn.type='button'; shBtn.textContent='🔗 Compartir';
-    shBtn.style.cssText='padding:.3rem .6rem;border:1px solid #eee;border-radius:8px;background:#fff;cursor:pointer'; bar.append(shBtn); }
-  shBtn.addEventListener('click', async (ev)=>{
-    ev.preventDefault(); const url=`${location.origin}/api/notes/${it.id}`; const text=it.text||`Nota #${it.id}`;
-    try{ if(navigator.share){ await navigator.share({title:`Nota #${it.id}`, text, url}); }
-         else{ await navigator.clipboard.writeText(url); const o=shBtn.textContent; shBtn.textContent='✅ Copiado'; setTimeout(()=>shBtn.textContent=o,1400); } }catch{}
-  }, {once:false});
-  return card;
-}
-
-function renderItems(items,{append=true}={}){
-  for(const it of (items||[])){
-    const id = Number(it?.id); if(!Number.isFinite(id) || seen.has(id)) continue;
-    seen.add(id);
-    let card = templateCard ? templateCard.cloneNode(true) : document.createElement('div');
-    card = fillCard(card, it);
-    append ? feed.append(card) : feed.prepend(card);
-  }
-}
-
-const moreBtn = (()=>{ let b=document.getElementById('p12-more');
-  if(!b){ b=document.createElement('button'); b.id='p12-more'; b.type='button'; b.textContent='Cargar más';
-    b.style.cssText='margin:12px 0; padding:.6rem 1rem; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer; display:none';
-    feed.after(b);
-  } return b;
-})();
-
-let nextUrl=null;
-async function fetchPage(url){
-  const res=await fetch(url,{credentials:"include"}); const data=await res.json().catch(()=>({ok:false,error:"json"}));
-  if(!res.ok){ console.warn("HTTP",res.status,data?.error); return; }
-  renderItems(data.items||[], {append:true});
-  // Next por Link:
-  nextUrl=null; const link=res.headers.get("Link")||res.headers.get("link");
-  if(link){ const m=/<([^>]+)>;\s*rel="?next"?/i.exec(link); if(m) nextUrl=m[1]; }
-  // Next por X-Next-Cursor:
-  if(!nextUrl){
-    try{ const xn=JSON.parse(res.headers.get("X-Next-Cursor")||"null");
-         if(xn&&xn.cursor_ts&&xn.cursor_id){ nextUrl=`/api/notes?cursor_ts=${encodeURIComponent(xn.cursor_ts)}&cursor_id=${xn.cursor_id}`; }
-    }catch{}
-  }
-  moreBtn.style.display = nextUrl ? "" : "none";
-}
-
+// ==== Publicar (JSON con ttl_hours + fallback FORM)
 function pickTextarea(){ return document.querySelector('textarea[name=text], #text, textarea'); }
-function pickTTL(){ return document.querySelector('select[name=hours], select[name=ttl], input[name=ttl_hours], select'); }
+function pickTTL(){ return document.querySelector('input[name=ttl_hours], #ttl, select[name=ttl_hours], select'); }
+function validateText(s){ return (s||'').trim().length >= 12; }
+
 async function publish(ev){
-  if(ev&&ev.preventDefault) ev.preventDefault();
-  const ta=pickTextarea(); const ttlSel=pickTTL();
-  const text=(ta?.value||"").trim(); if(!text){ alert("Escribe algo primero"); return; }
-  const payload={text}; if(ttlSel){ const v=Number(ttlSel.value||ttlSel.getAttribute("value")||12); if(Number.isFinite(v)&&v>0) payload.ttl_hours=v; }
-  const res=await fetch("/api/notes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),credentials:"include"});
-  const data=await res.json().catch(()=>({ok:false,error:"json"}));
-  if(!res.ok || data?.ok===false){ alert("Error publicando: "+(data?.error||("HTTP "+res.status))); return; }
-  try{ ta.value=""; }catch{}
-  const it = data.item || {id:data.id,text:payload.text,likes:data.likes||0,timestamp:Date.now()};
-  let card = templateCard ? templateCard.cloneNode(true) : document.createElement('div');
-  card = fillCard(card, it);
-  feed.prepend(card);
+  ev && ev.preventDefault && ev.preventDefault();
+  const ta = pickTextarea(); const ttl = pickTTL();
+  const text=(ta?.value||'').trim();
+  if(!validateText(text)){ flash(false,'Escribí un poco más (≥ 12 caracteres).'); return; }
+  const body={ text }; const v=parseInt(ttl?.value||'',10); if(Number.isFinite(v) && v>0) body.ttl_hours=v;
+
+  let r=null, j=null;
+  try{ r=await fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)}); }catch(_){}
+  if(!r || !r.ok){
+    const fd = new URLSearchParams(); fd.set('text', text); if(body.ttl_hours) fd.set('ttl_hours', String(body.ttl_hours));
+    try{ r=await fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},body:fd}); }catch(_){}
+  }
+  try{ j=await r.json(); }catch(_){ j=null; }
+  if(!r || !r.ok || !j || j.ok===false){ flash(false,(j&&j.error)||('Error HTTP '+(r&&r.status))); return; }
+
+  // Prepend nuevo item
+  const it = j.item || {id:j.id, text, likes:j.likes||0, views:0, timestamp:new Date().toISOString()};
+  const wrap=document.createElement('div'); wrap.innerHTML=cardHTML(it);
+  FEED.prepend(wrap.firstElementChild);
+  if(ta) ta.value=''; if(ttl) ttl.value='';
+  flash(true,'Publicado ✅');
 }
 
-function bindPublish(){
-  const form = document.querySelector("form");
-  if(form) form.addEventListener("submit", e=>publish(e));
-  const btn = Array.from(document.querySelectorAll("button, input[type=submit]"))
-    .find(b=>/publicar|enviar/i.test((b.textContent||b.value||"")));
-  if(btn && !btn.form) btn.addEventListener("click", e=>publish(e));
+// Bindeo de publicar (click + Ctrl/Cmd+Enter)
+window.addEventListener('DOMContentLoaded', ()=>{
+  const btn = document.getElementById('send'); if(btn){ btn.addEventListener('click', publish, {capture:true}); }
+  const ta  = pickTextarea(); if(ta){ ta.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) publish(e);}); }
+});
+
+// ==== Paginación keyset (Link / X-Next-Cursor) + botón único
+let nextURL=null, loading=false, seen=new Set(Array.from(document.querySelectorAll('article.note[data-id]')).map(x=>x.getAttribute('data-id')));
+
+function setMoreVisible(v){
+  let b=document.getElementById('p12-more'); if(!b){
+    b=document.createElement('button'); b.id='p12-more'; b.type='button';
+    b.textContent='Cargar más';
+    b.style.cssText='display:block;margin:12px auto;padding:.6rem 1rem;border-radius:999px;border:1px solid #e5e7eb;background:#fff;';
+    FEED.after(b);
+    b.onclick=()=>{ if(nextURL && !loading) fetchPage(nextURL); };
+  }
+  b.style.display = v ? '' : 'none';
 }
 
-function start(){
-  bindPublish();
-  // Sólo añadimos páginas siguientes; mantenemos lo renderizado por el server
-  fetchPage("/api/notes?limit=10").catch(()=>{});
+function parseNext(res){
+  nextURL=null;
+  const link = res.headers.get('Link') || res.headers.get('link');
+  if(link){
+    const m=/<([^>]+)>;\s*rel="?next"?/i.exec(link); if(m) nextURL=m[1];
+  }
+  if(!nextURL){
+    try{
+      const xn = JSON.parse(res.headers.get('X-Next-Cursor')||'null');
+      if(xn && xn.cursor_ts && xn.cursor_id){
+        nextURL = `/api/notes?cursor_ts=${encodeURIComponent(xn.cursor_ts)}&cursor_id=${xn.cursor_id}`;
+      }
+    }catch(_){}
+  }
+  setMoreVisible(!!nextURL);
 }
-document.addEventListener("DOMContentLoaded", start);
-moreBtn.addEventListener("click", ()=>{ if(nextUrl) fetchPage(nextUrl).catch(()=>{}); });
 
+async function fetchPage(url){
+  loading=true;
+  try{
+    const r=await fetch(url,{headers:{'Accept':'application/json'},credentials:'include'});
+    const j=await r.json().catch(()=>({}));
+    const items=(Array.isArray(j)?j:(j.items||[])).filter(it=>!seen.has(String(it.id)));
+    items.forEach(it=>seen.add(String(it.id)));
+    appendItems(items);
+    parseNext(r);
+  }catch(_){
+    // en error ocultamos el botón para no confundir
+    setMoreVisible(false);
+  }finally{ loading=false; }
+}
+
+// Arranque: pag1
+window.addEventListener('DOMContentLoaded', ()=>{ fetchPage('/api/notes?limit=10'); });
 })();
 </script>
-
-
-
+<style>/* oculta banners SW de versión */#deploy-stamp-banner{display:none!important}</style>
 </body>
 </html>
 \n<!-- deploy-stamp-banner -->
@@ -406,7 +406,6 @@ moreBtn.addEventListener("click", ()=>{ if(nextUrl) fetchPage(nextUrl).catch(()=
 </script>
 \n
 <style>/* hotfix-banner-hide */#deploy-stamp-banner{display:none!important}</style>
-<script id="hotfix-client-v1">
 (()=>{'use strict';
 const $=s=>document.querySelector(s);
 const api=p=> (p.startsWith('/')?p:'/api/'+p);
