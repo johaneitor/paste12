@@ -93,8 +93,667 @@
 
 
 <script>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Paste12</title>
+<style>
+.brand{margin:0; font-size:clamp(22px,3.4vw,30px)}
+  .tagline{margin:6px 0 0; font-size:14px; color:#17323a; font-weight:600; opacity:.9}
+
+  :root{
+    --bg:#fffdfc; --fg:#24323f; --muted:#6b7a86;
+    --teal:#8fd3d0;   /* turquesa pastel */
+    --peach:#ffb38a;  /* naranja pastel */
+    --pink:#f9a3c7;   /* rosa pastel */
+    --card:#ffffff; --ring: rgba(36,50,63,.15);
+  }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+        background:linear-gradient(180deg,var(--bg),#fff); color:var(--fg);}
+  header{ position:sticky; top:0; z-index:10;
+          background:linear-gradient(90deg,var(--teal),var(--peach),var(--pink));
+          color:#17323a; padding:16px 20px; box-shadow:0 2px 12px var(--ring); }
+  h1{margin:0; font-size:clamp(20px,3.2vw,28px)}
+  .container{max-width:860px; margin:20px auto; padding:0 16px}
+  .card{ background:var(--card); border:1px solid #eee; border-radius:16px; padding:14px; box-shadow:0 4px 20px var(--ring);}
+  textarea,input[type="text"]{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid #e6eef2; outline:none; font-size:16px; background:#fff; color:var(--fg);}
+  textarea:focus,input:focus{ border-color:#b5dfe0; box-shadow:0 0 0 4px rgba(143,211,208,.25) }
+  .row{display:flex; gap:10px; margin-top:10px}
+  .btn{ appearance:none; border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer;
+        background:linear-gradient(90deg,var(--teal),var(--peach)); color:#14333a; box-shadow:0 6px 18px var(--ring);}
+  .btn:active{transform:translateY(1px)}
+  .list{margin-top:18px; display:grid; gap:12px}
+  .note{ background:#fff; border:1px solid #eef2f5; border-radius:14px; padding:12px 14px; }
+  .meta{ color:var(--muted); font-size:13px; margin-top:6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .meta .act{ border:0; background:transparent; color:inherit; cursor:pointer; padding:0 6px; border-radius:8px; }
+  .meta .act:hover{ background:rgba(0,0,0,.05) }
+  .menu{ margin-top:8px; display:flex; gap:8px; }
+  .hidden{ display:none }
+  .error{ color:#9a2b2b; margin-top:8px }
+  .ok{ color:#0a6f57; margin-top:8px }
+  footer{ margin:40px 0 28px; color:var(--muted); text-align:center; font-size:14px; }
+  footer a{ color:#0b7c8a; text-decoration:underline }
+</style>
+<!-- TAGLINE-BEGIN -->
+<style id="tagline-style">
+  #tagline{margin:.25rem 0 0;opacity:.9;line-height:1.25;}
+  #tagline .tg-text{font-weight:500;}
+</style>
+<!-- TAGLINE-END -->
+
+<style>/* summary-enhancer */
+.summary-more-btn{font:inherit;font-size:.9em;border:none;background:transparent;color:#0b6;cursor:pointer;padding:0;margin-left:.25rem}
+.summary-more-btn:hover{text-decoration:underline}
+</style>
+
+<style id="brand-colors">
+  :root{
+    --brand-teal:#14b8a6;    /* teal-500 */
+    --brand-orange:#f97316;  /* orange-500 */
+  }
+  .brand-gradient{
+    background: linear-gradient(90deg, var(--brand-teal), var(--brand-orange));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1 class="brand-gradient brand">Paste12</h1>
+  <h2 id="tagline-rot"></h2><p class="tagline" id="tagline">Reta a un amigo · Dime un secreto · Confiesa algo · Manda un reto · Anónimo o no, tú decides</p>
+  </header>
+  <main class="container">
+    <section class="card">
+      <label for="text" style="font-weight:600;">Escribe tu nota…</label>
+      <textarea id="text" rows="3" placeholder="Escribe tu nota…"></textarea>
+      <div class="row">
+        <input id="ttl" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Horas (12 por defecto)">
+        <button id="send" class="btn">Publicar</button>
+      </div>
+      <div id="msg" class="hidden"></div>
+    </section>
+
+    <section class="list" id="list"></section>
+
+    <footer>
+      <span>Usamos cookies/localStorage (p. ej., para contar vistas).</span><br/>
+      <a href="/terms">Términos y Condiciones</a> · <a href="/privacy">Política de Privacidad</a>
+    </footer>
+  </main>
+
+
+<script>
 /* view-observer:start */
 (function(){
+  try{
+    const api=p=> (p.startsWith('/')?p:'/api/'+p);
+    
+    const seen = new Set();
+    // Cargar vistos previos (limitar a 500 ids para no crecer sin control)
+    try {
+      (JSON.parse(localStorage.getItem('seen_views')||'[]')||[]).slice(-500).forEach(id=>seen.add(String(id)));
+    } catch(_) {}
+    const save = () => {
+      try { localStorage.setItem('seen_views', JSON.stringify([...seen].slice(-500))); } catch(_){}
+    };
+
+    // Fingerprint simple para backend (opcional)
+    const fp = (navigator.userAgent||'') + '|' + (navigator.language||'') + '|' +
+               (Intl.DateTimeFormat().resolvedOptions().timeZone||'');
+
+    const obs = new IntersectionObserver((entries)=>{
+      entries.forEach(async (entry)=>{
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const id = (el.getAttribute('data-id')||'').trim();
+        if (!id || seen.has(id)) { obs.unobserve(el); return; }
+        seen.add(id); save();
+        try{
+          const res = await fetch(api('notes/'+id+'/view'), {method:'POST', headers:{'X-FP': fp}});
+          let j = {};
+          try { j = await res.json(); } catch(_){}
+          if (res.ok && (j.ok || j.id)) {
+            const span = el.querySelector('.views');
+            if (span) {
+              const m = /(\d+)/.exec(span.textContent||'0'); const cur = m?parseInt(m[1],10):0;
+              span.textContent = '👁️ ' + (cur+1);
+            }
+          }
+        }catch(_){}
+        obs.unobserve(el);
+      });
+    }, {root: null, threshold: 0.6});
+
+    function attach(){
+      document.querySelectorAll('article.note[data-id]').forEach(el=>{
+        if (!el.dataset.observing) { el.dataset.observing = '1'; obs.observe(el); }
+      });
+    }
+    const list = document.getElementById('list');
+    if (list) {
+      const mo = new MutationObserver(attach);
+      mo.observe(list, {childList:true});
+    }
+    // Primera pasada
+    attach();
+  }catch(_){}
+})();
+/* view-observer:end */
+</script>
+<script>
+(function(){
+  const el = document.getElementById('tagline');
+  if(!el) return;
+  const lines = [
+    "Reta a un amigo",
+    "Dime un secreto",
+    "Confiesa algo",
+    "Manda un reto",
+    "Anónimo o no, tú decides"
+  ];
+  let i = Math.floor(Math.random()*lines.length);
+  function set(){ el.textContent = lines[i]; i = (i+1) % lines.length; }
+  set();
+  setInterval(set, 5000);
+})();
+</script>
+
+<script id="summary-enhancer">
+(function(){
+  const FEED_SEL = '[data-feed], #feed, .notes, .list, body'; // fallback amplio
+  const CARD_SEL = '[data-note-id], .note, .card';
+  const TEXT_SEL = 'p, .text, .note-text, [data-text]';
+  const MAX = 140;
+
+  function truncate(t, n){ if(!t) return ""; return (t.length<=n)?t:(t.slice(0,n)+'…'); }
+
+  function decorateCard(card){
+    if(card.dataset.summaryDecorated==="1") return;
+    const tid = card.getAttribute("data-note-id") || card.getAttribute("data-id") || "";
+    // encontrar el contenedor de texto más plausible
+    const el = card.querySelector(TEXT_SEL);
+    if(!el) return;
+    // guardar texto completo si no existe
+    if(!el.dataset.full){
+      el.dataset.full = el.textContent || "";
+    }
+    // si ya hay summary del backend, úsalo; si no, lo generamos
+    const backendSummary = card.getAttribute("data-summary") || el.getAttribute("data-summary");
+    const full = el.dataset.full;
+    const summary = backendSummary || truncate(full, MAX);
+
+    // si no hace falta ver más, no agregamos botón
+    const needMore = full.length > summary.length;
+    el.textContent = summary;
+
+    // botón ver más/menos
+    let btn = card.querySelector(".summary-more-btn");
+    if(!btn && needMore){
+      btn = document.createElement("button");
+      btn.className = "summary-more-btn";
+      btn.type = "button";
+      btn.textContent = "Ver más";
+      el.insertAdjacentElement("afterend", btn);
+      btn.addEventListener("click", (ev)=>{
+        const expanded = btn.getAttribute("data-expanded")==="1";
+        if(expanded){
+          el.textContent = backendSummary || truncate(full, MAX);
+          btn.textContent = "Ver más";
+          btn.setAttribute("data-expanded","0");
+        }else{
+          el.textContent = full;
+          btn.textContent = "Ver menos";
+          btn.setAttribute("data-expanded","1");
+        }
+      });
+    }
+    card.dataset.summaryDecorated = "1";
+  }
+
+  function scan(){
+    const root = document.querySelector(FEED_SEL) || document.body;
+    root.querySelectorAll(CARD_SEL).forEach(decorateCard);
+  }
+
+  // Primera pasada
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", scan);
+  }else{
+    scan();
+  }
+
+  // Observer para nuevos items
+  const mo = new MutationObserver((muts)=>{
+    let need=false;
+    for(const m of muts){
+      if(m.addedNodes && m.addedNodes.length){ need=true; break; }
+    }
+    if(need) scan();
+  });
+  try{
+    mo.observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+})();
+</script>
+
+
+<!-- TAGLINE-ROTATOR -->
+<script>
+(function(){
+  if (window.__taglineRotatorInstalled) return;
+  window.__taglineRotatorInstalled = true;
+
+  try {
+    var el = document.getElementById('tagline-rot');
+    if (!el) return;
+
+    // Frases base (puedes editarlas aquí)
+    var phrases = [
+      "Reta a un amigo",
+      "Dime un secreto",
+      "Confiesa algo",
+      "Manda un reto",
+      "Anónimo o no, tú decides"
+    ];
+
+    // Si el H2 ya trae texto (por SSR), úsalo como primer valor
+    var initial = (el.textContent || "").trim();
+    if (initial && phrases.indexOf(initial) === -1) {
+      phrases.unshift(initial);
+    }
+
+    var i = 0;
+    function tick(){
+      el.textContent = phrases[i];
+      i = (i + 1) % phrases.length;
+    }
+    tick();
+    // Evitar múltiple timers si el DOM se hidrata dos veces
+    if (!el.dataset.rotStarted){
+      el.dataset.rotStarted = "1";
+      setInterval(tick, 3500);
+    }
+  } catch (e) {
+    // silencio por seguridad
+  }
+})();
+</script>
+
+<script id="max-pages-guard">
+(function(){
+  if (window.__MAX_PAGES_GUARD__) return; window.__MAX_PAGES_GUARD__=true;
+  const MAX_PAGES = 200;
+  let pageCount = 1;
+  // Exponer contador por si la UI ya tiene su propio loader
+  window.PASTE12_MAX_PAGES = MAX_PAGES;
+  window.PASTE12_pageCount = () => pageCount;
+
+  // Interceptar clicks en botones "más" comunes
+  function guardMore(evt){
+    if (pageCount >= MAX_PAGES) {
+      evt && evt.preventDefault();
+      console.warn("Max pages reached:", MAX_PAGES);
+      const b = evt && evt.currentTarget;
+      if (b) { b.setAttribute('disabled',''); b.textContent = "Límite de páginas (200)"; }
+      return false;
+    }
+    pageCount++;
+    return true;
+  }
+  // Delegación: botones con clase .act.more (heurística presente en la UI)
+  document.addEventListener('click', function(e){
+    const el = e.target.closest && e.target.closest('.act.more');
+    if (!el) return;
+    if (!guardMore(e)) return;
+  }, true);
+
+  // Interceptar fetch de “siguiente página” si el frontend usa fetch()
+  const _fetch = window.fetch;
+  window.fetch = function(url, init){
+    try{
+      if (typeof url === 'string' && /\/api\/notes\?/.test(url)) {
+        if (pageCount >= MAX_PAGES) {
+          return Promise.resolve(new Response(JSON.stringify({ok:false,error:"max_pages_reached"}),{
+            status: 429, headers: {'Content-Type':'application/json'}
+          }));
+        }
+        pageCount++;
+      }
+    }catch(_){}
+    return _fetch.apply(this, arguments);
+  };
+})();
+</script>
+
+<!-- p12 debug bootstrap -->
+<script id="debug-bootstrap-p12">
+(function () {
+  try {
+    var p = new URLSearchParams(location.search);
+    if (!p.has('debug')) return;
+
+    // 1) Desregistrar SW antiguos (no rompe si no hay)
+    if ('serviceWorker' in navigator) {
+      try {
+        navigator.serviceWorker.getRegistrations().then(function(rs){
+          rs.forEach(function(r){ r.unregister(); });
+        });
+      } catch (_e) {}
+    }
+
+    // 2) UI mínima de diagnóstico
+    function addBox() {
+      var box = document.createElement('div');
+      box.style.cssText = 'position:fixed;right:12px;bottom:12px;padding:10px 12px;background:#111;color:#fff;font:12px/1.4 system-ui;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:42ch;z-index:99999';
+      box.innerHTML = '<b>p12 debug</b><div id="p12d"></div>';
+      document.body.appendChild(box);
+      return box.querySelector('#p12d');
+    }
+    function log(k,v){
+      var el = document.createElement('div');
+      el.textContent = k + ': ' + v;
+      root.appendChild(el);
+    }
+
+    var root = addBox();
+
+    // 3) checks rápidos
+    fetch('/api/health').then(function(r){ log('health', r.status); }).catch(function(){ log('health','ERR'); });
+
+    fetch('/api/deploy-stamp')
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var c = ((j && j.deploy && j.deploy.commit) || j.commit || '').slice(0,7);
+        var d = ((j && j.deploy && j.deploy.date)   || j.date   || '');
+        log('deploy', c + ' @ ' + d);
+      })
+      .catch(function(){ log('deploy','ERR'); });
+
+    fetch('/api/notes?limit=3', {headers:{'Accept':'application/json'}})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var n = (Array.isArray(j) ? j.length : ((j && j.items && j.items.length) || 0));
+        log('notes', n + ' items');
+      })
+      .catch(function(){ log('notes','ERR'); });
+
+  } catch (_e) {}
+})();
+</script>
+
+
+<!-- p12 PE shim (solo ?pe=1) -->
+<script id="pe-shim-p12">
+(function(){
+  try {
+    var p = new URLSearchParams(location.search);
+    if (!p.has('pe')) return;
+
+    var root = document.createElement('div');
+    root.style.cssText = 'margin:16px;padding:12px;border:1px dashed #aaa;border-radius:10px;background:#fafafa';
+    root.innerHTML = '<b>PE shim</b> — listado mínimo de /api/notes';
+    var list = document.createElement('div');
+    list.style.cssText = 'margin-top:8px;font:14px system-ui';
+    root.appendChild(list);
+    (document.body || document.documentElement).appendChild(root);
+
+    fetch('/api/notes?limit=5',{headers:{'Accept':'application/json'}})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var items = (j && j.items) || [];
+        if (!items.length) { list.textContent = '(sin items)'; return; }
+        var ul = document.createElement('ul');
+        items.forEach(function(it){
+          var li = document.createElement('li');
+          li.textContent = '#'+it.id+': '+(it.text || it.summary || '(sin texto)');
+          ul.appendChild(li);
+        });
+        list.appendChild(ul);
+      })
+      .catch(function(){ list.textContent = 'error cargando'; });
+  } catch (_e) {}
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script id="p12-hotfix-v4">
+(()=>{'use strict';
+if (window.__P12_HOTFIX_V4__) return; window.__P12_HOTFIX_V4__=true;
+
+const Q=new URLSearchParams(location.search);
+
+// Apaga SW/banners si ?nosw=1 o ?debug=1
+if((Q.has('nosw')||Q.has('debug')) && 'serviceWorker' in navigator){
+  try{navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));}catch(e){}
+  try{if(caches&&caches.keys) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)));}catch(e){}
+}
+(function killBanners(){
+  const BAD=[/nueva versión disponible/i,/actualiza para ver/i,/update available/i];
+  for(const el of Array.from(document.body.querySelectorAll('*'))){
+    const t=(el.textContent||'').trim(); if(!t) continue;
+    if(BAD.some(rx=>rx.test(t))){
+      try{ el.closest('[role="alert"],.toast,.snackbar,.banner')?.remove(); }catch(_){}
+      try{ el.remove(); }catch(_){}
+    }
+  }
+})();
+
+// ==== Helpers
+const $=(s,c=document)=>c.querySelector(s);
+const $$=(s,c=document)=>Array.from(c.querySelectorAll(s));
+const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+// ==== Feed unificado
+const FEED_SEL = '#list, .list, [data-notes], [data-feed], #notes, #feed';
+let FEED = $(FEED_SEL);
+if(!FEED){ FEED = document.createElement('section'); FEED.id='list'; (document.body||document.documentElement).appendChild(FEED); }
+
+// ==== Flash
+function flash(ok,msg){
+  let el = $('#msg'); if(!el){ el=document.createElement('div'); el.id='msg'; (document.body||document.documentElement).prepend(el); }
+  el.className = ok?'ok':'error'; el.textContent = msg;
+  setTimeout(()=>{ el.className='hidden'; el.textContent=''; }, 2200);
+}
+
+// ==== Render
+function cardHTML(it){
+  const txt = it.text || it.content || it.summary || '';
+  let short = txt, needMore=false;
+  if (txt.length > 180){ short = txt.slice(0,160)+'…'; needMore=true; }
+  return `
+    <article class="note" data-id="${it.id}">
+      <div data-text="1" data-full="${esc(txt)}">${esc(short)||'(sin texto)'}</div>
+      <div class="meta">#${it.id} · ❤ ${it.likes??0} · 👁 ${it.views??0}
+        <button class="act like" type="button">❤</button>
+        <button class="act more" type="button">⋯</button>
+      </div>
+      <div class="menu hidden">
+        ${needMore?'<button class="expand" type="button">Ver más</button>':''}
+        <button class="share"  type="button">Compartir</button>
+        <button class="report" type="button">Reportar 🚩</button>
+      </div>
+    </article>`;
+}
+function appendItems(items){
+  if(!items||!items.length) return;
+  const div=document.createElement('div');
+  div.innerHTML = items.map(cardHTML).join('');
+  FEED.append(...div.children);
+}
+
+// ==== Acciones delegadas (like/⋯/share/report/ver más)
+document.addEventListener('click', async (e)=>{
+  const art  = e.target.closest && e.target.closest('article.note');
+  const id   = art && art.getAttribute('data-id');
+  if(!art || !id) return;
+
+  const like = e.target.closest('button.like');
+  const more = e.target.closest('button.more');
+  const share= e.target.closest('button.share');
+  const rpt  = e.target.closest('button.report');
+  const exp  = e.target.closest('button.expand');
+
+  try{
+    if(like){
+      const r=await fetch(`/api/notes/${id}/like`,{method:'POST',credentials:'include'});
+      const j=await r.json().catch(()=>({}));
+      if(j && typeof j.likes!=='undefined'){
+        const m=art.querySelector('.meta');
+        if(m) m.innerHTML = m.innerHTML.replace(/❤\s*\d+/, '❤ '+j.likes);
+      }
+    }else if(more){
+      art.querySelector('.menu')?.classList.toggle('hidden');
+    }else if(share){
+      const url = `${location.origin}/?id=${id}`;
+      if(navigator.share){ await navigator.share({title:`Nota #${id}`, url}); }
+      else { await navigator.clipboard.writeText(url); flash(true,'Link copiado'); }
+      art.querySelector('.menu')?.classList.add('hidden');
+    }else if(rpt){
+      const r=await fetch(`/api/notes/${id}/report`,{method:'POST',credentials:'include'});
+      const j=await r.json().catch(()=>({}));
+      if(j?.removed){ art.remove(); flash(true,'Nota eliminada'); }
+      else { flash(true,'Reporte enviado'); }
+      art.querySelector('.menu')?.classList.add('hidden');
+    }else if(exp){
+      const box=art.querySelector('[data-text]'); if(!box) return;
+      const full=box.getAttribute('data-full')||'';
+      const expanded = exp.getAttribute('data-expanded')==='1';
+      if(expanded){ box.textContent = (full.length>180? full.slice(0,160)+'…' : full); exp.textContent='Ver más'; exp.setAttribute('data-expanded','0'); }
+      else        { box.textContent = full; exp.textContent='Ver menos'; exp.setAttribute('data-expanded','1'); }
+    }
+  }catch(_){}
+}, {capture:true});
+
+// ==== Publicar (JSON con ttl_hours + fallback FORM)
+function pickTextarea(){ return document.querySelector('textarea[name=text], #text, textarea'); }
+function pickTTL(){ return document.querySelector('input[name=ttl_hours], #ttl, select[name=ttl_hours], select'); }
+function validateText(s){ return (s||'').trim().length >= 12; }
+
+async function publish(ev){
+  ev && ev.preventDefault && ev.preventDefault();
+  const ta = pickTextarea(); const ttl = pickTTL();
+  const text=(ta?.value||'').trim();
+  if(!validateText(text)){ flash(false,'Escribí un poco más (≥ 12 caracteres).'); return; }
+  const body={ text }; const v=parseInt(ttl?.value||'',10); if(Number.isFinite(v) && v>0) body.ttl_hours=v;
+
+  let r=null, j=null;
+  try{ r=await fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)}); }catch(_){}
+  if(!r || !r.ok){
+    const fd = new URLSearchParams(); fd.set('text', text); if(body.ttl_hours) fd.set('ttl_hours', String(body.ttl_hours));
+    try{ r=await fetch('/api/notes',{method:'POST',credentials:'include',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},body:fd}); }catch(_){}
+  }
+  try{ j=await r.json(); }catch(_){ j=null; }
+  if(!r || !r.ok || !j || j.ok===false){ flash(false,(j&&j.error)||('Error HTTP '+(r&&r.status))); return; }
+
+  // Prepend nuevo item
+  const it = j.item || {id:j.id, text, likes:j.likes||0, views:0, timestamp:new Date().toISOString()};
+  const wrap=document.createElement('div'); wrap.innerHTML=cardHTML(it);
+  FEED.prepend(wrap.firstElementChild);
+  if(ta) ta.value=''; if(ttl) ttl.value='';
+  flash(true,'Publicado ✅');
+}
+
+// Bindeo de publicar (click + Ctrl/Cmd+Enter)
+window.addEventListener('DOMContentLoaded', ()=>{
+  const btn = document.getElementById('send'); if(btn){ btn.addEventListener('click', publish, {capture:true}); }
+  const ta  = pickTextarea(); if(ta){ ta.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) publish(e);}); }
+});
+
+// ==== Paginación keyset (Link / X-Next-Cursor) + botón único
+let nextURL=null, loading=false, seen=new Set(Array.from(document.querySelectorAll('article.note[data-id]')).map(x=>x.getAttribute('data-id')));
+
+function setMoreVisible(v){
+  let b=document.getElementById('p12-more'); if(!b){
+    b=document.createElement('button'); b.id='p12-more'; b.type='button';
+    b.textContent='Cargar más';
+    b.style.cssText='display:block;margin:12px auto;padding:.6rem 1rem;border-radius:999px;border:1px solid #e5e7eb;background:#fff;';
+    FEED.after(b);
+    b.onclick=()=>{ if(nextURL && !loading) fetchPage(nextURL); };
+  }
+  b.style.display = v ? '' : 'none';
+}
+
+function parseNext(res){
+  nextURL=null;
+  const link = res.headers.get('Link') || res.headers.get('link');
+  if(link){
+    const m=/<([^>]+)>;\s*rel="?next"?/i.exec(link); if(m) nextURL=m[1];
+  }
+  if(!nextURL){
+    try{
+      const xn = JSON.parse(res.headers.get('X-Next-Cursor')||'null');
+      if(xn && xn.cursor_ts && xn.cursor_id){
+        nextURL = `/api/notes?cursor_ts=${encodeURIComponent(xn.cursor_ts)}&cursor_id=${xn.cursor_id}`;
+      }
+    }catch(_){}
+  }
+  setMoreVisible(!!nextURL);
+}
+
+async function fetchPage(url){
+  loading=true;
+  try{
+    const r=await fetch(url,{headers:{'Accept':'application/json'},credentials:'include'});
+    const j=await r.json().catch(()=>({}));
+    const items=(Array.isArray(j)?j:(j.items||[])).filter(it=>!seen.has(String(it.id)));
+    items.forEach(it=>seen.add(String(it.id)));
+    appendItems(items);
+    parseNext(r);
+  }catch(_){
+    // en error ocultamos el botón para no confundir
+    setMoreVisible(false);
+  }finally{ loading=false; }
+}
+
+// Arranque: pag1
+window.addEventListener('DOMContentLoaded', ()=>{
+  const q=new URLSearchParams(location.search);
+  const pid=q.get('id');
+  if(pid){
+    (async()=>{
+      try{
+        const r=await fetch(`/api/notes/${encodeURIComponent(pid)}`,{headers:{'Accept':'application/json'},credentials:'include'});
+        const j=await r.json().catch(()=>({}));
+        const it=j&&j.item; const root=document.querySelector('#list,.list,[data-feed],#feed')||document.body;
+        if(it){ root.innerHTML = (function(){const d=document.createElement('div'); d.innerHTML=cardHTML(it); return d.innerHTML;})();
+                 document.title = `Nota #${it.id} – Paste12`; }
+        else { root.innerHTML = '<article class="note"><div>(Nota no encontrada)</div></article>'; }
+        const back=document.createElement('a'); back.href='/'; back.textContent='← Volver al feed';
+        back.className='btn'; back.style.margin='12px auto'; root.after(back);
+      }catch(_){}
+    })();
+    return; // no cargues el feed
+  }
+  fetchPage('/api/notes?limit=10');
+});})();
+</script>
+<style>/* oculta banners SW de versión */#deploy-stamp-banner{display:none!important}</style>
+</body>
+</html>
   try{
     const seen = new Set();
     // Cargar vistos previos (limitar a 500 ids para no crecer sin control)

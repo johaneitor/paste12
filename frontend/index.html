@@ -359,8 +359,26 @@ async function fetchPage(url){
 }
 
 // Arranque: pag1
-window.addEventListener('DOMContentLoaded', ()=>{ fetchPage('/api/notes?limit=10'); });
-})();
+window.addEventListener('DOMContentLoaded', ()=>{
+  const q=new URLSearchParams(location.search);
+  const pid=q.get('id');
+  if(pid){
+    (async()=>{
+      try{
+        const r=await fetch(`/api/notes/${encodeURIComponent(pid)}`,{headers:{'Accept':'application/json'},credentials:'include'});
+        const j=await r.json().catch(()=>({}));
+        const it=j&&j.item; const root=document.querySelector('#list,.list,[data-feed],#feed')||document.body;
+        if(it){ root.innerHTML = (function(){const d=document.createElement('div'); d.innerHTML=cardHTML(it); return d.innerHTML;})();
+                 document.title = `Nota #${it.id} – Paste12`; }
+        else { root.innerHTML = '<article class="note"><div>(Nota no encontrada)</div></article>'; }
+        const back=document.createElement('a'); back.href='/'; back.textContent='← Volver al feed';
+        back.className='btn'; back.style.margin='12px auto'; root.after(back);
+      }catch(_){}
+    })();
+    return; // no cargues el feed
+  }
+  fetchPage('/api/notes?limit=10');
+});})();
 </script>
 <style>/* oculta banners SW de versión */#deploy-stamp-banner{display:none!important}</style>
 </body>
