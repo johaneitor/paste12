@@ -338,30 +338,88 @@ h1{background:linear-gradient(90deg,#8fd3d0,#ffb38a,#f9a3c7);-webkit-background-
 <p>Podemos almacenar <code>cookies/localStorage</code> para mejorar la experiencia. No vendemos tu información.</p>
 </body></html>"""
 
+
+def _parse_post_note(environ):
+    """Devuelve (code, payload) o (None, {"text": "..."}). Tolerante a JSON, FORM y texto plano."""
+    try:
+        ctype = (environ.get("CONTENT_TYPE") or "").lower()
+        clen  = environ.get("CONTENT_LENGTH") or ""
+        try:
+            n = int(clen) if clen.strip() else 0
+        except Exception:
+            n = 0
+        # lee hasta n bytes si n>0; si no, best-effort
+        raw = environ["wsgi.input"].read(n) if n > 0 else (environ["wsgi.input"].read() or b"")
+        text = None
+        if "application/json" in ctype:
+            try:
+                import json as _json
+                obj = _json.loads((raw or b"").decode("utf-8") or "{}")
+                if isinstance(obj, dict):
+                    # Acepta top-level "text" o wrappers frecuentes
+                    text = obj.get("text") \
+                           or (obj.get("item") or {}).get("text") \
+                           or (obj.get("data") or {}).get("text")
+                elif isinstance(obj, str):
+                    text = obj
+            except Exception:
+                pass  # caerá a FORM/texto
+        if text is None and "application/x-www-form-urlencoded" in ctype:
+            from urllib.parse import parse_qs
+            qd = parse_qs((raw or b"").decode("utf-8"), keep_blank_values=True)
+            text = (qd.get("text") or [""])[0]
+        if text is None and "text/plain" in ctype:
+            text = (raw or b"").decode("utf-8")
+        # Best-effort extra: si nada funcionó y hay algo legible, intenta parsear como JSON y si no, como texto
+        if text is None and raw:
+            try:
+                import json as _json
+                obj = _json.loads((raw or b"").decode("utf-8"))
+                if isinstance(obj, dict):
+                    text = obj.get("text") or (obj.get("item") or {}).get("text")
+                elif isinstance(obj, str):
+                    text = obj
+            except Exception:
+                text = (raw or b"").decode("utf-8")
+        if text is None:
+            return 400, {"ok": False, "error": "text_required"}
+        return None, {"text": text}
+    except Exception as e:
+        return 500, {"ok": False, "error": f"parse_failed: {e}"}
+
 def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
     def _app(environ, start_response):
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
-
-        # Preflight CORS/OPTIONS para /api/*
-
         if path in ("/", "/index.html") and method in ("GET","HEAD"):
             if inner_app is None or os.environ.get("FORCE_BRIDGE_INDEX") == "1":
                 status, headers, body = _serve_index_html()
+                # Single-note flag injection (?id=..., ?note=...)
+                try:
+                    from urllib.parse import parse_qs as _pq
+                    _id=None
+                    if qs:
+                        _q=_pq(qs, keep_blank_values=True)
+                        _idv=_q.get('id') or _q.get('note')
+                        if _idv and _idv[0].isdigit(): _id=_idv[0]
+                    if _id:
+                        try:
+                            _b = body if isinstance(body,(bytes,bytearray)) else (body or b"")
+                            _b = _b.replace(b"<body", f"<body data-single=\"1\" data-note-id=\"{_id}\"".encode("utf-8"), 1)
+                            body = _b
+                        except Exception: pass
+                except Exception: pass
                 return _finish(start_response, status, headers, body, method)
-
         if path == "/terms" and method in ("GET","HEAD"):
             status, headers, body = _html(200, _TERMS_HTML)
             return _finish(start_response, status, headers, body, method)
         if path == "/privacy" and method in ("GET","HEAD"):
             status, headers, body = _html(200, _PRIVACY_HTML)
             return _finish(start_response, status, headers, body, method)
-
         if path == "/api/health" and method in ("GET","HEAD"):
             status, headers, body = _json(200, {"ok": True})
             return _finish(start_response, status, headers, body, method)
-        # Preflight CORS/OPTIONS para /api/*
         if method == "OPTIONS" and path.startswith("/api/"):
             origin = environ.get("HTTP_ORIGIN")
             hdrs = [
@@ -371,18 +429,13 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                 ("Access-Control-Max-Age", "86400"),
             ]
             if origin:
-                hdrs += [
-                    ("Access-Control-Allow-Origin", origin),
-                    ("Vary", "Origin"),
-                    ("Access-Control-Allow-Credentials", "true"),
-                    ("Access-Control-Expose-Headers", "Link, X-Next-Cursor, X-Summary-Applied, X-Summary-Limit"),
-                ]
-            req_hdrs = environ.get("HTTP_ACCESS_CONTROL_REQUEST_HEADERS")
-            if req_hdrs:
-                hdrs = [(k,v) for (k,v) in hdrs if k.lower() != "access-control-allow-headers"] + [("Access-Control-Allow-Headers", req_hdrs)]
+                hdrs += [("Access-Control-Allow-Origin", origin), ("Vary","Origin"), ("Access-Control-Allow-Credentials","true"), ("Access-Control-Expose-Headers","Link, X-Next-Cursor, X-Summary-Applied, X-Summary-Limit")]
             start_response("204 No Content", hdrs)
             return [b""]
 
+        # Home / index (+ single-note flag cuando viene ?id=)
+        # Preflight CORS/OPTIONS para /api/*
+        # Preflight CORS/OPTIONS para /api/*
 
         if path == "/api/deploy-stamp" and method in ("GET","HEAD"):
             try:
@@ -437,24 +490,16 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
                 pass
             return _finish(start_response, status, headers, body, method, extra_headers=extra)  # type: ignore[name-defined]
         if path == "/api/notes" and method == "POST":
-            try:
-                ctype = environ.get("CONTENT_TYPE","")
-                length = int(environ.get("CONTENT_LENGTH","0") or "0")
-                raw = environ["wsgi.input"].read(length) if length > 0 else b""
-                data = {}
-                if "application/json" in ctype:
-                    try: data = json.loads(raw.decode("utf-8") or "{}")
-                    except Exception: data = {}
-                else:
-                    from urllib.parse import parse_qs
-                    qd = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
-                    data = {k: v[0] for k,v in qd.items()}
-                code, payload = _insert_note(data)
-            except Exception as e:
-                code, payload = 500, {"ok": False, "error": str(e)}
+            _code_payload, _data = _parse_post_note(environ)
+            if _code_payload is not None:
+                code, payload = _code_payload, _data
+            else:
+                try:
+                    code, payload = _insert_note(_data)
+                except Exception as e:
+                    code, payload = 500, {"ok": False, "error": str(e)}
             status, headers, body = _json(code, payload)
             return _finish(start_response, status, headers, body, method)
-
         if path.startswith("/api/notes/") and method == "POST":
             tail = path.removeprefix("/api/notes/")
             try:
