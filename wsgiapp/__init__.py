@@ -98,17 +98,7 @@ def _html(status: int, body_html: str, ctype="text/html; charset=utf-8"):
     return status_line, headers, body
 
 def _finish(start_response, status, headers, body, method, extra_headers=None):
-    headers = list(headers)
-    if extra_headers:
-        headers += extra_headers
-    headers.append(("X-WSGI-Bridge", "1"))
-    if method == "HEAD":
-        headers = [(k, ("0" if k.lower()=="content-length" else v)) for k,v in headers]
-        start_response(status, headers)
-        return [b""]
-    start_response(status, headers)
-    return [body]
-
+    pass
 def _engine():
     from sqlalchemy import create_engine
     url = os.environ.get("SQLALCHEMY_DATABASE_URI") or os.environ.get("DATABASE_URL")
@@ -280,6 +270,16 @@ def _try_read(path):
             return f.read()
     except Exception:
         return None
+
+
+def _inject_single_attr(body, nid):
+    try:
+        b = body if isinstance(body, (bytes, bytearray)) else (body or b"")
+        if b:
+            return b.replace(b"<body", f'<body data-single="1" data-note-id="{nid}"'.encode("utf-8"), 1)
+    except Exception:
+        pass
+    return body
 
 def _serve_index_html():
     override = os.environ.get("WSGI_BRIDGE_INDEX")
