@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta name="p12-single" content="1">
 <meta name="p12-safe-shim" content="1">
   <meta name="ads-client" content="ca-pub-XXXXXXXXXXXXXXX">
   <meta charset="utf-8">
@@ -12,6 +11,19 @@
   <link rel="preconnect" href="https://pagead2.googlesyndication.com">
   <link rel="preconnect" href="https://googleads.g.doubleclick.net">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+<script>(function(){/* p12-single runtime injector */
+ try {
+   var isSingle = (document.body && document.body.dataset && document.body.dataset.single === "1");
+   if (!isSingle) {
+     var q = new URLSearchParams(location.search);
+     isSingle = q.has("id") || q.has("note");
+   }
+   if (isSingle && !document.querySelector("meta[name=\"p12-single\"]")) {
+     var m = document.createElement("meta");
+     m.name = "p12-single"; m.content = "1"; document.head.appendChild(m);
+   }
+ } catch(e) {}
+})();</script>
 </head>
 <body>
   <header class="topbar">
