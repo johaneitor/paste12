@@ -395,6 +395,15 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
         if path in ("/", "/index.html") and method in ("GET","HEAD"):
             if inner_app is None or os.environ.get("FORCE_BRIDGE_INDEX") == "1":
                 status, headers, body = _serve_index_html()
+                # P12: single-note flag si viene ?id= o ?note=
+                try:
+                    from urllib.parse import parse_qs as _pq
+                    _q = _pq(qs, keep_blank_values=True) if qs else {}
+                    _idv = _q.get('id') or _q.get('note')
+                    if _idv and (_idv[0] or '').isdigit():
+                        body = _inject_single_attr(body, _idv[0])
+                except Exception:
+                    pass
                 # Single-note flag injection (?id=..., ?note=...)
                 try:
                     from urllib.parse import parse_qs as _pq
