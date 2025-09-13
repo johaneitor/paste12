@@ -392,6 +392,24 @@ def _middleware(inner_app: Callable | None, is_fallback: bool) -> Callable:
         path   = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET").upper()
         qs     = environ.get("QUERY_STRING", "")
+        # P12: index guard v1 — sirve index y bandera single-note
+        if path in ("/", "/index.html") and method in ("GET","HEAD"):
+            try:
+                status, headers, body = _serve_index_html()
+            except Exception:
+                status, headers, body = "200 OK", [("Content-Type","text/html; charset=utf-8")], b"<!doctype html><meta charset=\"utf-8\"><title>Paste12</title><body><h1>Paste12</h1></body>"
+            # bandera data-single si viene ?id= o ?note=
+            try:
+                from urllib.parse import parse_qs as _pq
+                _q = _pq(qs, keep_blank_values=True) if qs else {}
+                _idv = _q.get("id") or _q.get("note")
+                if _idv and _idv[0].isdigit():
+                    _b = body if isinstance(body,(bytes,bytearray)) else (body or b"")
+                    body = _b.replace(b"<body", f'<body data-single="1" data-note-id="{_idv[0]}"'.encode("utf-8"), 1)
+            except Exception:
+                pass
+            return _finish(start_response, status, headers, body, method)
+
         if path in ("/", "/index.html") and method in ("GET","HEAD"):
             if inner_app is None or os.environ.get("FORCE_BRIDGE_INDEX") == "1":
                 status, headers, body = _serve_index_html()
@@ -715,3 +733,47 @@ except NameError:
                 return [b'{"ok": true}']
             start_response("404 Not Found", [("Content-Type","application/json; charset=utf-8")])
             return [b'{"ok": false, "error": "not_found"}']
+
+
+def _finish2(start_response, status, headers, body, method, extra_headers=None):
+    # normaliza headers
+    try:
+        hdrs = list(headers or [])
+    except Exception:
+        hdrs = []
+    if extra_headers:
+        try:
+            hdrs.extend(extra_headers)
+        except Exception:
+            pass
+    # body -> bytes
+    if isinstance(body, (bytes, bytearray)):
+        b = body
+    elif body is None:
+        b = b""
+    else:
+        try:
+            b = body.encode("utf-8")
+        except Exception:
+            b = b""
+    # Content-Type por defecto si falta
+    has_ct = False
+    for (k, _) in hdrs:
+        if str(k).lower() == "content-type":
+            has_ct = True
+            break
+    if not has_ct:
+        ct = "application/json; charset=utf-8" if (len(b) and b[:1] in (b"{", b"[")) else "text/html; charset=utf-8"
+        hdrs.append(("Content-Type", ct))
+    # HEAD => sin cuerpo (pero status/headers correctos)
+    if method == "HEAD":
+        hdrs = [(k,v) for (k,v) in hdrs if str(k).lower() != "content-length"]
+        start_response(status, hdrs)
+        return [b""]
+    # Content-Length consistente
+    hdrs = [(k,v) for (k,v) in hdrs if str(k).lower() != "content-length"]
+    hdrs.append(("Content-Length", str(len(b))))
+    start_response(status, hdrs)
+    return [b]
+# Fuerza alias
+_finish = _finish2
