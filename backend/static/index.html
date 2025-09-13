@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="es">
 <head>
+<script id="p12-single-detector">
+(()=>{
+  const isSingle = !!document.querySelector("meta[name=\"p12-single\"]") || (document.body && document.body.getAttribute("data-single")==="1");
+  window.__P12_SINGLE__ = isSingle;
+  if(isSingle) document.documentElement.classList.add("p12-single");
+})();
+</script>
 <meta name="p12-safe-shim" content="1">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
