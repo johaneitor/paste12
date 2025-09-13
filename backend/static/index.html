@@ -4,7 +4,8 @@
 <meta name="p12-safe-shim" content="v1.1">
 <title>Paste12 — Safe UI</title>
 <style>
-  :root { --fg:#111; --mut:#666; --bd:#eee; }
+  :root { --fg:#111; --mut:#666; --bd:#eee; --bg:#fafafa; }
+  html,body{background:var(--bg)}
   body {font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; padding:16px; color:var(--fg);}
   header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
   textarea{width:100%;min-height:96px;padding:8px}
@@ -36,8 +37,17 @@
       return {data, next};
     },
     async get(id) {
-      const r = await fetch(`/api/notes/${id}`, {credentials:'include'});
-      return r.ok ? r.json() : {ok:false};
+      // Intento primario: GET /api/notes/:id (si el backend lo expone)
+      try {
+        const r = await fetch(`/api/notes/${id}`, {credentials:'include'});
+        if (r.ok) return r.json();
+      } catch {}
+      // Fallback: traer cabeza del feed y buscar el id (sirve para notas recién creadas/compartidas)
+      try {
+        const {data} = await api.list();
+        const it = (data && data.items || []).find(x => String(x.id) === String(id));
+        return it ? {ok:true, item: it} : {ok:false};
+      } catch { return {ok:false}; }
     },
     async like(id){
       return fetch(`/api/notes/${id}/like`, {method:'POST'}).then(r=>r.json()).catch(()=>({ok:false}));
