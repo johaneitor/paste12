@@ -107,6 +107,35 @@ def _html(status: int, body_html: str, ctype="text/html; charset=utf-8"):
     status_line = f"{status} " + ("OK" if status == 200 else "ERROR")
     headers = [("Content-Type", ctype), ("Content-Length", str(len(body)))]
     return status_line, headers, body
+# P12 RETURNING GUARD HELPER (idempotent)
+def _bump_note_counter(db, note_id, col):
+    # col validada por whitelist para evitar SQL injection
+    if col not in ("likes","views","reports"):
+        return None
+    try:
+        cur = db.cursor()
+        sql = f"UPDATE note SET {col}=COALESCE({col},0)+1 WHERE id=%s RETURNING COALESCE(likes,0), COALESCE(views,0), COALESCE(reports,0)"
+        cur.execute(sql, (note_id,))
+        row = cur.fetchone()
+        cur.close()
+        if not row:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            return None
+        try:
+            db.commit()
+        except Exception:
+            pass
+        return {"likes": row[0], "views": row[1], "reports": row[2]}
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        return None
+
 
 def _finish(start_response, status, headers, body, method, extra_headers=None):
     try:
