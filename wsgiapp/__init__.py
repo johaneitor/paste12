@@ -179,6 +179,36 @@ def _finish(start_response, status, headers, body, method, extra_headers=None):
             pass
         return [b"internal error"]
 
+
+
+# BEGIN:p12_bump_helper
+def _bump_counter(db, note_id: int, field: str):
+    if field not in ("likes", "views", "reports"):
+        return False, {"ok": False, "error": "bad_field"}
+    try:
+        cur = db.cursor()
+        sql = (
+            "UPDATE note "
+            f"SET {field}=COALESCE({field},0)+1 "
+            "WHERE id=%s "
+            "RETURNING id, COALESCE(likes,0), COALESCE(views,0), COALESCE(reports,0)"
+        )
+        cur.execute(sql, (note_id,))
+        row = cur.fetchone()
+        cur.close()
+        if not row:
+            try: db.rollback()
+            except Exception: pass
+            return False, {"ok": False, "error": "not_found"}
+        try: db.commit()
+        except Exception: pass
+        return True, {"ok": True, "id": row[0], "likes": row[1], "views": row[2], "reports": row[3], "deduped": False}
+    except Exception:
+        try: db.rollback()
+        except Exception: pass
+        return False, {"ok": False, "error": "db_error"}
+# END:p12_bump_helper
+
 # === P12_DIAG_MW_V1: diag/import + deploy-stamp middleware (append-only, idempotente) ===
 try:
     import os, json, datetime, re
