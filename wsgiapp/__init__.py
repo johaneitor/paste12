@@ -13,8 +13,6 @@ def _json(code, payload):
     ]
     return status, headers, body
 
-
-
 T = _text
 import os, sys, json, mimetypes, hashlib
 from importlib import import_module
@@ -135,7 +133,6 @@ def _bump_note_counter(db, note_id, col):
         except Exception:
             pass
         return None
-
 
 def _finish(start_response, status, headers, body, method, extra_headers=None):
     try:
