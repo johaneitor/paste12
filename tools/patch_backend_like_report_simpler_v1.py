@@ -1,42 +1,42 @@
 #!/usr/bin/env python3
-import re, sys, pathlib
+import re, sys
+from pathlib import Path
 
-W = pathlib.Path("wsgiapp/__init__.py")
+W = Path("wsgiapp/__init__.py")
 src = W.read_text(encoding="utf-8", errors="ignore").replace("\r\n","\n")
 
-changed = False
+HELPER = (
+    "# BEGIN:p12_bump_helper\n"
+    "def _bump_counter(db, note_id: int, field: str):\n"
+    "    if field not in (\"likes\", \"views\", \"reports\"):\n"
+    "        return False, {\"ok\": False, \"error\": \"bad_field\"}\n"
+    "    try:\n"
+    "        cur = db.cursor()\n"
+    "        sql = (\n"
+    "            \"UPDATE note \"\n"
+    "            f\"SET {field}=COALESCE({field},0)+1 \"\n"
+    "            \"WHERE id=%s \"\n"
+    "            \"RETURNING id, COALESCE(likes,0), COALESCE(views,0), COALESCE(reports,0)\"\n"
+    "        )\n"
+    "        cur.execute(sql, (note_id,))\n"
+    "        row = cur.fetchone()\n"
+    "        cur.close()\n"
+    "        if not row:\n"
+    "            try: db.rollback()\n"
+    "            except Exception: pass\n"
+    "            return False, {\"ok\": False, \"error\": \"not_found\"}\n"
+    "        try: db.commit()\n"
+    "        except Exception: pass\n"
+    "        return True, {\"ok\": True, \"id\": row[0], \"likes\": row[1], \"views\": row[2], \"reports\": row[3], \"deduped\": False}\n"
+    "    except Exception:\n"
+    "        try: db.rollback()\n"
+    "        except Exception: pass\n"
+    "        return False, {\"ok\": False, \"error\": \"db_error\"}\n"
+    "# END:p12_bump_helper\n"
+    "\n"
+)
 
-HELPER = """
-# BEGIN:p12_bump_helper
-def _bump_counter(db, note_id: int, field: str):
-    if field not in ("likes", "views", "reports"):
-        return False, {"ok": False, "error": "bad_field"}
-    try:
-        cur = db.cursor()
-        sql = (
-            "UPDATE note "
-            f"SET {field}=COALESCE({field},0)+1 "
-            "WHERE id=%s "
-            "RETURNING id, COALESCE(likes,0), COALESCE(views,0), COALESCE(reports,0)"
-        )
-        cur.execute(sql, (note_id,))
-        row = cur.fetchone()
-        cur.close()
-        if not row:
-            try: db.rollback()
-            except Exception: pass
-            return False, {"ok": False, "error": "not_found"}
-        try: db.commit()
-        except Exception: pass
-        return True, {"ok": True, "id": row[0], "likes": row[1], "views": row[2], "reports": row[3], "deduped": False}
-    except Exception:
-        try: db.rollback()
-        except Exception: pass
-        return False, {"ok": False, "error": "db_error"}
-# END:p12_bump_helper
-""".strip() + "\n\n"
-
-# 0) Asegura helper sano (elimina versiones anteriores si quedaron)
+# 0) Limpia helpers anteriores y asegura uno sano
 src = re.sub(r'(?ms)^# BEGIN:p12_bump_helper.*?# END:p12_bump_helper\s*', '', src)
 src = re.sub(r'(?ms)^def[ \t]+_bump_counter\s*\([^)]*\):\s*\n(?:[ \t].*\n)*', '', src)
 
@@ -47,43 +47,43 @@ if mfin:
 else:
     src = src.rstrip() + "\n\n" + HELPER
 
-def replace_counter_block(src: str, field: str) -> tuple[str, int]:
+def replace_counter_block(s: str, field: str) -> tuple[str, int]:
     """
-    Busca un UPDATE de 'field' y reemplaza el bloque:
-      <indent>cur = db.cursor()
-      <indent>cur.execute("UPDATE note SET field=COALESCE(field,0)+1 WHERE id=%s ...")
-      ... (cualquier cosa) ...
-      <indent>return ...
-    por llamada a _bump_counter con manejo 200/404/500.
+    Reemplaza el bloque que hace UPDATE de `field` en el endpoint (like/report)
+    por una llamada a _bump_counter con manejo 200/404/500.
 
-    Hace solo un reemplazo por campo (el más típico). Repetir si hubiera múltiples.
+    Estrategia:
+      - Detecta línea con cur.execute(... UPDATE ... field ...)
+      - Busca hacia atrás el 'cur = db.cursor()' con la misma indentación
+      - Busca hacia adelante el siguiente 'return ...' con esa indentación
+      - Sustituye ese rango por el bloque seguro
     """
-    # 1) Localiza la línea del UPDATE del campo (captura indent)
+    # 1) línea del UPDATE (case-insensitive, SQL puede estar muy variado)
     upd = re.search(
-        rf'(?m)^(?P<ind>[ \t]+)cur\.execute\([^\n]*UPDATE\s+note\s+SET\s+{field}\b.*$',
-        src
+        rf'(?mi)^(?P<ind>[ \t]+)cur\.execute\([^\n]*update[ \t]+note[ \t]+set[ \t]+{field}\b.*$',
+        s
     )
     if not upd:
-        return src, 0
+        return s, 0
 
     ind = upd.group('ind')
     upd_start = upd.start()
 
-    # 2) Busca hacia atrás el "cur = db.cursor()" en la misma indent
-    before = src[:upd_start]
+    # 2) cursor anterior con misma indent
+    before = s[:upd_start]
     curm = list(re.finditer(rf'(?m)^{re.escape(ind)}cur\s*=\s*db\.cursor\(\)\s*$', before))
     if not curm:
-        return src, 0
+        return s, 0
     cur_line = curm[-1].start()
 
-    # 3) Busca hacia adelante el primer "return ..." con la misma indent
-    after = src[upd.start():]
+    # 3) siguiente return con misma indent
+    after = s[upd.start():]
     retm = re.search(rf'(?m)^{re.escape(ind)}return[^\n]*$', after)
     if not retm:
-        return src, 0
-    ret_end = upd.start() + retm.end()  # índice absoluto del final de esa línea
+        return s, 0
+    ret_end = upd.start() + retm.end()
 
-    # 4) Construye el bloque nuevo
+    # 4) bloque nuevo
     new_block = (
         f"{ind}ok, payload = _bump_counter(db, note_id, '{field}')\n"
         f"{ind}if ok:\n"
@@ -93,14 +93,14 @@ def replace_counter_block(src: str, field: str) -> tuple[str, int]:
         f"{ind}return _json(payload, status='500 Internal Server Error')\n"
     )
 
-    # 5) Reemplaza desde la línea del cursor hasta la línea return
-    new_src = src[:cur_line] + new_block + src[ret_end:]
-    return new_src, 1
+    # 5) reemplazo
+    new_s = s[:cur_line] + new_block + s[ret_end:]
+    return new_s, 1
 
 hits_total = 0
-for fld in ("likes", "reports"):  # view ya te da 404, no lo tocamos
+for fld in ("likes", "reports"):  # 'view' ya está bien, no lo tocamos
     src, hits = replace_counter_block(src, fld)
     hits_total += hits
 
-pathlib.Path(W).write_text(src, encoding="utf-8")
+W.write_text(src, encoding="utf-8")
 print(f"OK: helper sano y reemplazos aplicados={hits_total} (likes/reports)")

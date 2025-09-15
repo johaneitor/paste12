@@ -181,6 +181,8 @@ def _finish(start_response, status, headers, body, method, extra_headers=None):
 
 
 
+
+
 # BEGIN:p12_bump_helper
 def _bump_counter(db, note_id: int, field: str):
     if field not in ("likes", "views", "reports"):
