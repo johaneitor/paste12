@@ -1,54 +1,56 @@
 """
-Entrypoint robusto para Gunicorn en Render.
+Entrypoint robusto para Gunicorn en Render (v4).
 
-Orden de resolución:
-  1) Módulo por env P12_WSGI_MODULE (default: 'wsgiapp').
-  2) Atributo/factoría indicado por env P12_WSGI_CALLABLE (si existe).
-  3) Submódulos comunes: wsgi, app, application, main, server.
-  4) Nombres típicos (incluyendo privados con '_').
-  5) Escaneo de callables WSGI o factorías sin args que retornen uno.
-
-Si no encuentra, lanza un error con pistas de atributos públicos.
+- Usa P12_WSGI_MODULE (default 'wsgiapp') y P12_WSGI_CALLABLE como hints.
+- Acepta SOLO callables con firma WSGI (environ, start_response).
+- Factorías: intenta llamarlas SIN argumentos y valida que devuelvan WSGI.
+- Evita confundir helpers (p.ej. _bump_counter) con la app.
 """
 import os, importlib, inspect
 
 SUBMODULES = ("wsgi", "app", "application", "main", "server")
-CANDIDATE_NAMES = [
-    # públicos
+CANDIDATE_NAMES = (
     "app","application","create_app","make_app","build_app","get_app",
     "inner_app","wsgi_app","api","serve","main",
-    # privados comunes
     "_app","_application","_create_app","_make_app","_inner_app","_wsgi_app",
-]
+)
+
+def _positional_names(fn):
+    try:
+        sig = inspect.signature(fn)
+    except (ValueError, TypeError):
+        return []
+    names = []
+    for p in sig.parameters.values():
+        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD):
+            names.append(p.name)
+    return names
 
 def _is_wsgi_callable(obj):
     if not callable(obj):
         return False
-    try:
-        sig = inspect.signature(obj)
-        req = [p for p in sig.parameters.values()
-               if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-               and p.default is inspect._empty]
-        return len(req) >= 2  # environ, start_response
-    except (ValueError, TypeError):
-        # Callables C / objetos con __call__ sin firma util; aceptamos
+    names = [n.lower() for n in _positional_names(obj)]
+    # Debe aceptar EXACTAMENTE los dos primeros como environ/start_response
+    if len(names) >= 2 and names[0] in ("environ","env") and "start_response" in names[1]:
         return True
+    return False
 
 def _maybe_call_factory(obj):
+    if not callable(obj):
+        return None
     try:
         sig = inspect.signature(obj)
         req = [p for p in sig.parameters.values()
                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
                and p.default is inspect._empty]
         if len(req) == 0:
-            maybe = obj()
-            if _is_wsgi_callable(maybe):
-                return maybe
+            out = obj()
+            return out if _is_wsgi_callable(out) else None
     except (ValueError, TypeError):
+        # No podemos inspeccionar: probá con llamada vacía y validá
         try:
-            maybe = obj()
-            if _is_wsgi_callable(maybe):
-                return maybe
+            out = obj()
+            return out if _is_wsgi_callable(out) else None
         except Exception:
             return None
     return None
@@ -65,7 +67,7 @@ def _pick_from_module(mod):
             return maybe
         raise RuntimeError(f"P12_WSGI_CALLABLE='{hint}' no es WSGI válido en {mod.__name__}")
 
-    # 2) Candidatos por nombre
+    # 2) Candidatos frecuentes
     for name in CANDIDATE_NAMES:
         if hasattr(mod, name):
             obj = getattr(mod, name)
@@ -75,29 +77,32 @@ def _pick_from_module(mod):
             if maybe:
                 return maybe
 
-    # 3) Escaneo de callables directos
+    # 3) Escaneo (solo verdaderos WSGI, NO helpers sueltos)
     for name in dir(mod):
+        if name.startswith("_"):  # evitamos helpers privados tipo _bump_counter
+            continue
         obj = getattr(mod, name)
         if _is_wsgi_callable(obj):
             return obj
-    # 4) Escaneo de factorías sin args
-    for name in dir(mod):
-        obj = getattr(mod, name)
-        if callable(obj):
-            maybe = _maybe_call_factory(obj)
-            if maybe:
-                return maybe
-    return None
+
+    # 4) Error con pistas
+    public = [n for n in dir(mod) if not n.startswith("__")]
+    raise RuntimeError(
+        f"No encontré un WSGI app en '{mod.__name__}'. "
+        f"Probé nombres: {', '.join(CANDIDATE_NAMES)}. "
+        f"Atributos públicos: {', '.join(sorted(public)[:60])}"
+    )
 
 def _resolve_app():
     base = os.environ.get("P12_WSGI_MODULE", "wsgiapp")
-    # 0) Módulo base
     mod = importlib.import_module(base)
+
+    # Intento en módulo base
     app = _pick_from_module(mod)
     if app:
         return app
 
-    # 1) Submódulos típicos
+    # Submódulos típicos (wsgi, app, application, main, server)
     for sub in SUBMODULES:
         try:
             smod = importlib.import_module(f"{base}.{sub}")
@@ -107,12 +112,6 @@ def _resolve_app():
         if app:
             return app
 
-    # 2) Error con pistas
-    public = [n for n in dir(mod) if not n.startswith("__")]
-    raise RuntimeError(
-        f"No encontré un WSGI app en '{base}'. "
-        f"Probé submódulos: {', '.join(SUBMODULES)} y nombres: {', '.join(CANDIDATE_NAMES)}. "
-        f"Atributos públicos en {base}: {', '.join(sorted(public)[:60])}"
-    )
+    raise RuntimeError(f"No encontré WSGI app en módulo '{base}' ni submódulos {SUBMODULES}")
 
 app = _resolve_app()
