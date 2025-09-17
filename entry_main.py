@@ -29,7 +29,7 @@ def _is_wsgi_function(obj):
 def _is_wsgi_object(obj):
     if inspect.isclass(obj):
         return False
-    if hasattr(obj, "wsgi_app") and callable(obj):
+    if hasattr(obj, "wsgi_app") and callable(obj):  # Flask-like
         return True
     call = getattr(obj, "__call__", None)
     if call and callable(call):
@@ -38,7 +38,7 @@ def _is_wsgi_object(obj):
     return False
 
 def _build():
-    # 1) intentos directos en módulos probables
+    # 1) Intentos directos en módulos probables
     for modname, attr in CANDIDATES:
         try:
             mod = import_module(modname)
@@ -47,7 +47,7 @@ def _build():
                 return obj
         except Exception:
             pass
-    # 2) último recurso: si wsgiapp trae factoría, llamarla una sola vez
+    # 2) Último recurso: factoría interna de wsgiapp si existe
     try:
         wa = import_module("wsgiapp")
         if hasattr(wa, "_resolve_app"):
