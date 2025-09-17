@@ -35,6 +35,7 @@ def _is_wsgi_object(obj):
     return False
 
 def _build():
+    # 1) Intentos directos típicos (Flask/WSGI)
     for modname, attr in CANDIDATES:
         try:
             mod = import_module(modname)
@@ -43,7 +44,16 @@ def _build():
                 return obj
         except Exception:
             pass
-    tried = ", ".join([f"{m}:{a}" for m,a in CANDIDATES])
+    # 2) Fallback legacy: resolver interno de wsgiapp
+    try:
+        wa = import_module("wsgiapp")
+        if hasattr(wa, "_resolve_app"):
+            obj = wa._resolve_app()
+            if obj and (_is_wsgi_function(obj) or _is_wsgi_object(obj)):
+                return obj
+    except Exception:
+        pass
+    tried = ", ".join([f"{m}:{a}" for m,a in CANDIDATES]) + " + wsgiapp._resolve_app()"
     raise RuntimeError(f"entry_main: no encontré una app WSGI válida (intenté {tried})")
 
 _APP = _build()
