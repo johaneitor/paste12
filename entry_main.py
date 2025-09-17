@@ -35,7 +35,7 @@ def _is_wsgi_object(obj):
     return False
 
 def _build():
-    # 1) Intentos directos típicos (Flask/WSGI)
+    # 1) Intentos directos típicos
     for modname, attr in CANDIDATES:
         try:
             mod = import_module(modname)
@@ -44,11 +44,12 @@ def _build():
                 return obj
         except Exception:
             pass
-    # 2) Fallback legacy: resolver interno de wsgiapp
+    # 2) Fallback legacy: resolver interno de wsgiapp si existe
     try:
         wa = import_module("wsgiapp")
-        if hasattr(wa, "_resolve_app"):
-            obj = wa._resolve_app()
+        res = getattr(wa, "_resolve_app", None)
+        if callable(res):
+            obj = res()
             if obj and (_is_wsgi_function(obj) or _is_wsgi_object(obj)):
                 return obj
     except Exception:
