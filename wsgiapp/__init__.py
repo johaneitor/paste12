@@ -289,3 +289,75 @@ except Exception:
     # En caso de error, no rompemos la app
     pass
 # === /P12_DIAG_MW_V1 ===
+
+# --- P12: exportar 'app' de forma robusta para entornos que arrancan con 'wsgiapp:app' ---
+# Intenta backend.* y luego cae a la factoría local si existe.
+try:
+    app  # si ya existe, no hacemos nada
+except NameError:
+    from importlib import import_module
+    import inspect
+
+    def _p12_is_wsgi_function(obj):
+        if not callable(obj) or inspect.isclass(obj):
+            return False
+        try:
+            sig = inspect.signature(obj)
+            names = [p.name.lower() for p in sig.parameters.values()
+                     if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+        except (ValueError, TypeError):
+            return False
+        return len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response"
+
+    def _p12_is_wsgi_object(obj):
+        if inspect.isclass(obj):
+            return False
+        call = getattr(obj, "__call__", None)
+        if call and callable(call):
+            try:
+                sig = inspect.signature(call)
+                names = [p.name.lower() for p in sig.parameters.values()
+                         if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+                return len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response"
+            except (ValueError, TypeError):
+                return False
+        # frameworks como Flask suelen tener .wsgi_app y ser invocables
+        return hasattr(obj, "wsgi_app") and callable(obj)
+
+    def _p12_try_candidates():
+        candidates = [
+            ("backend.app", "app"),
+            ("backend.main", "app"),
+            ("backend.wsgi", "app"),
+            ("app", "app"),
+            ("run", "app"),
+        ]
+        for modname, attr in candidates:
+            try:
+                mod = import_module(modname)
+                obj = getattr(mod, attr, None)
+                if obj and (_p12_is_wsgi_function(obj) or _p12_is_wsgi_object(obj)):
+                    return obj
+            except Exception:
+                pass
+        return None
+
+    _p12_target = _p12_try_candidates()
+
+    if _p12_target is None:
+        # último recurso: si este módulo define _resolve_app(), úsalo una sola vez
+        try:
+            _p12_factory = globals().get("_resolve_app")
+            if callable(_p12_factory):
+                maybe = _p12_factory()
+                if maybe and (_p12_is_wsgi_function(maybe) or _p12_is_wsgi_object(maybe)):
+                    _p12_target = maybe
+        except Exception:
+            _p12_target = None
+
+    if _p12_target is None:
+        raise RuntimeError("wsgiapp: no pude exportar 'app' (backend.* y factoría fallaron)")
+
+    def app(environ, start_response):
+        return _p12_target(environ, start_response)
+# --- fin P12 ---
