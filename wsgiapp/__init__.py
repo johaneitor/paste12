@@ -361,3 +361,10 @@ except NameError:
     def app(environ, start_response):
         return _p12_target(environ, start_response)
 # --- fin P12 ---
+
+# --- P12 alias: exportar app desde entry_main para tolerar 'wsgiapp:app' ---
+try:
+    from entry_main import app as app
+except Exception as e:
+    raise RuntimeError(f"wsgiapp alias → entry_main:app falló: {e}")
+# --- fin alias P12 ---
