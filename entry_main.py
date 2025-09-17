@@ -1,4 +1,3 @@
-# Target WSGI explícito, sin dependencias extra.
 from importlib import import_module
 import inspect
 
@@ -8,8 +7,6 @@ CANDIDATES = [
     ("backend.wsgi", "app"),
     ("app", "app"),
     ("run", "app"),
-    ("wsgiapp", "app"),
-    ("wsgiapp", "application"),
 ]
 
 def _positional_names(fn):
@@ -29,7 +26,7 @@ def _is_wsgi_function(obj):
 def _is_wsgi_object(obj):
     if inspect.isclass(obj):
         return False
-    if hasattr(obj, "wsgi_app") and callable(obj):  # Flask-like
+    if hasattr(obj, "wsgi_app") and callable(obj):
         return True
     call = getattr(obj, "__call__", None)
     if call and callable(call):
@@ -38,7 +35,6 @@ def _is_wsgi_object(obj):
     return False
 
 def _build():
-    # 1) Intentos directos en módulos probables
     for modname, attr in CANDIDATES:
         try:
             mod = import_module(modname)
@@ -47,16 +43,7 @@ def _build():
                 return obj
         except Exception:
             pass
-    # 2) Último recurso: factoría interna de wsgiapp si existe
-    try:
-        wa = import_module("wsgiapp")
-        if hasattr(wa, "_resolve_app"):
-            obj = wa._resolve_app()
-            if obj and (_is_wsgi_function(obj) or _is_wsgi_object(obj)):
-                return obj
-    except Exception:
-        pass
-    tried = ", ".join([f"{m}:{a}" for m,a in CANDIDATES]) + " + wsgiapp._resolve_app()"
+    tried = ", ".join([f"{m}:{a}" for m,a in CANDIDATES])
     raise RuntimeError(f"entry_main: no encontré una app WSGI válida (intenté {tried})")
 
 _APP = _build()
