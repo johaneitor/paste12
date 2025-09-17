@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Start estable para Paste12: siempre a entry_main:app
+# Start estable para Paste12
 exec gunicorn entry_main:app \
   --chdir /opt/render/project/src \
   -w "${WEB_CONCURRENCY:-2}" -k gthread --threads "${THREADS:-4}" \
