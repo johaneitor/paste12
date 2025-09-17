@@ -1,10 +1,9 @@
 """
-Entrypoint robusto para Gunicorn (v6):
-- Tolera apps WSGI como objetos (ej. Flask) o funciones.
-- Prioriza módulos comunes: wsgiapp, backend.app/main/wsgi, app, run, server.
-- Si no encuentra, escanea el árbol del proyecto (sin venv/.git/__pycache__).
-- Evita helpers privados (_bump_counter, etc.).
-- Sin depender de APP_MODULE.
+Entrypoint robusto para Gunicorn (v7):
+- Solo acepta WSGI reales: funciones (environ,start_response) u objetos cuya __call__
+  tenga esa firma, o con atributo 'wsgi_app'.
+- Excluye clases, símbolos de 'typing', helpers privados, etc.
+- Busca primero en módulos comunes y luego escanea el repo (sin venv/.git).
 """
 import os, sys, importlib, inspect, types
 
@@ -13,7 +12,6 @@ PRIORITY_MODULES = [
     "backend.app", "backend.main", "backend.wsgi",
     "app", "run", "server", "application", "wsgi",
 ]
-
 SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", "node_modules"}
 
 def _positional_names(fn):
@@ -24,47 +22,34 @@ def _positional_names(fn):
     names = []
     for p in sig.parameters.values():
         if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD):
-            names.append(p.name)
-    return [n.lower() for n in names]
+            names.append(p.name.lower())
+    return names
 
 def _looks_wsgi_function(obj):
-    if not callable(obj): return False
+    if not callable(obj) or inspect.isclass(obj):
+        return False
     names = _positional_names(obj)
-    # Firma clásica WSGI
-    return len(names) >= 2 and names[0] in ("environ","env") and "start_response" in names[1]
+    return len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response"
 
 def _looks_wsgi_object(obj):
-    # Objetos tipo Flask u otros que son WSGI-callables
-    # Heurística: tienen atributo 'wsgi_app' o '__call__' y NO son helper privado
-    if hasattr(obj, "wsgi_app"):  # Flask, Starlette, etc.
+    # Objetos tipo Flask (instancias), u otros con __call__(environ,start_response)
+    if inspect.isclass(obj):
+        return False
+    if getattr(obj, "__module__", "").startswith("typing"):
+        return False
+    if hasattr(obj, "wsgi_app") and callable(obj):
+        # Flask expone wsgi_app y es invocable
         return True
-    if callable(obj) and not isinstance(obj, (types.FunctionType, types.BuiltinFunctionType)):
-        # callable no-función (clase con __call__)
-        return True
+    call = getattr(obj, "__call__", None)
+    if call and callable(call):
+        names = _positional_names(call)
+        if len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response":
+            return True
     return False
 
 def _is_private_name(name: str) -> bool:
-    return name.startswith("_") or "bump_counter" in name
-
-def _module_candidates_from_fs():
-    root = os.getcwd()
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
-        for f in filenames:
-            if not f.endswith(".py"): continue
-            if f in ("wsgi_entry.py",): continue
-            rel = os.path.relpath(os.path.join(dirpath, f), root)
-            parts = rel.split(os.sep)
-            if parts[-1] == "__init__.py":
-                parts = parts[:-1]
-            else:
-                parts[-1] = parts[-1].rsplit(".",1)[0]
-            if not parts: continue
-            mod = ".".join(parts)
-            # Ignorar tests y scripts de tools (normalmente no exportan WSGI)
-            if mod.startswith("tools.") or mod.endswith(".tests") or ".tests." in mod:
-                continue
-            yield mod
+    name = name.lower()
+    return name.startswith("_") or "bump_counter" in name or "typing" in name
 
 def _import_module(modname):
     try:
@@ -73,7 +58,7 @@ def _import_module(modname):
         return None
 
 def _pick_from_module(mod):
-    # 1) nombres típicos
+    # 1) nombres típicos (sin privados)
     for name in ("app","application","wsgi_app","inner_app"):
         if hasattr(mod, name):
             obj = getattr(mod, name)
@@ -83,16 +68,16 @@ def _pick_from_module(mod):
     for fac in ("create_app","make_app","build_app","get_app"):
         if hasattr(mod, fac):
             fn = getattr(mod, fac)
-            if callable(fn):
+            if callable(fn) and not inspect.isclass(fn):
                 try:
                     out = fn()
                     if _looks_wsgi_function(out) or _looks_wsgi_object(out):
                         return out
                 except Exception:
                     pass
-    # 3) escaneo de atributos públicos
+    # 3) escaneo de atributos públicos (evitar privados/sospechosos)
     for name in dir(mod):
-        if _is_private_name(name):  # evita helpers privados
+        if _is_private_name(name):
             continue
         try:
             obj = getattr(mod, name)
@@ -102,25 +87,47 @@ def _pick_from_module(mod):
             return obj
     return None
 
+def _module_candidates_from_fs():
+    root = os.getcwd()
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for f in filenames:
+            if not f.endswith(".py"):
+                continue
+            if f in ("wsgi_entry.py",):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, f), root)
+            parts = rel.split(os.sep)
+            if parts[-1] == "__init__.py":
+                parts = parts[:-1]
+            else:
+                parts[-1] = parts[-1].rsplit(".", 1)[0]
+            if not parts:
+                continue
+            mod = ".".join(parts)
+            if mod.startswith("tools.") or ".tests." in mod or mod.endswith(".tests"):
+                continue
+            yield mod
+
 def _resolve_app():
-    # 0) Intentos de alta prioridad
+    # 0) módulos priorizados
     tried = []
     for modname in PRIORITY_MODULES:
         mod = _import_module(modname)
-        tried.append(modname + (" (ok)" if mod else " (fail)"))
-        if not mod: continue
+        tried.append(f"{modname} {'OK' if mod else 'fail'}")
+        if not mod:
+            continue
         app = _pick_from_module(mod)
         if app:
             return app
-    # 1) Escaneo del árbol
+    # 1) escaneo del repo
     for modname in _module_candidates_from_fs():
         mod = _import_module(modname)
-        if not mod: continue
+        if not mod:
+            continue
         app = _pick_from_module(mod)
         if app:
             return app
-    # 2) Error con pistas
-    raise RuntimeError("No pude localizar una app WSGI en módulos probados: " + ", ".join(tried))
+    raise RuntimeError("No pude localizar una app WSGI. Probados: " + ", ".join(tried))
 
-# Resolvemos UNA VEZ en import (evita condiciones de carrera)
 app = _resolve_app()
