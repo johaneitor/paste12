@@ -1,0 +1,68 @@
+--- a/wsgiapp/__init__.py
++++ b/wsgiapp/__init__.py
+@@
++# --- Paste12 counters helper (v4): UPDATE ... RETURNING + fallback SELECT ---
++def _bump_counter(conn, note_id, field):
++    """
++    Incrementa likes/views/reports de una nota y devuelve (id, likes, views, reports).
++    Si la nota no existe, retorna None y el caller debe responder 404.
++    Usa UPDATE ... RETURNING si está disponible; si no, hace SELECT + UPDATE + SELECT.
++    """
++    if field not in ("likes", "views", "reports"):
++        raise ValueError("invalid field: %r" % (field,))
++    cur = conn.cursor()
++    row = None
++    try:
++        # Intento con RETURNING (Postgres y SQLite >=3.35)
++        try:
++            sql = f"UPDATE notes SET {field} = {field} + 1 WHERE id = ? RETURNING id, likes, views, reports"
++            cur.execute(sql, (note_id,))
++            row = cur.fetchone()
++        except Exception:
++            row = None
++        if row is None:
++            # Fallback portable
++            cur.execute("SELECT id FROM notes WHERE id = ?", (note_id,))
++            if cur.fetchone() is None:
++                return None
++            cur.execute(f"UPDATE notes SET {field} = {field} + 1 WHERE id = ?", (note_id,))
++            cur.execute("SELECT id, likes, views, reports FROM notes WHERE id = ?", (note_id,))
++            row = cur.fetchone()
++        conn.commit()
++        return {"id": row[0], "likes": row[1], "views": row[2], "reports": row[3]}
++    finally:
++        try:
++            cur.close()
++        except Exception:
++            pass
++
+@@
+-def api_notes_like(environ, start_response, m):
+-    # ... implementación anterior ...
+-    pass
++def api_notes_like(environ, start_response, m):
++    nid = int(m.group(1))
++    res = _bump_counter(DB(), nid, "likes")
++    if res is None:
++        return _json(start_response, {"ok": False, "error": "not_found"}, status=404)
++    return _json(start_response, {"ok": True, **res})
+@@
+-def api_notes_view(environ, start_response, m):
+-    # ... implementación anterior ...
+-    pass
++def api_notes_view(environ, start_response, m):
++    nid = int(m.group(1))
++    res = _bump_counter(DB(), nid, "views")
++    if res is None:
++        return _json(start_response, {"ok": False, "error": "not_found"}, status=404)
++    return _json(start_response, {"ok": True, **res})
+@@
+-def api_notes_report(environ, start_response, m):
+-    # ... implementación anterior ...
+-    pass
++def api_notes_report(environ, start_response, m):
++    nid = int(m.group(1))
++    res = _bump_counter(DB(), nid, "reports")
++    if res is None:
++        return _json(start_response, {"ok": False, "error": "not_found"}, status=404)
++    return _json(start_response, {"ok": True, **res})

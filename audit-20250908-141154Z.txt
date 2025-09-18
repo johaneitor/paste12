@@ -1,0 +1,27 @@
+== HEALTH & DEPLOY ==
+HTTP/2 200 
+✓ deploy-stamp commit: 49d4ce98e6bdbe577b67b703b6c6f149b6b01967
+✓ deploy-stamp fecha: 2025-09-06T19:05:26Z
+---------------------------------------------
+== HEADERS ROOT ==
+HTTP/2 200 
+cache-control: no-store, no-cache, must-revalidate, max-age=0
+x-index-source: bridge
+x-wsgi-bridge: 1
+---------------------------------------------
+== CREATE NOTE (JSON y FORM) ==
+JSON id: 160
+FORM id: 161
+---------------------------------------------
+== TTL (GET /api/notes/:id) ==
+status: 
+✗ GET /api/notes/160 →  (posible 404 si handler no montado)
+---------------------------------------------
+== LIKES (dedupe + distinta FP + concurrencia) ==
+same-FP: 1 false -> 1 true
+{
+  "likes": "1",
+  "deduped": "true"
+}
+A/B/C => 2 -> 3 -> 4
+curl: (22) The requested URL returned error: 404

@@ -1,0 +1,63 @@
+
+===== INFO =====
+Base: https://paste12-rmsk.onrender.com
+UTC: Sun Sep  7 16:03:40 UTC 2025
+
+===== SALUD & DEPLOY =====
+  HTTP/2 200 
+  date: Sun, 07 Sep 2025 16:03:42 GMT
+  content-type: application/json; charset=utf-8
+  rndr-id: 5a1e63c5-ad7c-4253
+  vary: Accept-Encoding
+  x-render-origin-server: gunicorn
+  x-wsgi-bridge: 1
+  cf-cache-status: DYNAMIC
+  server: cloudflare
+  cf-ray: 97b7700bec8fba71-EZE
+  alt-svc: h3=":443"; ma=86400
+  
+deploy-stamp: 49d4ce98e6bdbe577b67b703b6c6f149b6b01967
+
+===== HEADERS / =====
+  HTTP/2 200 
+  date: Sun, 07 Sep 2025 16:03:43 GMT
+  content-type: text/html; charset=utf-8
+  cache-control: no-store, no-cache, must-revalidate, max-age=0
+  rndr-id: ac60649d-e805-4684
+  vary: Accept-Encoding
+  x-index-source: bridge
+  x-render-origin-server: gunicorn
+  x-wsgi-bridge: 1
+  cf-cache-status: DYNAMIC
+  server: cloudflare
+  cf-ray: 97b77015a80fba6b-EZE
+  alt-svc: h3=":443"; ma=86400
+  
+
+===== UI: BRAND & TAGLINE & PREVIEW =====
+h1.brand: 1   tagline-rot: 2   tagline (fijos): 0   'Ver más': 4
+
+===== TTL (CAP anunciado y efectivo) =====
+X-Max-TTL-Hours: <ausente>
+POST /api/notes (JSON) => 
+timestamp: 2025-09-07 16:03:45.569760+00:00
+expires  : 2025-09-08 04:03:45.569760+00:00
+TTL(h)   : 12.00
+
+===== LIKES (dedupe y concurrencia corta) =====
+same-FP: 1 false -> 1 true
+likes finales (esp 4): 4
+race Z: antes=4 despues=5 delta=1
+
+===== PAGINACIÓN (page1, Link next, X-Next-Cursor) =====
+GET page1 => 
+  link: </api/notes?cursor_ts=2025-09-06%2020%3A10%3A30.096609%2B00%3A00&cursor_id=130>; rel="next"
+  x-next-cursor: {"cursor_ts": "2025-09-06 20:10:30.096609+00:00", "cursor_id": 130}
+  id: 134
+  id: 133
+  id: 132
+  id: 131
+  id: 130
+
+===== FIN =====
+Copia: /data/data/com.termux/files/home/storage/downloads/audit-20250907-160340Z.txt

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta name="p12-v7" content="1">
+  <meta name="ads-client" content="ca-pub-XXXXXXXXXXXXXXX">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>paste12</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- Ads (sólo cambia tu client y slot cuando tengas el ID) -->
+  <link rel="preconnect" href="https://pagead2.googlesyndication.com">
+  <link rel="preconnect" href="https://googleads.g.doubleclick.net">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+<script id="p12-cohesion-v7" type="application/json">{"v":7}</script>
+  <!-- p12:cohesion v7 -->
+  <meta name="p12-cohesion" content="v7">
+  <script id="p12-nosw" data-nosw>if(location.search.includes("nosw=1")&&"serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}</script>
+</head>
+<body>
+  <header class="topbar">

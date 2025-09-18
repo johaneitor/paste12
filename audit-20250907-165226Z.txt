@@ -1,0 +1,33 @@
+== HEALTH & DEPLOY ==
+HTTP/2 200 
+{"ok": true, "commit": "49d4ce98e6bdbe577b67b703b6c6f149b6b01967", "stamp": "2025-09-06T19:05:26Z"}
+== TTL CAP (headers de /) ==
+HTTP/2 200 
+cache-control: no-store, no-cache, must-revalidate, max-age=0
+
+== PAGINATION headers ==
+HTTP/2 200 
+link: </api/notes?cursor_ts=2025-09-07%2016%3A48%3A03.288457%2B00%3A00&cursor_id=140>; rel="next"
+x-next-cursor: {"cursor_ts": "2025-09-07 16:48:03.288457+00:00", "cursor_id": 140}
+
+== AUTH no montado (register → 404) ==
+
+udflare
+cf-ray: 97b7b7876cf4ba67-EZE
+alt-svc: h3=":443"; ma=86400
+
+{"ok": true, "item": {"id": 143, "text": "audit note 2025-09-07T16:52:28Z \u2013 json cuerpo largo para validar (>= 80 chars) 1234567890 abcdefghij", "title": null, "url": null, "summary": null, "content": null, "timestamp": "2025-09-07 16:52:30.126227+00:00", "expires_at": "2025-09-08 04:52:30.126227+00:00", "likes": 0, "views": 0, "reports": 0, "author_fp": null}}
+== NOTES create (form-urlencoded) ==
+HTTP/2 201 
+date: Sun, 07 Sep 2025 16:52:30 GMT
+content-type: application/json; charset=utf-8
+rndr-id: 4bd5af33-548e-421c
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+x-wsgi-bridge: 1
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 97b7b78b8c81ba65-EZE
+alt-svc: h3=":443"; ma=86400
+
+{"ok": true, "item": {"id": 144, "text": "audit note 2025-09-07T16:52:29Z \u2013 form cuerpo largo para validar (>= 80 chars)", "title": null, "url": null, "summary": null, "content": null, "timestamp": "2025-09-07 16:52:30.820678+00:00", "expires_at": "2025-09-08 04:52:30.820678+00:00", "likes": 0, "views": 0, "reports": 0, "author_fp": null}}

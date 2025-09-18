@@ -74,3 +74,4 @@ backups_*/
 .pid_waitress
 server.log
 .server.pid
+.env.render

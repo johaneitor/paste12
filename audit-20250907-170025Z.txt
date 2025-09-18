@@ -1,0 +1,51 @@
+== HEALTH & DEPLOY ==
+HTTP/2 200 
+{"ok": true, "commit": "49d4ce98e6bdbe577b67b703b6c6f149b6b01967", "stamp": "2025-09-06T19:05:26Z"}
+== TTL CAP (header) ==
+cache-control: no-store, no-cache, must-revalidate, max-age=0
+
+== NOTES create (JSON y form) ==
+HTTP/2 201 
+date: Sun, 07 Sep 2025 17:00:29 GMT
+content-type: application/json; charset=utf-8
+rndr-id: 2da9f626-bdba-427f
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+x-wsgi-bridge: 1
+cf-cache-status: DYNAMIC
+
+HTTP/2 201 
+date: Sun, 07 Sep 2025 17:00:30 GMT
+content-type: application/json; charset=utf-8
+rndr-id: 27752cf4-9aa4-4c75
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+x-wsgi-bridge: 1
+cf-cache-status: DYNAMIC
+
+== PAGINATION (primera página, headers) ==
+HTTP/2 200 
+link: </api/notes?cursor_ts=2025-09-07%2016%3A48%3A04.837170%2B00%3A00&cursor_id=142>; rel="next"
+x-next-cursor: {"cursor_ts": "2025-09-07 16:48:04.837170+00:00", "cursor_id": 142}
+
+== LIKES smoke (resumen) ==
+== CREATE (JSON largo) ==
+✓ nota creada id=147
+---------------------------------------------
+== SAME-FP (dedupe) ==
+· same-FP => 1 false -> 1 true
+✓ dedupe OK
+---------------------------------------------
+== Concurrencia (10 likes misma FP; delta <= 1) ==
+· antes=1  despues=2  delta=1
+· códigos: { 10 200 }
+✓ concurrencia controlada (<= +1)
+---------------------------------------------
+== JSON shape (última respuesta) ==
+✓ JSON válido ok/id/likes
+---------------------------------------------
+RESUMEN: ok=4, fail=0
+
+== AUTH smoke (resumen) ==
+== register ==
+
