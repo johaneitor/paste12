@@ -1,54 +1,46 @@
-import io, json, re
-from typing import Callable, Iterable, Tuple, Optional
+import json, re, io
+from urllib.parse import unquote_plus
 
-StartResp = Callable[[str, list, object | None], Callable[[bytes], object]]
-WSGIApp   = Callable[[dict, StartResp], Iterable[bytes]]
+# Embed de HEAD para /api/deploy-stamp (lo reemplazamos más abajo)
+HEAD_SHA = "41ce418f05d516e3783442505b51fc40e92319bc"
 
-def _b(s: str) -> list[bytes]:
+def _b(s: str):
     return [s.encode("utf-8")]
 
-def _has(headers: list[Tuple[str,str]], key: str) -> bool:
+def _has(headers, key: str) -> bool:
     k = key.lower()
-    return any(h[0].lower() == k for h in headers)
+    return any(h[0].lower() == k for h in headers or [])
 
-def _capture(inner: WSGIApp, env: dict) -> tuple[str, list, bytes]:
-    cap = {"status": "500 Internal Server Error", "headers": []}
-    def _sr(status, headers, exc_info=None):
-        cap["status"]  = status
-        cap["headers"] = list(headers)
-        def _write(_): pass
-        return _write
-    body = b"".join(inner(env, _sr))
-    return cap["status"], cap["headers"], body
-
-def build_inner() -> Optional[WSGIApp]:
-    # 1) Ideal: backend.create_app()
+def _build_inner():
+    # 1) backend.create_app()
     try:
         from backend import create_app as _factory  # type: ignore
         return _factory()
     except Exception:
         pass
-    # 2) Fallback: resolver interno de wsgiapp (si existe)
+    # 2) wsgiapp._resolve_app()
     try:
         from wsgiapp import _resolve_app  # type: ignore
         return _resolve_app()
     except Exception:
         return None
 
-# Inyectado por el caller
-HEAD_SHA = "79435650dd5db3754d8665b8a308b4d3e56f0eb4"
-
-def application(environ: dict, start_response: StartResp):
-    path   = environ.get("PATH_INFO", "") or ""
+def application(environ, start_response):
+    path   = environ.get("PATH_INFO") or ""
     method = (environ.get("REQUEST_METHOD") or "GET").upper()
     q      = environ.get("QUERY_STRING") or ""
+    accept = (environ.get("HTTP_ACCEPT") or "")
 
-    # /api/health textual
+    # /api/health (dual: JSON si lo piden explícito)
     if path == "/api/health":
-        start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
-        return _b("health ok")
+        if "application/json" in accept:
+            start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
+            return _b('{"ok": true}')
+        else:
+            start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
+            return _b("health ok")
 
-    # /api/deploy-stamp (.txt y .json)
+    # /api/deploy-stamp (.txt o .json)
     if path == "/api/deploy-stamp" or path == "/api/deploy-stamp.json":
         if path.endswith(".json"):
             start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
@@ -57,7 +49,7 @@ def application(environ: dict, start_response: StartResp):
             start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
             return _b(HEAD_SHA)
 
-    # CORS preflight estable para /api/notes
+    # CORS preflight
     if method == "OPTIONS" and path == "/api/notes":
         start_response("204 No Content", [
             ("Access-Control-Allow-Origin",  "*"),
@@ -72,7 +64,7 @@ def application(environ: dict, start_response: StartResp):
         start_response("200 OK", [("Content-Type","text/html; charset=utf-8")])
         return []
 
-    # Adaptador de POST vacío → error canónico (para /api/notes)
+    # Adaptador de POST vacío → error canónico
     if method == "POST" and path == "/api/notes":
         clen = (environ.get("CONTENT_LENGTH") or "").strip()
         try:
@@ -83,87 +75,87 @@ def application(environ: dict, start_response: StartResp):
             start_response("400 Bad Request", [("Content-Type","application/json; charset=utf-8")])
             return _b('{"ok": false, "error": "text_required"}')
 
-    # Helper: subrequest interna GET /api/notes?id=ID
-    def _exists(inner: WSGIApp, base_env: dict, note_id: str) -> bool:
-        env2 = dict(base_env)
-        env2["REQUEST_METHOD"] = "GET"
-        env2["PATH_INFO"]      = "/api/notes"
-        env2["QUERY_STRING"]   = f"id={note_id}"
-        env2["CONTENT_LENGTH"] = "0"
-        env2["wsgi.input"]     = io.BytesIO(b"")
-        st, hd, body = _capture(inner, env2)
-        if not st.startswith("200"):
-            return False
-        try:
-            data = json.loads(body.decode("utf-8") or "{}")
-        except Exception:
-            return False
-        # Soportar lista o objeto
-        if isinstance(data, dict) and data.get("id") == int(note_id):
-            return True
-        if isinstance(data, list):
-            return any(isinstance(x, dict) and x.get("id") == int(note_id) for x in data)
-        return False
-
-    # Interceptar like/view/report (POST) con fallback robusto
-    if method == "POST" and path in ("/api/notes/like", "/api/notes/view", "/api/notes/report"):
-        inner = build_inner()
-        if inner is None:
-            start_response("500 Internal Server Error", [("Content-Type","application/json; charset=utf-8")])
-            return _b('{"ok": false, "error": "no_inner_app"}')
-
-        # 1º intento: dejar actuar al backend tal cual
-        st, hd, body = _capture(inner, environ)
-        if st.startswith("2"):
-            # OK directo del backend
-            start_response(st, hd)
-            return [body]
-
-        # Extraer id del query o del JSON body
-        m = re.search(r'(?:^|&)id=(\d+)(?:&|$)', (environ.get("QUERY_STRING") or ""))
-        note_id = m.group(1) if m else None
-        if note_id is None:
-            # Intentar leer body JSON
-            try:
-                n = int(environ.get("CONTENT_LENGTH") or "0")
-                raw = environ.get("wsgi.input").read(n) if n else b""
-                obj = json.loads(raw.decode("utf-8") or "{}")
-                if isinstance(obj, dict) and isinstance(obj.get("id"), int):
-                    note_id = str(obj["id"])
-            except Exception:
-                note_id = None
-
-        # Fallback: si existe, devolvemos OK canónico; si no, 404
-        if note_id and _exists(inner, environ, note_id):
-            start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
-            return _b(json.dumps({"ok": True, "id": int(note_id)}))
-        else:
-            start_response("404 Not Found", [("Content-Type","application/json; charset=utf-8")])
-            return _b('{"ok": false, "error": "not_found"}')
-
-    # Passthrough general + Link en GET /api/notes si falta
-    inner = build_inner()
+    inner = _build_inner()
     if inner is None:
         start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
         return _b("wsgi: sin app interna")
 
+    # Helper para invocar y capturar status/headers/body
+    def _invoke(env):
+        cap = {"status": None, "headers": None, "body": b""}
+        def _sr(status, headers, exc_info=None):
+            cap["status"], cap["headers"] = status, list(headers or [])
+            def _write(b):
+                if b: cap["body"] += b
+            return _write
+        chunks = list(inner(env, _sr))
+        if chunks:
+            cap["body"] += b"".join(chunks)
+        return cap
+
     injecting_link = (method == "GET" and path == "/api/notes")
+
+    # --- Camino normal / posible reintento FORM→JSON ---
+    if method == "POST" and path == "/api/notes":
+        ctyp = (environ.get("CONTENT_TYPE") or "").lower()
+        if "application/x-www-form-urlencoded" in ctyp:
+            # Bufferizamos el body para poder reintentar
+            try:
+                n = int(environ.get("CONTENT_LENGTH") or "0")
+            except Exception:
+                n = 0
+            raw = b""
+            wsgi_input = environ.get("wsgi.input")
+            if n and hasattr(wsgi_input, "read"):
+                raw = wsgi_input.read(n)
+            # 1ª pasada (FORM original)
+            env1 = dict(environ)
+            env1["CONTENT_LENGTH"] = str(len(raw))
+            env1["wsgi.input"] = io.BytesIO(raw)
+            r1 = _invoke(env1)
+            status = r1["status"] or "200 OK"
+            # Si no es 400, devolvemos tal cual
+            if not status.startswith("400"):
+                start_response(status, r1["headers"] or [])
+                return [r1["body"]] if r1["body"] else []
+            # Si fue 400, intentamos extraer text=... y reintentar como JSON
+            try:
+                form = raw.decode("utf-8")
+            except Exception:
+                form = ""
+            m = re.search(r'(?:^|&)text=([^&]+)', form)
+            if not m:
+                start_response(status, r1["headers"] or [])
+                return [r1["body"]] if r1["body"] else []
+            text = unquote_plus(m.group(1))
+            payload = json.dumps({"text": text}).encode("utf-8")
+            env2 = dict(environ)
+            env2["CONTENT_TYPE"]   = "application/json; charset=utf-8"
+            env2["CONTENT_LENGTH"] = str(len(payload))
+            env2["wsgi.input"]     = io.BytesIO(payload)
+            r2 = _invoke(env2)
+            start_response(r2["status"] or "200 OK", r2["headers"] or [])
+            return [r2["body"]] if r2["body"] else []
+        # Si no era form-urlencoded → camino normal
+        r = _invoke(environ)
+        start_response(r["status"] or "200 OK", r["headers"] or [])
+        return [r["body"]] if r["body"] else []
+
+    # GET /api/notes (inyectar Link si falta)
     cap = {"status": None, "headers": None}
-    def _sr(status: str, headers: list, exc_info=None):
-        cap["status"], cap["headers"] = status, list(headers)
+    def _sr(status, headers, exc_info=None):
+        cap["status"], cap["headers"] = status, list(headers or [])
         def _write(_): pass
         return _write
-
-    out = inner(environ, _sr)  # no tocamos body aquí
-    status: str = cap["status"] or "200 OK"
-    headers: list = list(cap["headers"] or [])
+    out_iter = list(inner(environ, _sr))
+    status = cap["status"] or "200 OK"
+    headers = list(cap["headers"] or [])
     if injecting_link and not _has(headers, "Link"):
         m = re.search(r'(?:^|&)limit=([^&]+)', q or "")
         limit = m.group(1) if m else "3"
         headers.append(("Link", f'</api/notes?limit={limit}&cursor=next>; rel="next"'))
-
     start_response(status, headers)
-    return out
+    return out_iter
 
 # Alias estándar
 app = application
