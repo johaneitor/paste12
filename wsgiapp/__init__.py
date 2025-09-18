@@ -8,6 +8,33 @@ def _p12_try_entry_app():
 
 def _p12_try_legacy_resolver():
     try:
+        ra = globals().get("_resolve_app")
+        if callable(ra):
+            a = ra()
+            return a if a else None
+    except Exception:
+        return None
+    return None
+
+def application(environ, start_response):
+    a = _p12_try_entry_app() or _p12_try_legacy_resolver()
+    if a is None:
+        start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
+        return [b"wsgiapp: no pude resolver la WSGI app (entry_main o _resolve_app)"]
+    return a(environ, start_response)
+
+app = application
+# --- END P12 SAFE EXPORT ---
+# --- P12 SAFE EXPORT (prepend) ---
+def _p12_try_entry_app():
+    try:
+        from entry_main import app as _a
+        return _a if callable(_a) else None
+    except Exception:
+        return None
+
+def _p12_try_legacy_resolver():
+    try:
         # Si _resolve_app existe más abajo, lo tomamos cuando el módulo termine de cargar
         ra = globals().get("_resolve_app")
         if callable(ra):
