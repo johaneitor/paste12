@@ -462,3 +462,10 @@ def app(environ, start_response):
 # Alias gunicorn convencional
 application = app
 # --- fin P12 export robusto ---
+
+
+# === P12 CONTRACT SHIM EXPORT ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass
