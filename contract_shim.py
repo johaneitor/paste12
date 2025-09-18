@@ -1,50 +1,46 @@
-import io, json, re
+import io, json, os, re
 from typing import Callable, Iterable, Tuple
 
 StartResp = Callable[[str, list, object | None], Callable[[bytes], object]]
 WSGIApp   = Callable[[dict, StartResp], Iterable[bytes]]
 
-def _b(s: str) -> list[bytes]:
-    return [s.encode("utf-8")]
-
+def _b(s: str) -> list[bytes]: return [s.encode("utf-8")]
 def _has(headers: list[Tuple[str,str]], key: str) -> bool:
-    k = key.lower()
-    return any(h[0].lower() == k for h in headers)
+    k = key.lower(); return any(h[0].lower() == k for h in headers)
 
 def build_inner() -> WSGIApp | None:
-    # 1) backend.create_app() si existe
+    # 1) backend.create_app()
     try:
         from backend import create_app as _factory  # type: ignore
         return _factory()
     except Exception:
         pass
-    # 2) Resolver propio del paquete wsgiapp (si existe)
+    # 2) wsgiapp._resolve_app() si existe
     try:
         from wsgiapp import _resolve_app  # type: ignore
         return _resolve_app()
     except Exception:
         return None
 
-HEAD_SHA = "REPLACED_AT_BUILD"  # lo reemplazamos más abajo
+HEAD_SHA = os.getenv("RENDER_GIT_COMMIT") or "20969c57fb4aedb60d0af5cef01c030959a66475"
 
 def application(environ: dict, start_response: StartResp):
-    path   = environ.get("PATH_INFO", "") or ""
+    path   = (environ.get("PATH_INFO") or "")
     method = (environ.get("REQUEST_METHOD") or "GET").upper()
     q      = environ.get("QUERY_STRING") or ""
 
-    # /api/health → JSON canónico
+    # /api/health → texto estricto
     if path == "/api/health":
-        start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
-        return _b('{"ok":true}')
+        start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
+        return _b("health ok")
 
-    # /api/deploy-stamp (.json o .txt)
-    if path == "/api/deploy-stamp" or path == "/api/deploy-stamp.json":
+    # /api/deploy-stamp (.txt/.json)
+    if path.startswith("/api/deploy-stamp"):
         if path.endswith(".json"):
             start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
             return _b(json.dumps({"rev": HEAD_SHA}))
-        else:
-            start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
-            return _b(HEAD_SHA)
+        start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
+        return _b(HEAD_SHA)
 
     # CORS preflight estable para /api/notes
     if method == "OPTIONS" and path == "/api/notes":
@@ -61,51 +57,37 @@ def application(environ: dict, start_response: StartResp):
         start_response("200 OK", [("Content-Type","text/html; charset=utf-8")])
         return []
 
-    # Adaptador de POST vacío → error canónico
+    # POST vacío → error canónico
     if method == "POST" and path == "/api/notes":
-        clen = (environ.get("CONTENT_LENGTH") or "").strip()
         try:
-            n = int(clen) if clen else 0
+            n = int((environ.get("CONTENT_LENGTH") or "0").strip() or "0")
         except Exception:
             n = 0
         if n == 0:
             start_response("400 Bad Request", [("Content-Type","application/json; charset=utf-8")])
             return _b('{"ok": false, "error": "text_required"}')
 
-    inner = build_inner()
-    if inner is None:
-        start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
-        return _b("wsgi: sin app interna")
-
-    # Helper para capturar status/headers
-    cap = {"status": None, "headers": None}
-    def _sr(status: str, headers: list, exc_info=None):
-        cap["status"], cap["headers"] = status, list(headers)
-        def _write(_: bytes): pass
-        return _write
-
-    # Reintento inteligente solo para POST /api/notes con form-urlencoded
-    def _maybe_retry_form(env: dict):
-        if not (method == "POST" and path == "/api/notes"):
-            return inner(env, _sr)
-        # Primera pasada
-        body1 = list(inner(env, _sr))
-        status = cap["status"] or "200 OK"
-        headers = cap["headers"] or []
-        if not status.startswith("400"):
-            return body1
+    # Adaptador: si inner devuelve 400 a FORM, reintentar como JSON {"text":...}
+    def _maybe_retry_form(inner, env, sr):
+        cap = {"status": None, "headers": None}
+        def _sr(status, headers, exc_info=None):
+            cap["status"], cap["headers"] = status, list(headers)
+            def _w(_): pass
+            return _w
+        body = list(inner(env, _sr))
+        st = (cap["status"] or "200 OK")
+        if not (method == "POST" and path == "/api/notes"): sr(st, cap["headers"] or []); return body
+        if not st.startswith("400"): sr(st, cap["headers"] or []); return body
         ctyp = (env.get("CONTENT_TYPE") or "").lower()
-        if "application/x-www-form-urlencoded" not in ctyp:
-            return body1
-        # Leemos el body original (puede estar consumido, toleramos fallo)
+        if "application/x-www-form-urlencoded" not in ctyp: sr(st, cap["headers"] or []); return body
+        # leer body original
         try:
             w = env["wsgi.input"]; n = int(env.get("CONTENT_LENGTH") or "0")
             raw = w.read(n).decode("utf-8") if n else ""
         except Exception:
-            return body1
+            sr(st, cap["headers"] or []); return body
         m = re.search(r'(?:^|&)text=([^&]+)', raw)
-        if not m:
-            return body1
+        if not m: sr(st, cap["headers"] or []); return body
         import urllib.parse as _u
         text = _u.unquote_plus(m.group(1))
         payload = json.dumps({"text": text}).encode("utf-8")
@@ -113,32 +95,49 @@ def application(environ: dict, start_response: StartResp):
         env2["CONTENT_TYPE"]   = "application/json; charset=utf-8"
         env2["CONTENT_LENGTH"] = str(len(payload))
         env2["wsgi.input"]     = io.BytesIO(payload)
-        # Segunda pasada
-        cap["status"], cap["headers"] = None, None
-        return inner(env2, _sr)
+        cap2 = {"status": None, "headers": None}
+        def _sr2(status, headers, exc_info=None):
+            cap2["status"], cap2["headers"] = status, list(headers)
+            def _w(_): pass
+            return _w
+        out2 = inner(env2, _sr2)
+        sr(cap2["status"] or "200 OK", cap2["headers"] or [])
+        return out2
 
-    # Normalizar like/view existentes a 200 + JSON {ok:true}
-    m_like = re.fullmatch(r"/api/notes/(\d+)/(like|view)", path)
-    if method == "POST" and m_like:
-        body = list(_maybe_retry_form(environ))
-        status = cap["status"] or "200 OK"
-        # Si es éxito (2xx), lo normalizamos a 200 + JSON
-        if status.startswith("20"):
-            start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
-            return _b('{"ok":true}')
-        # Si es error, propagamos tal cual
-        start_response(status, cap["headers"] or [])
-        return body
+    inner = build_inner()
+    if inner is None:
+        start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
+        return _b("wsgi: sin app interna")
 
-    # Passthrough general + inyección de Link en GET /api/notes
-    out = _maybe_retry_form(environ)
+    injecting_link = (method == "GET" and path == "/api/notes")
+    cap = {"status": None, "headers": None}
+    def _sr(status, headers, exc_info=None):
+        cap["status"], cap["headers"] = status, list(headers)
+        def _w(_): pass
+        return _w
+
+    out = _maybe_retry_form(inner, environ, _sr)
+
     status: str = cap["status"] or "200 OK"
     headers: list = list(cap["headers"] or [])
-
-    if method == "GET" and path == "/api/notes" and not _has(headers, "Link"):
+    if injecting_link and not _has(headers, "Link"):
         m = re.search(r'(?:^|&)limit=([^&]+)', q or "")
         limit = m.group(1) if m else "3"
         headers.append(("Link", f'</api/notes?limit={limit}&cursor=next>; rel="next"'))
+
+    # Parche "single flag" si el backend no lo pone (GET /api/notes/<id>)
+    if method == "GET" and re.fullmatch(r"/api/notes/\d+", path) and status.startswith("200"):
+        buf = b"".join(out)
+        try:
+            doc = json.loads(buf.decode("utf-8") or "{}")
+            if isinstance(doc, dict) and "single" not in doc:
+                doc["single"] = True
+                buf = json.dumps(doc).encode("utf-8")
+                headers = [h for h in headers if h[0].lower() != "content-length"]
+        except Exception:
+            pass
+        start_response(status, headers)
+        return [buf]
 
     start_response(status, headers)
     return out
