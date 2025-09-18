@@ -15,21 +15,21 @@ def build_inner() -> WSGIApp | None:
         return _factory()
     except Exception:
         pass
-    # 2) wsgiapp._resolve_app() si existe
+    # 2) wsgiapp._resolve_app() (si existe)
     try:
         from wsgiapp import _resolve_app  # type: ignore
         return _resolve_app()
     except Exception:
         return None
 
-HEAD_SHA = os.getenv("RENDER_GIT_COMMIT") or "20969c57fb4aedb60d0af5cef01c030959a66475"
+HEAD_SHA = os.getenv("RENDER_GIT_COMMIT") or "726674a3d0dfbb78f21f48455edc22d603e16ca5"
 
 def application(environ: dict, start_response: StartResp):
     path   = (environ.get("PATH_INFO") or "")
     method = (environ.get("REQUEST_METHOD") or "GET").upper()
     q      = environ.get("QUERY_STRING") or ""
 
-    # /api/health → texto estricto
+    # /api/health → texto estricto (lo que esperan tus tests)
     if path == "/api/health":
         start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
         return _b("health ok")
@@ -67,7 +67,7 @@ def application(environ: dict, start_response: StartResp):
             start_response("400 Bad Request", [("Content-Type","application/json; charset=utf-8")])
             return _b('{"ok": false, "error": "text_required"}')
 
-    # Adaptador: si inner devuelve 400 a FORM, reintentar como JSON {"text":...}
+    # Si inner devuelve 400 a FORM, reintentar como JSON {"text":...}
     def _maybe_retry_form(inner, env, sr):
         cap = {"status": None, "headers": None}
         def _sr(status, headers, exc_info=None):
@@ -80,14 +80,17 @@ def application(environ: dict, start_response: StartResp):
         if not st.startswith("400"): sr(st, cap["headers"] or []); return body
         ctyp = (env.get("CONTENT_TYPE") or "").lower()
         if "application/x-www-form-urlencoded" not in ctyp: sr(st, cap["headers"] or []); return body
+
         # leer body original
         try:
             w = env["wsgi.input"]; n = int(env.get("CONTENT_LENGTH") or "0")
             raw = w.read(n).decode("utf-8") if n else ""
         except Exception:
             sr(st, cap["headers"] or []); return body
+
         m = re.search(r'(?:^|&)text=([^&]+)', raw)
         if not m: sr(st, cap["headers"] or []); return body
+
         import urllib.parse as _u
         text = _u.unquote_plus(m.group(1))
         payload = json.dumps({"text": text}).encode("utf-8")
@@ -95,6 +98,7 @@ def application(environ: dict, start_response: StartResp):
         env2["CONTENT_TYPE"]   = "application/json; charset=utf-8"
         env2["CONTENT_LENGTH"] = str(len(payload))
         env2["wsgi.input"]     = io.BytesIO(payload)
+
         cap2 = {"status": None, "headers": None}
         def _sr2(status, headers, exc_info=None):
             cap2["status"], cap2["headers"] = status, list(headers)
