@@ -1,1 +1,1 @@
-from contract_shim import application, app  # export estable
+from contract_shim import application, app
