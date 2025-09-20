@@ -476,3 +476,10 @@ try:
     from contract_shim import application as application, app as app
 except Exception:
     pass
+
+
+# === CONTRACT SHIM EXPORT v6 ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass

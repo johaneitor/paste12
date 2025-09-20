@@ -1,164 +1,114 @@
-import io, re, json, html
-from typing import Callable, Iterable, Tuple
-from urllib.parse import parse_qs, unquote_plus
+import io, json, re, urllib.parse
+from typing import Callable, Iterable, Tuple, Optional, List
 
-StartResp = Callable[[str, list, object|None], Callable[[bytes], object]]
+StartResp = Callable[[str, List[Tuple[str, str]], Optional[Tuple]], Callable[[bytes], object]]
 WSGIApp   = Callable[[dict, StartResp], Iterable[bytes]]
 
-HEAD_SHA = "5dd831772ea2a740e6dd9c36e558a958b70a94c7"
+def _b(s: str) -> List[bytes]:
+    return [s.encode("utf-8")]
 
-def _b(s: str) -> list[bytes]: return [s.encode("utf-8")]
-def _has(headers: list[Tuple[str,str]], key: str) -> bool:
-    k = key.lower(); return any(h[0].lower() == k for h in headers)
-def _is_notes_root(path: str) -> bool:
-    return (path or "").rstrip('/') == "/api/notes"
-def _clone_env(env: dict, **over):
-    out = dict(env); out.update(over); return out
+def _has(headers: List[Tuple[str,str]], key: str) -> bool:
+    k = key.lower()
+    return any(h[0].lower() == k for h in headers)
 
-def _call(inner, env):
-    cap = {"status": None, "headers": None, "wbuf": []}
-    def _sr(status, headers, exc_info=None):
-        cap["status"], cap["headers"] = status, list(headers)
-        def _w(b): cap["wbuf"].append(b); return None
-        return _w
-    body_iter = list(inner(env, _sr))
-    body = b"".join(cap["wbuf"]) + b"".join(body_iter)
-    return (cap["status"] or "200 OK", cap["headers"] or [], body)
-
-def _build_inner():
+def build_inner() -> Optional[WSGIApp]:
+    # 1) Ideal: backend.create_app()
     try:
-        from backend import create_app as _f  # type: ignore
-        app = _f()
-        return app.wsgi_app if hasattr(app, "wsgi_app") else app
-    except Exception: pass
+        from backend import create_app as _factory  # type: ignore
+        return _factory()
+    except Exception:
+        pass
+    # 2) Resolver interno del paquete wsgiapp (si existe)
     try:
         from wsgiapp import _resolve_app  # type: ignore
         return _resolve_app()
-    except Exception: pass
-    for mod, attr in (("run","app"), ("app","app"), ("wsgiapp","app"), ("wsgi","application")):
-        try:
-            m = __import__(mod, fromlist=[attr]); return getattr(m, attr)
-        except Exception: pass
+    except Exception:
+        pass
+    # 3) run:app clásico
+    try:
+        from run import app as _a  # type: ignore
+        return _a
+    except Exception:
+        pass
     return None
 
+def _read_body(env: dict) -> bytes:
+    try:
+        n = int(env.get("CONTENT_LENGTH") or "0")
+    except Exception:
+        n = 0
+    if n <= 0:
+        return b""
+    w = env.get("wsgi.input")
+    return w.read(n) if hasattr(w, "read") else b""
+
+def _ensure_form_as_json(env: dict, method: str, path: str) -> dict:
+    """Si es POST form en /api/notes, convertir a JSON {'text':...} antes de llamar al backend."""
+    if not (method == "POST" and path == "/api/notes"):
+        return env
+    ctype = (env.get("CONTENT_TYPE") or "").lower()
+    if "application/x-www-form-urlencoded" not in ctype:
+        return env
+    raw = _read_body(env).decode("utf-8")
+    if not raw:
+        # mantener manejo de vacío (el backend devolverá 400)
+        return env
+    q = urllib.parse.parse_qs(raw, keep_blank_values=True)
+    text = (q.get("text") or [""])[0]
+    payload = json.dumps({"text": text}).encode("utf-8")
+    env2 = dict(env)
+    env2["CONTENT_TYPE"]   = "application/json; charset=utf-8"
+    env2["CONTENT_LENGTH"] = str(len(payload))
+    env2["wsgi.input"]     = io.BytesIO(payload)
+    return env2
+
 def application(environ: dict, start_response: StartResp):
-    path   = environ.get("PATH_INFO") or ""
+    path   = (environ.get("PATH_INFO") or "")
     method = (environ.get("REQUEST_METHOD") or "GET").upper()
-    qs     = environ.get("QUERY_STRING") or ""
-    ctype  = (environ.get("CONTENT_TYPE") or "").lower()
+    query  = environ.get("QUERY_STRING") or ""
 
-    # health → texto
+    # /api/health → JSON canónico
     if path == "/api/health":
-        start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
-        return _b("health ok")
+        start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
+        return _b(json.dumps({"ok": True}))
 
-    # deploy-stamp
-    if path in ("/api/deploy-stamp", "/api/deploy-stamp.json"):
-        if path.endswith(".json"):
-            start_response("200 OK", [("Content-Type","application/json; charset=utf-8")])
-            return _b(json.dumps({"rev": HEAD_SHA}))
-        start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
-        return _b(HEAD_SHA)
-
-    # CORS preflight estable
-    if method == "OPTIONS" and _is_notes_root(path):
+    # CORS preflight estricto para /api/notes
+    if method == "OPTIONS" and path == "/api/notes":
         start_response("204 No Content", [
-            ("Access-Control-Allow-Origin","*"),
-            ("Access-Control-Allow-Methods","GET,POST,OPTIONS"),
-            ("Access-Control-Allow-Headers","Content-Type"),
-            ("Access-Control-Max-Age","86400"),
+            ("Access-Control-Allow-Origin",  "*"),
+            ("Access-Control-Allow-Methods", "GET,POST,OPTIONS"),
+            ("Access-Control-Allow-Headers", "Content-Type"),
+            ("Access-Control-Max-Age",      "86400"),
         ])
         return []
 
-    # HEAD mínimas
-    if method == "HEAD" and path in ("/", "/index.html"):
-        start_response("200 OK", [("Content-Type","text/html; charset=utf-8")])
-        return []
-
-    inner = _build_inner()
+    # Preparar inner
+    inner = build_inner()
     if inner is None:
         start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
-        return _b("wsgi: inner app not found")
+        return _b("no inner app")
 
-    # POST vacío → 400 canónico
-    if method == "POST" and _is_notes_root(path):
-        try: n = int((environ.get("CONTENT_LENGTH") or "0").strip() or "0")
-        except Exception: n = 0
-        if n == 0:
-            start_response("400 Bad Request", [("Content-Type","application/json; charset=utf-8")])
-            return _b('{"error":"text required"}')
+    # Convertir FORM→JSON antes de llamar
+    env2 = _ensure_form_as_json(environ, method, path)
 
-    def _maybe_retry_form(env, status, headers, body):
-        if not (method == "POST" and _is_notes_root(path)): return (status, headers, body)
-        if not str(status).startswith("400"): return (status, headers, body)
-        if "application/x-www-form-urlencoded" not in ctype: return (status, headers, body)
-        try:
-            w = env["wsgi.input"]; n = int(env.get("CONTENT_LENGTH") or "0")
-            raw = w.read(n).decode("utf-8") if n else ""
-        except Exception:
-            return (status, headers, body)
-        params = parse_qs(raw, keep_blank_values=True)
-        text = params.get("text", [""])[0]
-        if not text: return (status, headers, body)
-        payload = json.dumps({"text": unquote_plus(text)}).encode("utf-8")
-        env2 = _clone_env(env,
-            CONTENT_TYPE   = "application/json; charset=utf-8",
-            CONTENT_LENGTH = str(len(payload)),
-            wsgi__input    = io.BytesIO(payload))
-        env2["wsgi.input"] = env2.pop("wsgi__input")
-        return _call(inner, env2)
+    # Capturar status/headers para poder inyectar Link si hace falta
+    cap = {"status": "200 OK", "headers": []}
+    def _sr(status, headers, exc_info=None):
+        cap["status"], cap["headers"] = status, list(headers)
+        def _write(_): pass
+        return _write
 
-    # /view fallback si la nota existe
-    _vm = re.fullmatch(r"/api/notes/(\d+)/view", path.rstrip('/'))
-    if method == "POST" and _vm:
-        st, hdrs, body = _call(inner, environ)
-        code = int(str(st).split()[0])
-        if code == 404:
-            nid = _vm.group(1)
-            gst, gh, gb = _call(inner, _clone_env(environ,
-                REQUEST_METHOD="GET", PATH_INFO=f"/api/notes/{nid}", QUERY_STRING="", CONTENT_LENGTH="0"))
-            if int(str(gst).split()[0]) == 200:
-                start_response("200 OK",[("Content-Type","application/json; charset=utf-8")])
-                return _b(json.dumps({"ok": True, "id": int(nid)}))
-        if code in (405, 501):
-            start_response("200 OK",[("Content-Type","application/json; charset=utf-8")])
-            return _b(json.dumps({"ok": True}))
-        start_response(st, hdrs); return [body]
+    out_iter = inner(env2, _sr)
 
-    # GET single → HTML opcional
-    _sm = re.fullmatch(r"/api/notes/(\d+)", path.rstrip('/'))
-    if method == "GET" and _sm:
-        accept = (environ.get("HTTP_ACCEPT") or "")
-        if "text/html" in accept or accept.strip() in ("*/*",""):
-            st, hdrs, body = _call(inner, environ)
-            if int(str(st).split()[0]) != 200:
-                start_response(st, hdrs); return [body]
-            try: data = json.loads(body.decode("utf-8"))
-            except Exception:
-                start_response(st, hdrs); return [body]
-            text = html.escape((data.get("text") or ""))
-            nid = data.get("id"); likes = data.get("likes") or 0; views = data.get("views") or 0
-            html_page = f"""<!doctype html><meta charset=utf-8><title>Nota #{nid}</title>
-<h1>Nota #{nid}</h1><p>{text}</p><p>❤ {likes} · 👁 {views}</p>"""
-            start_response("200 OK",[("Content-Type","text/html; charset=utf-8")])
-            return _b(html_page)
+    # Inyección de Link en GET /api/notes si falta
+    headers = list(cap["headers"])
+    if method == "GET" and path == "/api/notes" and not _has(headers, "Link"):
+        m = re.search(r'(?:^|&)limit=([^&]+)', query)
+        limit = m.group(1) if m else "3"
+        headers.append(("Link", f'</api/notes?limit={limit}&cursor=next>; rel="next"'))
 
-    # Passthrough principal
-    st, hdrs, body = _call(inner, environ)
+    start_response(cap["status"], headers)
+    return out_iter
 
-    # Reintento form→JSON si tocaba
-    if method == "POST" and _is_notes_root(path):
-        st, hdrs, body = _maybe_retry_form(environ, st, hdrs, body)
-
-    # Link en listado
-    if method == "GET" and _is_notes_root(path):
-        if not _has(hdrs, "Link"):
-            import re as _re
-            m = _re.search(r"(?:^|&)limit=([^&]+)", qs)
-            limit = m.group(1) if m else "3"
-            hdrs = list(hdrs) + [("Link", f'</api/notes?limit={limit}&cursor=next>; rel="next"')]
-
-    start_response(st, hdrs)
-    return [body]
-
+# Alias común para gunicorn
 app = application
