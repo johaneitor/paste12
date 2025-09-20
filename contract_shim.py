@@ -21,7 +21,7 @@ def _replace_status_to(status: str, new_code: int, new_text: str) -> str:
     # status: "500 Internal Server Error" → "404 Not Found"
     return f"{new_code} {new_text}"
 
-HEAD_SHA = "baa4067e297edcec1f0809a29758624e6af8bb03"
+HEAD_SHA = "e876efd2d6dd89692faa2e827c0e628732daa7bd"
 
 def build_inner() -> WSGIApp | None:
     # 1) Intentar backend.create_app() (ideal)
