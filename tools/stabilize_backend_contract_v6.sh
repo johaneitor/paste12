@@ -1,3 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SHA="$(git rev-parse HEAD 2>/dev/null || echo UNKNOWN)"
+
+cat > contract_shim.py <<'PY'
 import io, re, json, html
 from typing import Callable, Iterable, Tuple
 from urllib.parse import parse_qs, unquote_plus
@@ -5,7 +10,7 @@ from urllib.parse import parse_qs, unquote_plus
 StartResp = Callable[[str, list, object|None], Callable[[bytes], object]]
 WSGIApp   = Callable[[dict, StartResp], Iterable[bytes]]
 
-HEAD_SHA = "5dd831772ea2a740e6dd9c36e558a958b70a94c7"
+HEAD_SHA = "REPLACED_AT_BUILD"
 
 def _b(s: str) -> list[bytes]: return [s.encode("utf-8")]
 def _has(headers: list[Tuple[str,str]], key: str) -> bool:
@@ -162,3 +167,28 @@ def application(environ: dict, start_response: StartResp):
     return [body]
 
 app = application
+PY
+
+# Incrustar SHA
+python - <<PY
+from pathlib import Path
+p=Path("contract_shim.py"); s=p.read_text(encoding="utf-8")
+p.write_text(s.replace('HEAD_SHA = "REPLACED_AT_BUILD"','HEAD_SHA = "'+"${SHA}"+'"'), encoding="utf-8")
+print("✓ contract_shim.py incrustó ${SHA}")
+PY
+
+cat > wsgi.py <<'PY'
+from contract_shim import application, app
+PY
+
+python - <<'PY'
+import py_compile
+py_compile.compile('contract_shim.py', doraise=True); print("✓ py_compile contract_shim.py")
+py_compile.compile('wsgi.py', doraise=True);          print("✓ py_compile wsgi.py")
+try:
+    import py_compile; py_compile.compile('wsgiapp/__init__.py', doraise=True)
+except Exception: pass
+PY
+
+echo "➡️  Start Command sugerido:"
+echo "gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT"
