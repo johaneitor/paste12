@@ -25,7 +25,7 @@ def build_inner() -> Optional[WSGIApp]:
     except Exception:
         return None
 
-HEAD_SHA = "a883339ff43e5ad055c5ef9688b3ddcf9eaf7b65"
+HEAD_SHA = "f57d7ebed0fb397b060daf5ddd152275bfc74091"
 
 def _read_body(env: dict) -> bytes:
     try:
