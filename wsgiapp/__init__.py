@@ -469,3 +469,10 @@ try:
     from contract_shim import application as application, app as app
 except Exception:
     pass
+
+
+# === CONTRACT_SHIM_EXPORT ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass
