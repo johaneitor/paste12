@@ -1,1 +1,2 @@
-from contract_shim import application, app  # export
+# Gunicorn entrypoint
+from contract_shim import application, app  # reexport
