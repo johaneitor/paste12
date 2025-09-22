@@ -1,5 +1,13 @@
 # Simple export: Gunicorn cargará "wsgi:application"
 from contract_shim import application  # type: ignore
+try:
+    import db_runtime_guards as _dbg
+    _dbg.install(application)
+except Exception as _e:
+    try:
+        import sys; print('db guards skipped:', _e, file=sys.stderr)
+    except Exception:
+        pass
 
 # Ejecución local (opcional)
 if __name__ == "__main__":
