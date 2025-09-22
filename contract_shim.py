@@ -1,133 +1,73 @@
 # -*- coding: utf-8 -*-
 """
-Paste12 Contract Shim (v10)
-- Inyecta 'Link: <...>; rel="next"' y 'X-Next-Cursor' en GET /api/notes
-- Añade 'Access-Control-Expose-Headers: Link, X-Next-Cursor'
-- No toca tus rutas; funciona a nivel WSGI.
+Contract shim: garantiza que exista `application` (WSGI callable) para gunicorn.
+Intenta importar la app Flask desde módulos comunes y expone:
+    - application  (WSGI)
+    - app          (alias opcional)
+Además, agrega un after_request con CORS y soporta OPTIONS 204 para /api/notes.
 """
-import json, urllib.parse
+from __future__ import annotations
 
-HEAD_SHA = "9383639b018c15fba7bcb9ef7791364d9ab67f55"  # se rellena desde el shell
+import importlib
+from typing import Any
 
-class _CaptureStart(object):
-    __slots__ = ("status","headers","exc_info")
-    def __init__(self): self.status="200 OK"; self.headers=[]; self.exc_info=None
-    def __call__(self, status, headers, exc_info=None):
-        self.status = status; self.headers = list(headers); self.exc_info = exc_info
-        # devolvemos un write dummy si nos lo piden
-        def _write(_chunk): pass
-        return _write
+_app = None
 
-def _get_header(headers, name):
-    ln = name.lower()
-    for k,v in headers:
-        if k.lower()==ln: return v
-    return None
+CANDIDATES = [
+    # (module, attr)
+    ("wsgiapp", "app"),           # paquete local común
+    ("app", "app"),               # app.py -> app = Flask(...)
+    ("application", "application"),
+    ("main", "app"),
+]
 
-def _set_header(headers, name, value):
-    ln = name.lower()
-    for i,(k,v) in enumerate(headers):
-        if k.lower()==ln:
-            headers[i] = (k, value); return
-    headers.append((name, value))
-
-def _append_header(headers, name, value):
-    # no duplica si ya existe exactamente ese valor
-    existing = _get_header(headers, name)
-    if existing is None:
-        headers.append((name, value))
-        return
-    if value not in existing.split(","):
-        _set_header(headers, name, existing + ", " + value)
-
-def _maybe_inject_link(environ, status, headers, body_bytes):
-    try:
-        # Sólo GET /api/notes con 200 y JSON
-        if environ.get("REQUEST_METHOD") != "GET": return headers, body_bytes
-        if (environ.get("PATH_INFO") or "") != "/api/notes": return headers, body_bytes
-        if not status.startswith("200"): return headers, body_bytes
-        ctype = (_get_header(headers, "Content-Type") or "").lower()
-        if "application/json" not in ctype: return headers, body_bytes
-
-        data = body_bytes.decode("utf-8")
-        payload = json.loads(data)
-        items = payload if isinstance(payload, list) else (payload.get("items") if isinstance(payload, dict) else [])
-        if not isinstance(items, list) or not items:
-            return headers, body_bytes
-
-        # parse limit de la query (si existe)
-        qs = environ.get("QUERY_STRING") or ""
-        qd = urllib.parse.parse_qs(qs, keep_blank_values=True)
-        limit = None
+def _load_app():
+    global _app
+    for mod, attr in CANDIDATES:
         try:
-            if "limit" in qd and qd["limit"] and qd["limit"][0] not in (None,""):
-                limit = int(qd["limit"][0])
+            m = importlib.import_module(mod)
+            a = getattr(m, attr, None)
+            if a is not None:
+                return a
         except Exception:
-            limit = None
-
-        last = items[-1]
-        nid = last.get("id")
-        ts  = last.get("timestamp") or last.get("ts")
-        if nid is None or not ts:
-            return headers, body_bytes
-
-        qp = {"cursor_ts": ts, "cursor_id": str(nid)}
-        if limit: qp["limit"] = str(limit)
-        next_rel = "/api/notes?" + urllib.parse.urlencode(qp)
-
-        # Link y X-Next-Cursor
-        if _get_header(headers, "Link") is None:
-            headers.append(("Link", f"<{next_rel}>; rel=\"next\""))
-        _set_header(headers, "X-Next-Cursor", json.dumps({"cursor_ts": ts, "cursor_id": nid}))
-
-        # Exponer headers al frontend (CORS)
-        expose = _get_header(headers, "Access-Control-Expose-Headers") or ""
-        expose_list = [h.strip() for h in expose.split(",") if h.strip()]
-        for h in ("Link","X-Next-Cursor"):
-            if h not in expose_list: expose_list.append(h)
-        if expose_list:
-            _set_header(headers, "Access-Control-Expose-Headers", ", ".join(expose_list))
-
-    except Exception:
-        # silencio: nunca rompemos la respuesta original
-        return headers, body_bytes
-    return headers, body_bytes
-
-class P12ContractShim:
-    def __init__(self, app): self.app = app
-    def __call__(self, environ, start_response):
-        cap = _CaptureStart()
-        app_iter = self.app(environ, cap)
-        chunks = []
-        try:
-            for c in app_iter:
-                if c: chunks.append(c)
-        finally:
-            if hasattr(app_iter, "close"):
-                try: app_iter.close()
-                except Exception: pass
-
-        body = b"".join(chunks)
-        headers, body = _maybe_inject_link(environ, cap.status, cap.headers, body)
-        start_response(cap.status, headers, cap.exc_info)
-        return [body]
-
-def wrap_app_for_p12(app):
-    """ Idempotente: evita doble wrap. """
-    if getattr(app, "_p12_wrapped", False):
-        return app
-    wrapped = P12ContractShim(app)
-    setattr(wrapped, "_p12_wrapped", True)
-    return wrapped
-
-if __name__ == "__main__":
-    pass
-
-# ---- export alias for gunicorn ----
-try:
-    application  # type: ignore[name-defined]
-except NameError:  # pragma: no cover
+            continue
+    # como último intento: buscar variable "application" en wsgi.py
     try:
-        application = app  # type: ignore[name-defined]
-    except NameError:
+        m = importlib.import_module("wsgi")
+        a = getattr(m, "application", None) or getattr(m, "app", None)
+        if a is not None:
+            return a
+    except Exception:
         pass
+    raise RuntimeError("No se pudo localizar una app WSGI (Flask) para exponer como `application`")
+
+_app = _load_app()
+
+# Exponer API esperada por gunicorn
+application = _app
+app = _app  # alias, por compatibilidad
+
+# ====== Endurecer CORS & OPTIONS en /api/notes ======
+try:
+    from flask import request, make_response
+    @app.after_request
+    def _p12_cors(resp):
+        # CORS estándar
+        resp.headers.setdefault("Access-Control-Allow-Origin", "*")
+        resp.headers.setdefault("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS")
+        resp.headers.setdefault("Access-Control-Allow-Headers", "Content-Type, Accept")
+        resp.headers.setdefault("Access-Control-Max-Age", "600")
+        return resp
+
+    # Preflight manual para /api/notes
+    @app.route("/api/notes", methods=["OPTIONS"])
+    def _p12_options_notes():
+        r = make_response("", 204)
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        r.headers["Access-Control-Allow-Methods"] = "GET,POST,HEAD,OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
+        r.headers["Access-Control-Max-Age"] = "600"
+        return r
+except Exception:
+    # si no es Flask o falla, no bloqueamos el arranque
+    pass
