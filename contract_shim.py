@@ -119,3 +119,15 @@ def wrap_app_for_p12(app):
     wrapped = P12ContractShim(app)
     setattr(wrapped, "_p12_wrapped", True)
     return wrapped
+
+if __name__ == "__main__":
+    pass
+
+# ---- export alias for gunicorn ----
+try:
+    application  # type: ignore[name-defined]
+except NameError:  # pragma: no cover
+    try:
+        application = app  # type: ignore[name-defined]
+    except NameError:
+        pass

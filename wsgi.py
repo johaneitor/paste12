@@ -1,72 +1,17 @@
-# Gunicorn entrypoint
-from contract_shim import application, app  # reexport
-# --- Paste12 Contract Shim hook (v10) ---
+# Minimal, robust WSGI entry point for Render
+# Tries 'application' first, falls back to 'app' from contract_shim.
+import os
 try:
-    from contract_shim import wrap_app_for_p12
-    if 'application' in globals():
-        application = wrap_app_for_p12(application)
-except Exception as _e:
-    # nunca romper arranque
+    from contract_shim import application  # type: ignore
+    app = application  # alias
+except Exception:
+    from contract_shim import app as application  # type: ignore
+    app = application
+
+# Optional AdSense injection (if adsense_injector.py is present)
+try:
+    from adsense_injector import install_adsense_injector  # type: ignore
+    install_adsense_injector(application, os.environ.get("ADSENSE_CLIENT","ca-pub-9479870293204581"))
+except Exception:
+    # In production keep going even if injector isn't available
     pass
-# --- end shim hook ---
-# ### BEGIN:P12_ADSENSE_INJECTOR (no editar dentro de este bloque)
-import re
-from typing import Iterable, Callable, Tuple
-
-_P12_SNIPPET = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581"\n     crossorigin="anonymous"></script>\n'  # será rellenado por el shell script
-class _P12HeadInject:
-    def __init__(self, app, snippet_html: str):
-        self.app = app
-        # normalizamos a bytes una sola vez
-        self.snippet = (snippet_html or "").encode("utf-8")
-
-    def __call__(self, environ, start_response):
-        state = {}
-        def _capture_start(status: str, headers: list, exc_info=None):
-            state["status"] = status
-            state["headers"] = list(headers)
-            state["exc_info"] = exc_info
-            # devolvemos un no-op write (WSGI antiguo)
-            return lambda _chunk: None
-
-        result = self.app(environ, _capture_start)
-
-        # consumimos el iterable (respuestas pequeñas como index)
-        try:
-            body = b"".join(result)
-        finally:
-            if hasattr(result, "close"):
-                try: result.close()
-                except Exception: pass
-
-        headers = state.get("headers", [])
-        status  = state.get("status", "200 OK")
-        exc     = state.get("exc_info")
-
-        # ¿HTML?
-        ctype = ""
-        for k, v in headers:
-            if k.lower() == "content-type":
-                ctype = v or ""
-                break
-
-        if "text/html" in ctype and self.snippet:
-            try:
-                text = body.decode("utf-8", "ignore")
-                # ya insertado?
-                if "pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" not in text:
-                    # insertamos antes de </head> (case-insensitive)
-                    m = re.search(r"</head>", text, flags=re.IGNORECASE)
-                    if m:
-                        pos = m.start()
-                        text = text[:pos] + _P12_SNIPPET + text[pos:]
-                        body = text.encode("utf-8")
-                        # quitamos Content-Length si existía (chunked/auto)
-                        headers = [(k, v) for (k, v) in headers if k.lower() != "content-length"]
-            except Exception:
-                pass  # si algo falla, devolvemos tal cual
-
-        start_response(status, headers, exc)
-        return [body]
-
-# ### END:P12_ADSENSE_INJECTOR
