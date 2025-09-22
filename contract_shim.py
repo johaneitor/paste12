@@ -1,127 +1,121 @@
-# Paste12 Contract Shim v9 — backend hardening layer
-# - /api/health -> JSON {"ok":true}
-# - OPTIONS /api/notes -> 204 + CORS headers
-# - POST /api/notes (form) -> reintenta como JSON {"text":...}
-# - GET /api/notes -> inyecta Link: rel="next" si falta
-# - /api/deploy-stamp(.json) -> HEAD SHA
-# - passthrough para todo lo demás
+# -*- coding: utf-8 -*-
+"""
+Paste12 Contract Shim (v10)
+- Inyecta 'Link: <...>; rel="next"' y 'X-Next-Cursor' en GET /api/notes
+- Añade 'Access-Control-Expose-Headers: Link, X-Next-Cursor'
+- No toca tus rutas; funciona a nivel WSGI.
+"""
+import json, urllib.parse
 
-import io, json, re, urllib.parse
-from typing import Callable, Iterable, Tuple, Optional
+HEAD_SHA = "9383639b018c15fba7bcb9ef7791364d9ab67f55"  # se rellena desde el shell
 
-StartResp = Callable[[str, list, object | None], Callable[[bytes], object]]
-WSGIApp   = Callable[[dict, StartResp], Iterable[bytes]]
-
-HEAD_SHA = "f10427e1e984ad723a11772a047fc1db22bbe730"   # sustituido por script
-
-def _b(s: str) -> list[bytes]:
-    return [s.encode("utf-8")]
-
-def _has(headers: list[Tuple[str,str]], key: str) -> bool:
-    lk = key.lower()
-    return any(h[0].lower() == lk for h in headers)
-
-def _json(status: str, obj: dict) -> tuple[str, list[Tuple[str,str]], list[bytes]]:
-    body = json.dumps(obj, separators=(",",":")).encode("utf-8")
-    return status, [("Content-Type","application/json")], [body]
-
-def build_inner() -> Optional[WSGIApp]:
-    # 1) Intentá un app factory real
-    try:
-        from backend import create_app as _factory  # type: ignore
-        return _factory()
-    except Exception:
-        pass
-    # 2) Fallback al resolver del paquete wsgiapp (si existe)
-    try:
-        from wsgiapp import _resolve_app  # type: ignore
-        return _resolve_app()
-    except Exception:
-        return None
-
-def application(environ: dict, start_response: StartResp):
-    path   = environ.get("PATH_INFO") or ""
-    method = (environ.get("REQUEST_METHOD") or "GET").upper()
-    query  = environ.get("QUERY_STRING") or ""
-
-    # /api/health → JSON estable
-    if path == "/api/health":
-        status, headers, body = _json("200 OK", {"ok": True})
-        start_response(status, headers)
-        return body
-
-    # /api/deploy-stamp (.txt y .json)
-    if path == "/api/deploy-stamp" or path == "/api/deploy-stamp.json":
-        if path.endswith(".json"):
-            status, headers, body = _json("200 OK", {"rev": HEAD_SHA})
-            start_response(status, headers)
-            return body
-        else:
-            start_response("200 OK", [("Content-Type","text/plain; charset=utf-8")])
-            return _b(HEAD_SHA)
-
-    # Preflight CORS estable para /api/notes
-    if method == "OPTIONS" and path == "/api/notes":
-        headers = [
-            ("Access-Control-Allow-Origin","*"),
-            ("Access-Control-Allow-Methods","GET,POST,OPTIONS"),
-            ("Access-Control-Allow-Headers","Content-Type"),
-            ("Access-Control-Max-Age","86400"),
-        ]
-        start_response("204 No Content", headers)
-        return []
-
-    # HEAD estático útil (no bloqueante)
-    if method == "HEAD" and path in ("/", "/index.html"):
-        start_response("200 OK", [("Content-Type","text/html; charset=utf-8")])
-        return []
-
-    # Asegurar inner
-    inner = build_inner()
-    if inner is None:
-        start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
-        return _b("p12-shim: inner app missing")
-
-    # Adaptador: si POST form a /api/notes, convertir a JSON {"text":...}
-    if method == "POST" and path == "/api/notes":
-        ctyp = (environ.get("CONTENT_TYPE") or "").lower()
-        if "application/x-www-form-urlencoded" in ctyp:
-            try:
-                n = int(environ.get("CONTENT_LENGTH") or "0")
-            except Exception:
-                n = 0
-            raw = (environ.get("wsgi.input").read(n).decode("utf-8") if n else "")
-            text = urllib.parse.parse_qs(raw).get("text", [""])[0]
-            if not text:
-                status, headers, body = _json("400 Bad Request", {"error":"text required"})
-                start_response(status, headers)
-                return body
-            payload = json.dumps({"text": text}, separators=(",",":")).encode("utf-8")
-            env2 = dict(environ)
-            env2["CONTENT_TYPE"]   = "application/json; charset=utf-8"
-            env2["CONTENT_LENGTH"] = str(len(payload))
-            env2["wsgi.input"]     = io.BytesIO(payload)
-            return inner(env2, start_response)
-
-    # Passthrough con posibilidad de inyectar Link: rel="next" en GET /api/notes
-    injecting_link = (method == "GET" and path == "/api/notes")
-    cap = {"status":"", "headers": []}
-    def _sr(status: str, headers: list, exc_info=None):
-        cap["status"], cap["headers"] = status, list(headers)
-        def _write(_): pass
+class _CaptureStart(object):
+    __slots__ = ("status","headers","exc_info")
+    def __init__(self): self.status="200 OK"; self.headers=[]; self.exc_info=None
+    def __call__(self, status, headers, exc_info=None):
+        self.status = status; self.headers = list(headers); self.exc_info = exc_info
+        # devolvemos un write dummy si nos lo piden
+        def _write(_chunk): pass
         return _write
 
-    body_iter = inner(environ, _sr)
-    status     = cap["status"] or "200 OK"
-    headers    = list(cap["headers"] or [])
+def _get_header(headers, name):
+    ln = name.lower()
+    for k,v in headers:
+        if k.lower()==ln: return v
+    return None
 
-    if injecting_link and status.startswith("200") and not _has(headers, "Link"):
-        m = re.search(r'(?:^|&)limit=([^&]+)', query)
-        limit = m.group(1) if m else "3"
-        headers.append(("Link", f'</api/notes?limit={limit}&cursor=next>; rel="next"'))
+def _set_header(headers, name, value):
+    ln = name.lower()
+    for i,(k,v) in enumerate(headers):
+        if k.lower()==ln:
+            headers[i] = (k, value); return
+    headers.append((name, value))
 
-    start_response(status, headers)
-    return body_iter
+def _append_header(headers, name, value):
+    # no duplica si ya existe exactamente ese valor
+    existing = _get_header(headers, name)
+    if existing is None:
+        headers.append((name, value))
+        return
+    if value not in existing.split(","):
+        _set_header(headers, name, existing + ", " + value)
 
-# WSGI alias
-app = application
+def _maybe_inject_link(environ, status, headers, body_bytes):
+    try:
+        # Sólo GET /api/notes con 200 y JSON
+        if environ.get("REQUEST_METHOD") != "GET": return headers, body_bytes
+        if (environ.get("PATH_INFO") or "") != "/api/notes": return headers, body_bytes
+        if not status.startswith("200"): return headers, body_bytes
+        ctype = (_get_header(headers, "Content-Type") or "").lower()
+        if "application/json" not in ctype: return headers, body_bytes
+
+        data = body_bytes.decode("utf-8")
+        payload = json.loads(data)
+        items = payload if isinstance(payload, list) else (payload.get("items") if isinstance(payload, dict) else [])
+        if not isinstance(items, list) or not items:
+            return headers, body_bytes
+
+        # parse limit de la query (si existe)
+        qs = environ.get("QUERY_STRING") or ""
+        qd = urllib.parse.parse_qs(qs, keep_blank_values=True)
+        limit = None
+        try:
+            if "limit" in qd and qd["limit"] and qd["limit"][0] not in (None,""):
+                limit = int(qd["limit"][0])
+        except Exception:
+            limit = None
+
+        last = items[-1]
+        nid = last.get("id")
+        ts  = last.get("timestamp") or last.get("ts")
+        if nid is None or not ts:
+            return headers, body_bytes
+
+        qp = {"cursor_ts": ts, "cursor_id": str(nid)}
+        if limit: qp["limit"] = str(limit)
+        next_rel = "/api/notes?" + urllib.parse.urlencode(qp)
+
+        # Link y X-Next-Cursor
+        if _get_header(headers, "Link") is None:
+            headers.append(("Link", f"<{next_rel}>; rel=\"next\""))
+        _set_header(headers, "X-Next-Cursor", json.dumps({"cursor_ts": ts, "cursor_id": nid}))
+
+        # Exponer headers al frontend (CORS)
+        expose = _get_header(headers, "Access-Control-Expose-Headers") or ""
+        expose_list = [h.strip() for h in expose.split(",") if h.strip()]
+        for h in ("Link","X-Next-Cursor"):
+            if h not in expose_list: expose_list.append(h)
+        if expose_list:
+            _set_header(headers, "Access-Control-Expose-Headers", ", ".join(expose_list))
+
+    except Exception:
+        # silencio: nunca rompemos la respuesta original
+        return headers, body_bytes
+    return headers, body_bytes
+
+class P12ContractShim:
+    def __init__(self, app): self.app = app
+    def __call__(self, environ, start_response):
+        cap = _CaptureStart()
+        app_iter = self.app(environ, cap)
+        chunks = []
+        try:
+            for c in app_iter:
+                if c: chunks.append(c)
+        finally:
+            if hasattr(app_iter, "close"):
+                try: app_iter.close()
+                except Exception: pass
+
+        body = b"".join(chunks)
+        headers, body = _maybe_inject_link(environ, cap.status, cap.headers, body)
+        start_response(cap.status, headers, cap.exc_info)
+        return [body]
+
+def wrap_app_for_p12(app):
+    """ Idempotente: evita doble wrap. """
+    if getattr(app, "_p12_wrapped", False):
+        return app
+    wrapped = P12ContractShim(app)
+    setattr(wrapped, "_p12_wrapped", True)
+    return wrapped
