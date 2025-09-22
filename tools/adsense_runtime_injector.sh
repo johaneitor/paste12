@@ -1,19 +1,24 @@
-# Gunicorn entrypoint
-from contract_shim import application, app  # reexport
-# --- Paste12 Contract Shim hook (v10) ---
-try:
-    from contract_shim import wrap_app_for_p12
-    if 'application' in globals():
-        application = wrap_app_for_p12(application)
-except Exception as _e:
-    # nunca romper arranque
-    pass
-# --- end shim hook ---
+#!/usr/bin/env bash
+set -euo pipefail
+
+WSGI_FILE="wsgi.py"
+CLIENT_ID="${1:-ca-pub-9479870293204581}"
+
+[[ -f "$WSGI_FILE" ]] || { echo "❌ No existe $WSGI_FILE"; exit 1; }
+
+if grep -q "### BEGIN:P12_ADSENSE_INJECTOR" "$WSGI_FILE"; then
+  echo "✔ Inyector ya presente en $WSGI_FILE (no hago nada)"; exit 0;
+fi
+
+TS="$(date +%Y%m%d-%H%M%SZ)"
+cp -f "$WSGI_FILE" "$WSGI_FILE.bak.$TS"
+
+cat >> "$WSGI_FILE" <<'PYCODE'
 # ### BEGIN:P12_ADSENSE_INJECTOR (no editar dentro de este bloque)
 import re
 from typing import Iterable, Callable, Tuple
 
-_P12_SNIPPET = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581"\n     crossorigin="anonymous"></script>\n'  # será rellenado por el shell script
+_P12_SNIPPET = None  # será rellenado por el shell script
 class _P12HeadInject:
     def __init__(self, app, snippet_html: str):
         self.app = app
@@ -70,3 +75,27 @@ class _P12HeadInject:
         return [body]
 
 # ### END:P12_ADSENSE_INJECTOR
+PYCODE
+
+# Rellenar el snippet con el client id recibido
+python - <<PY
+from pathlib import Path
+p = Path("$WSGI_FILE")
+s = p.read_text(encoding="utf-8")
+snippet = (
+    '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=%s"\\n'
+    '     crossorigin="anonymous"></script>\\n'
+) % ("$CLIENT_ID",)
+s = s.replace("_P12_SNIPPET = None", "_P12_SNIPPET = " + repr(snippet))
+# envolver la aplicación si existe el símbolo `application`
+if "application =" in s and "P12HeadInject" not in s and "_P12HeadInject(" not in s:
+    # añadimos el wrap al final del archivo
+    s += '\n# Activamos el inyector en runtime\ntry:\n' \
+         '    application = _P12HeadInject(application, _P12_SNIPPET)\n' \
+         'except Exception:\n' \
+         '    pass\n'
+Path("$WSGI_FILE").write_text(s, encoding="utf-8")
+print("✔ Inyector añadido a", p)
+PY
+
+python -m py_compile "$WSGI_FILE" && echo "✓ py_compile $WSGI_FILE"
