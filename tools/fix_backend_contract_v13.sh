@@ -1,3 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ts="$(date -u +%Y%m%d-%H%M%SZ)"
+backup="contract_shim.py.bak.$ts"
+[ -f contract_shim.py ] && cp -f contract_shim.py "$backup" || true
+
+cat > contract_shim.py <<'PY'
 # -*- coding: utf-8 -*-
 """
 Paste12 backend contract shim v13:
@@ -150,3 +158,13 @@ def _shim_app(app):
 
 application = _shim_app(_real_app)
 app = application  # alias opcional
+PY
+
+python - <<'PY'
+import py_compile
+py_compile.compile("contract_shim.py", doraise=True)
+PY
+
+echo "✓ contract_shim.py actualizado y compilado"
+echo "→ Sugerido Start Command en Render:"
+echo "  gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT"
