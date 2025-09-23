@@ -1,4 +1,5 @@
 import psycopg2
+import re
 import os
 from flask import request, make_response
 from flask import send_from_directory, abort
@@ -8,6 +9,25 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 
+# == paste12: normalize DATABASE_URL ==
+def _normalize_db_url(url: str) -> str:
+    if not url: return url
+    # postgres:// -> postgresql+psycopg2://
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg2://" + url[len("postgres://"):]
+    return url
+
+try:
+    _env_url = os.environ.get("DATABASE_URL", "") or os.environ.get("DB_URL", "")
+    _norm_url = _normalize_db_url(_env_url)
+    if _norm_url and _norm_url != _env_url:
+        os.environ["DATABASE_URL"] = _norm_url
+except Exception:
+    pass
+# == end normalize ==
+
+
+
 # SQLAlchemy global del paquete (lo usan los modelos)
 db = SQLAlchemy()
 
@@ -16,6 +36,14 @@ def create_app() -> Flask:
 
     # Config DB (Render suele exponer DATABASE_URL; si no, sqlite)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
 
 # === Normalize DATABASE_URL (protocol + SSL) ===
 import urllib.parse as _u
@@ -29,9 +57,7 @@ if 'sslmode=' not in _dburl:
     sep = '&' if '?' in _dburl else '?'
     _dburl = _dburl + f"{sep}sslmode=require"
 app.config['SQLALCHEMY_DATABASE_URI'] = _dburl
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    # Inicializar db
+        # Inicializar db
     db.init_app(app)
 
     # Intentar registrar blueprint oficial si existe
@@ -214,3 +240,35 @@ def _operr(e): return _db_fail(e)
 
 @app.errorhandler(DBAPIError)
 def _dberr(e): return _db_fail(e)
+# == Paste12 harden v2 ==
+try:
+    # Desactivar track_modifications de forma segura
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+except Exception:
+    pass
+try:
+    # Normalizar DATABASE_URL (postgres:// → postgresql://)
+    uri = app.config.get("SQLALCHEMY_DATABASE_URI") or app.config.get("DATABASE_URL") or ""
+    if uri.startswith("postgres://"):
+        uri = "postgresql://" + uri.split("postgres://",1)[1]
+        app.config["SQLALCHEMY_DATABASE_URI"] = uri
+
+    # Endurecimiento del pool
+    engine_opts = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+        "pool_size": 5,
+        "max_overflow": 5,
+        "pool_use_lifo": True,
+    }
+    if "postgresql://" in (app.config.get("SQLALCHEMY_DATABASE_URI") or ""):
+        engine_opts["connect_args"] = {
+            "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5
+        }
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        **engine_opts, **app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {})
+    }
+except Exception:
+    # No romper el boot por detalles de configuración
+    pass
+# == /Paste12 harden v2 ==
