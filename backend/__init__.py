@@ -35,7 +35,7 @@ def create_app() -> Flask:
     app = Flask(__name__)
 
     # Config DB (Render suele exponer DATABASE_URL; si no, sqlite)
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
 app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
     "pool_pre_ping": True,
     "pool_recycle": 180,
@@ -95,7 +95,7 @@ def apply_engine_hardening(app):
     opts.setdefault("pool_size", 5)
     opts.setdefault("max_overflow", 10)
     opts.setdefault("pool_timeout", 30)
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = opts
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = opts
 
 
 # create_all con retry para evitar fallos transitorios de red/SSL
@@ -243,7 +243,7 @@ def _dberr(e): return _db_fail(e)
 # == Paste12 harden v2 ==
 try:
     # Desactivar track_modifications de forma segura
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 except Exception:
     pass
 try:
@@ -251,7 +251,7 @@ try:
     uri = app.config.get("SQLALCHEMY_DATABASE_URI") or app.config.get("DATABASE_URL") or ""
     if uri.startswith("postgres://"):
         uri = "postgresql://" + uri.split("postgres://",1)[1]
-        app.config["SQLALCHEMY_DATABASE_URI"] = uri
+app.config["SQLALCHEMY_DATABASE_URI"] = uri
 
     # Endurecimiento del pool
     engine_opts = {
@@ -265,8 +265,13 @@ try:
         engine_opts["connect_args"] = {
             "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5
         }
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        **engine_opts, **app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {})
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+}))
     }
 except Exception:
     # No romper el boot por detalles de configuración
