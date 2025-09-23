@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os, hashlib
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify
+from flask import send_from_directory,  Blueprint, request, jsonify
 from backend import db
 
 # Import del modelo Note
@@ -143,3 +143,13 @@ def create_report_min():
         return jsonify({"ok": True, "count": c, "deleted": deleted}), 200
     except Exception as e:
         return jsonify({"error":"report_failed","detail":str(e)}), 500
+
+
+@app.route('/terms', methods=['GET','HEAD'])
+def terms():
+    return send_from_directory('frontend','terms.html')
+
+
+@app.route('/privacy', methods=['GET','HEAD'])
+def privacy():
+    return send_from_directory('frontend','privacy.html')
