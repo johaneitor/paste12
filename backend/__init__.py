@@ -1,3 +1,4 @@
+import psycopg2
 import os
 from flask import request, make_response
 from flask import send_from_directory, abort
@@ -155,3 +156,34 @@ try:
 except NameError:
     # si no hay 'app', no hacemos nada (ambiente no esperado)
     pass
+
+# === Paste12 OperationalError handler ===
+try:
+    from sqlalchemy.exc import OperationalError
+    from flask import jsonify
+    try:
+        from backend.models import db as __p12_db
+    except Exception:
+        try:
+            from models import db as __p12_db
+        except Exception:
+            __p12_db = None
+    @app.errorhandler(OperationalError)
+    def __p12_db_operational_error(e):
+        try:
+            if __p12_db is not None:
+                __p12_db.session.remove()
+        except Exception:
+            pass
+        return jsonify(ok=False, error="db_unavailable", kind="OperationalError"), 503
+except Exception:
+    pass
+# === /Paste12 OperationalError handler ===
+
+
+@app.errorhandler(psycopg2.OperationalError)
+def _psycopg_operational(e):
+    from flask import jsonify
+    try: db.session.remove()
+    except Exception: pass
+    return jsonify(ok=False,error='db_unavailable',detail='psycopg2.OperationalError'),503

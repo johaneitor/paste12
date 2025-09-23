@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os, hashlib
 from datetime import datetime, timedelta
-from flask import send_from_directory,  Blueprint, request, jsonify
+from flask import send_from_directory,  Blueprint, request, jsonify, make_response
 from backend import db
 
 # Import del modelo Note
@@ -108,7 +108,7 @@ def like_note(note_id: int):
 
 # === paste12: /api/reports (mínimo, usa SQLite directo) ============
 import sqlite3, os
-from flask import request, jsonify
+from flask import request, jsonify, make_response
 DB_PATH = os.getenv("PASTE12_DB", "app.db")
 
 def _db_path():
@@ -153,3 +153,15 @@ def terms():
 @app.route('/privacy', methods=['GET','HEAD'])
 def privacy():
     return send_from_directory('frontend','privacy.html')
+
+@app.route('/api/notes', methods=['HEAD'])
+def api_notes_head():
+    # Respuesta vacía para HEAD con CORS estándar
+    resp = make_response('', 200)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, HEAD, OPTIONS'
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    resp.headers['Access-Control-Max-Age'] = '86400'
+    # Opcional: tipo json para clientes que lo esperan aunque no haya body
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
