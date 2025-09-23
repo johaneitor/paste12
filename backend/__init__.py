@@ -16,6 +16,19 @@ def create_app() -> Flask:
 
     # Config DB (Render suele exponer DATABASE_URL; si no, sqlite)
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db")
+
+# === Normalize DATABASE_URL (protocol + SSL) ===
+import urllib.parse as _u
+_dburl = app.config.get('SQLALCHEMY_DATABASE_URI') or os.environ.get('DATABASE_URL','')
+if _dburl.startswith('postgres://'):
+    _dburl = 'postgresql+psycopg2://' + _dburl[len('postgres://'):]
+elif _dburl.startswith('postgresql://'):
+    _dburl = 'postgresql+psycopg2://' + _dburl[len('postgresql://'):]
+# sslmode=require si no está
+if 'sslmode=' not in _dburl:
+    sep = '&' if '?' in _dburl else '?'
+    _dburl = _dburl + f"{sep}sslmode=require"
+app.config['SQLALCHEMY_DATABASE_URI'] = _dburl
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Inicializar db
@@ -187,3 +200,17 @@ def _psycopg_operational(e):
     try: db.session.remove()
     except Exception: pass
     return jsonify(ok=False,error='db_unavailable',detail='psycopg2.OperationalError'),503
+
+# --- DB error handlers (coherentes) ---
+from sqlalchemy.exc import OperationalError, DBAPIError
+from flask import jsonify
+
+def _db_fail(e):
+    # No revela detalles
+    return jsonify({"ok": False, "db": "unavailable"}), 503
+
+@app.errorhandler(OperationalError)
+def _operr(e): return _db_fail(e)
+
+@app.errorhandler(DBAPIError)
+def _dberr(e): return _db_fail(e)
