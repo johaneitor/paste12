@@ -1,3 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TGT="backend/__init__.py"
+TS="$(date -u +%Y%m%d-%H%M%SZ)"
+BAK="backend/__init__.py.$TS.bak"
+
+[[ -f "$TGT" ]] && cp -f "$TGT" "$BAK" && echo "[rewrite] backup: $BAK" || true
+
+cat > "$TGT" <<'PY'
 # -*- coding: utf-8 -*-
 import os
 import datetime as dt
@@ -67,3 +77,7 @@ except Exception:
 # --- exports WSGI ----------------------------------------------------------
 application = app
 __all__ = ["app", "db", "Note", "application"]
+PY
+
+python -m py_compile "$TGT" && echo "[rewrite] py_compile OK"
+echo "[rewrite] listo."
