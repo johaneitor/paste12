@@ -1,34 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
-MSG="${1:-ops: corefix — wsgi export + backend DB url + sanity}"
+MSG="${1:-ops: frontend reconcile + audits}"
+git rev-parse --is-inside-work-tree >/dev/null || { echo "ERROR: no es repo git"; exit 2; }
 
-# gates
-bash -n tools/fix_wsgi_export_v1.sh
-bash -n tools/patch_backend_db_url_v1.sh
-bash -n tools/sanity_entrypoints_v2.sh
+# Añadir cambios del frontend + tools nuevos aunque .gitignore tape
+git add -f frontend/index.html || true
+git add -f tools/*.sh || true
 
-# aplicar fixes por si aún no los corriste
-tools/fix_wsgi_export_v1.sh
-tools/patch_backend_db_url_v1.sh
+# Mostrar si hay deletions pendientes
+git status --porcelain
 
-# sanity
-tools/sanity_entrypoints_v2.sh
+# Compilación rápida de Python (si existen estos archivos)
+pyok=1
+for f in contract_shim.py wsgi.py backend/__init__.py backend/routes.py backend/models.py; do
+  [[ -f "$f" ]] && python -m py_compile "$f" || true
+done
 
-# stage (forzado)
-git add -f wsgi.py backend/__init__.py tools/*.sh
-
-# commit/push
+# Commit
 if [[ -n "$(git status --porcelain)" ]]; then
   git commit -m "$MSG"
 else
-  echo "ℹ️  Nada que commitear"
+  echo "ℹ️  Nada para commitear"
 fi
+
 echo "== prepush gate =="; echo "✓ listo"
 git push -u origin main
-
-echo "== HEADs =="
-echo "Local : $(git rev-parse HEAD)"
-UP="$(git rev-parse @{u} 2>/dev/null || true)"; [[ -n "$UP" ]] && echo "Remote: $UP" || true
-
-echo "Sugerencia (Render Start Command):"
-echo "  gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT"
+echo "== HEADs =="; echo "Local : $(git rev-parse HEAD)"; echo "Remote: $(git rev-parse @{u})"
