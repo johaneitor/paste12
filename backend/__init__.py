@@ -135,3 +135,22 @@ except Exception:
 # --- exports WSGI ----------------------------------------------------------
 application = app
 __all__ = ["app", "db", "Note", "application"]
+
+
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+db = SQLAlchemy()
+
+def create_app():
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+    try:
+        from backend import routes as _routes  # registra vistas si existen
+        if hasattr(_routes,'init_app'): _routes.init_app(app)
+    except Exception:
+        pass
+    @app.get('/api/health')
+    def _health(): return {'ok': True, 'api': True, 'ver':'fallback'}
+    return app

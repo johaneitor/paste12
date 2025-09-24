@@ -154,7 +154,7 @@ def terms():
 def privacy():
     return send_from_directory('frontend','privacy.html')
 
-@app.route('/api/notes', methods=['HEAD'])
+@app.route('/api/notes', methods=['GET','POST','OPTIONS'])
 def api_notes_head():
     # Respuesta vacía para HEAD con CORS estándar
     resp = make_response('', 200)
@@ -198,3 +198,14 @@ else:
             return resp
     except Exception:
         pass
+
+
+@app.route('/api/<path:anypath>', methods=['OPTIONS'])
+def _p12_options(anypath):
+    from flask import make_response
+    resp = make_response('', 204)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, HEAD, OPTIONS'
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    resp.headers['Access-Control-Max-Age'] = '86400'
+    return resp
