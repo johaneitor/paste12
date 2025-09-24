@@ -1,46 +1,52 @@
-from __future__ import annotations
-import os, re
-from flask import Flask, jsonify, send_from_directory
+# -*- coding: utf-8 -*-
+import os
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
 
 db = SQLAlchemy()
 
 def _normalize_db_url(url: str) -> str:
-    if not url: return url
-    # postgres -> postgresql+psycopg2 (soporta Render)
-    url = re.sub(r'^postgres(?=://)', 'postgresql+psycopg2', url)
-    return url
+    if not url:
+        return "sqlite:////tmp/paste12.db"
+    u = url.strip()
+    # Render / Heroku style
+    if u.startswith("postgres://"):
+        u = u.replace("postgres://", "postgresql+psycopg2://", 1)
+    if u.startswith("postgresql://"):
+        # asegurar driver explícito
+        if "postgresql+psycopg2://" not in u:
+            u = u.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return u
 
-def create_app() -> Flask:
-    app = Flask(__name__, static_folder="../frontend", static_url_path="")
-    # Config DB
-    db_url = _normalize_db_url(os.environ.get("DATABASE_URL", ""))
-    if db_url:
-        app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+def create_app():
+    app = Flask(__name__)
+
+    raw = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("RENDER_DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or ""
+    )
+    app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_db_url(raw)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # CORS abierto (como vienes testeando)
-    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
-
-    # Inicializar DB
+    # init DB (no toca la red hasta que se use sesión)
     db.init_app(app)
 
-    # Registrar blueprint API
-    from .routes import bp as api_bp
-    app.register_blueprint(api_bp)
-
-    # Health minimal sin DB
-    @app.route("/api/health")
+    # health lightweight para el boot de Render
+    @app.get("/api/health")
     def health():
-        return jsonify({"ok": True, "api": True, "ver": "factory-v1"})
+        return jsonify(ok=True, api=True, ver="factory-v2")
 
-    # Servir el frontend (index.html) y estáticos
-    @app.route("/")
-    def index():
-        return send_from_directory(app.static_folder, "index.html")
+    # registrar rutas después de init_app para evitar import cíclico
+    try:
+        from .routes import bp as api_bp  # noqa
+        app.register_blueprint(api_bp, url_prefix="/api")
+    except Exception:
+        # si todavía no existen rutas, seguimos; health ya responde
+        pass
 
     return app
 
-# Export para gunicorn
+# Export opcional por compatibilidad con gunicorn module:app
 app = create_app()

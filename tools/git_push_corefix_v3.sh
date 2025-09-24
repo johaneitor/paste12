@@ -1,59 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
-MSG="${1:-ops: corefix - stage deletions + add new tools + pooling_guard + sanity}"
+MSG="${1:-ops: corefix — wsgi export + backend DB url + sanity}"
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "ERROR: no es repo git"; exit 2; }
+# gates
+bash -n tools/fix_wsgi_export_v1.sh
+bash -n tools/patch_backend_db_url_v1.sh
+bash -n tools/sanity_entrypoints_v2.sh
 
-echo "== Stage deletions/modificaciones =="
-git add -u
+# aplicar fixes por si aún no los corriste
+tools/fix_wsgi_export_v1.sh
+tools/patch_backend_db_url_v1.sh
 
-echo "== Force-add tools/*.sh (ignorado por .gitignore) =="
-shopt -s nullglob
-for f in tools/*.sh; do git add -f "$f" || true; done
-# incluye cuarentena si existe
-if [[ -d tools/__quarantine__ ]]; then
-  git add -f tools/__quarantine__/* 2>/dev/null || true
-fi
+# sanity
+tools/sanity_entrypoints_v2.sh
 
-echo "== Añadir backend/pooling_guard.py si existe =="
-[[ -f backend/pooling_guard.py ]] && git add -f backend/pooling_guard.py || true
+# stage (forzado)
+git add -f wsgi.py backend/__init__.py tools/*.sh
 
-echo "== Sanity Python (py_compile) =="
-py_files=()
-[[ -f backend/__init__.py ]] && py_files+=("backend/__init__.py")
-[[ -f backend/routes.py   ]] && py_files+=("backend/routes.py")
-[[ -f backend/models.py   ]] && py_files+=("backend/models.py")
-[[ -f wsgi.py             ]] && py_files+=("wsgi.py")
-[[ -f contract_shim.py    ]] && py_files+=("contract_shim.py")
-
-if ((${#py_files[@]})); then
-  python - "${py_files[@]}" <<'PY'
-import py_compile, sys
-files = sys.argv[1:]
-ok = True
-for p in files:
-    try:
-        py_compile.compile(p, doraise=True)
-        print("✓ py_compile", p, "OK")
-    except Exception as e:
-        ok = False
-        print("✗ py_compile FAIL:", p, "-", repr(e))
-if not ok:
-    sys.exit(3)
-PY
-fi
-
-echo "== Commit =="
+# commit/push
 if [[ -n "$(git status --porcelain)" ]]; then
   git commit -m "$MSG"
 else
-  echo "ℹ️  Nada para commitear"
+  echo "ℹ️  Nada que commitear"
 fi
-
-echo "== Push =="
+echo "== prepush gate =="; echo "✓ listo"
 git push -u origin main
 
 echo "== HEADs =="
 echo "Local : $(git rev-parse HEAD)"
-up="$(git rev-parse @{u} 2>/dev/null || true)"
-[[ -n "$up" ]] && echo "Remote: $up" || echo "Remote: (upstream recién configurado)"
+UP="$(git rev-parse @{u} 2>/dev/null || true)"; [[ -n "$UP" ]] && echo "Remote: $UP" || true
+
+echo "Sugerencia (Render Start Command):"
+echo "  gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT"
