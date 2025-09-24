@@ -15,7 +15,7 @@ else:
     _import_error = None
 
 # Un único blueprint llamado "api"
-bp = Blueprint("api", __name__)
+bp = Blueprint("api", __name__, url_prefix="/api")
 
 def _now() -> datetime:
     # Naive UTC (compatible con la mayoría de definiciones típicas de modelos)
