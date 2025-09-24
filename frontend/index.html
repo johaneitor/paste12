@@ -42,6 +42,7 @@
 <style id="shim-hide-menu-expand">
 .menu .expand{ display:none !important; }
 </style>
+<style id="tagline-style">#tagline{margin:.25rem 0 0;opacity:.9;line-height:1.25;font-weight:600;color:#17323a}</style>
 <script id="p12-cache-guard">
 (function(){
   try{
@@ -62,6 +63,7 @@
   <header class="topbar">
 <meta name="description" content="Paste12: comparte notas anónimas e historias inspiradoras de forma simple."/>
     <h1 style="margin:0">Notas</h1>
+  <h2 id="tagline" class="tagline"></h2>
   </header>
 
   <!-- Bloque de anuncio responsivo -->
@@ -279,6 +281,21 @@
 })();
 </script>
 
+<script id="p12-405-tip">(function(){try{
+  var _f = window.fetch; if(!_f) return;
+  window.fetch = function(u,i){
+    return _f.apply(this,arguments).then(function(r){
+      try{ if(r && r.status===405){
+        var host = location.hostname;
+        var tip  = (host.indexOf("paste12-")===-1)? " ¿Estás en paste12-rmsk.onrender.com? (ojo: pastel2 no es lo mismo)" : " Endpoint sin POST habilitado.";
+        var box = document.getElementById("msg");
+        if(!box){ box=document.createElement("div"); box.id="msg"; (document.body||document.documentElement).prepend(box); }
+        box.className="error"; box.textContent = "Error HTTP 405." + tip;
+      }}catch(_){ }
+      return r;
+    });
+  };
+}catch(_){}})();</script>
 </body>
 
 <script id="p12-metrics-enhancer-v1">
