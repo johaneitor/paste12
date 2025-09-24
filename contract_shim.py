@@ -1,108 +1,115 @@
-# contract_shim.py — v3 (robusto)
-# Garantiza que siempre exista `application` aunque el backend real no cargue.
-import importlib, os, types, traceback
-from typing import Optional, Tuple
+# -*- coding: utf-8 -*-
+"""
+contract_shim: resuelve la app WSGI de forma robusta.
+- Inyecta CORS si el código del backend la usa sin importarla.
+- Expone `application` para gunicorn (wsgi:application).
+- Responde /api/health aunque falle el import, con diagnóstico.
+"""
+from __future__ import annotations
+import builtins, importlib, os, traceback
+from typing import Any, Callable
 
-def _try_load(module_attr: str) -> Tuple[Optional[object], str]:
-    """
-    Acepta "pkg.mod:attr" o "pkg.mod".
-    Devuelve (objeto_app, motivo_fallo)
-    """
-    fail = ""
-    try:
-        if ":" in module_attr:
-            mod_name, attr = module_attr.split(":", 1)
-            mod = importlib.import_module(mod_name)
-            obj = getattr(mod, attr, None)
-            if callable(obj):  # factory create_app()
-                try:
-                    obj = obj()
-                except Exception as e:
-                    fail = f"factory {module_attr} lanzó: {e!r}"
-                    return (None, fail)
-            if obj is None:
-                fail = f"attr {attr} no existe en {mod_name}"
-                return (None, fail)
-            return (obj, "")
-        else:
-            mod = importlib.import_module(module_attr)
-            # Preferir 'app' o 'application' si existen
-            for name in ("app","application"):
-                if hasattr(mod, name):
-                    obj = getattr(mod, name)
-                    if callable(obj):
-                        try:
-                            obj = obj()
-                        except Exception as e:
-                            fail = f"factory {module_attr}.{name} lanzó: {e!r}"
-                            return (None, fail)
-                    return (obj, "")
-            # Último recurso: si el módulo es un Flask directamente
-            return (mod, "")
-    except Exception as e:
-        fail = f"import {module_attr} falló: {e.__class__.__name__}: {e}"
-        return (None, fail)
+# Asegurar CORS en globales si el backend lo usa sin import
+try:
+    from flask_cors import CORS  # type: ignore
+    if not hasattr(builtins, "CORS"):
+        builtins.CORS = CORS  # type: ignore[attr-defined]
+except Exception:
+    # Si no está instalada flask-cors, seguimos; /api/health igual funciona en fallback
+    pass
 
-def _load_real_app() -> Tuple[Optional[object], str]:
+def _make_fallback_app(diag: str) -> Any:
+    from flask import Flask, jsonify, send_file, abort
+    app = Flask(__name__, static_folder=None)
+    @app.get("/api/health")
+    def health():
+        return jsonify({"ok": True, "api": False, "diag": diag, "ver":"shim-fallback-v4"})
+    @app.get("/")
+    def index():
+        p = os.path.join(os.getcwd(), "frontend", "index.html")
+        if os.path.isfile(p):
+            return send_file(p)
+        abort(404)
+    return app
+
+def _resolve_real_app() -> Any:
+    """
+    Intenta en orden:
+      1) backend.app:app
+      2) backend:create_app()
+      3) backend.main:app
+      4) backend.wsgi:app
+      5) backend:app
+      6) app:app
+      7) run:app
+    """
     tried = []
-    # Si APP_MODULE está seteado en Render, respétalo primero (p.ej. "backend:app" o "backend:create_app")
-    env_mod = os.environ.get("APP_MODULE","").strip()
-    if env_mod:
-        app, why = _try_load(env_mod)
-        if app is not None:
-            return (app, f"ok:{env_mod}")
-        tried.append(f"{env_mod} -> {why}")
-
-    # Candidatos comunes en este repo
-    for cand in [
-        "backend.app:app",
-        "backend:create_app",
-        "backend.main:app",
-        "backend.wsgi:app",
-        "backend:app",
-        "app:app",
-        "run:app",
-    ]:
-        app, why = _try_load(cand)
-        if app is not None:
-            return (app, f"ok:{cand}")
-        tried.append(f"{cand} -> {why}")
-
-    return (None, " ; ".join(tried))
-
-_real_app, _diag = _load_real_app()
-
-# Fallback mínimo (no rompe el deploy) si no se pudo resolver
-if _real_app is None:
+    # Helper para “import módulo:objeto”
+    def try_import(modname: str, attr: str|None=None, call: bool=False):
+        m = importlib.import_module(modname)
+        obj = getattr(m, attr) if attr else m
+        return obj() if call else obj
     try:
-        from flask import Flask, jsonify, request, send_from_directory, Response
-    except Exception:  # si no está Flask, algo está muy mal, pero intentamos igual
-        Flask = None
+        return try_import("backend.app","app")
+    except Exception as e:
+        tried.append(f"backend.app:app -> {e.__class__.__name__}: {e}")
 
-    if Flask is None:
-        # Ultimísimo recurso: objeto WSGI trivial
-        def application(environ, start_response):
-            start_response('200 OK',[('Content-Type','text/plain')])
-            return [b'fallback: wsgi minimal (Flask ausente)']
-    else:
-        app = Flask(__name__, static_folder="frontend", static_url_path="")
+    try:
+        create_app = try_import("backend","create_app")
+        return create_app()
+    except Exception as e:
+        tried.append(f"backend:create_app -> {e.__class__.__name__}: {e}")
+
+    for target in [("backend.main","app"), ("backend.wsgi","app"), ("backend","app"), ("app","app")]:
+        try:
+            return try_import(*target)
+        except Exception as e:
+            tried.append(f"{target[0]}:{target[1]} -> {e.__class__.__name__}: {e}")
+
+    try:
+        return try_import("run","app")
+    except Exception as e:
+        tried.append(f"run:app -> {e.__class__.__name__}: {e}")
+
+    raise RuntimeError(" ; ".join(tried))
+
+def _wrap_with_cors(app: Any) -> Any:
+    try:
+        # Si CORS quedó disponible (inyectado), úsalo. Si no, continúa sin CORS.
+        cors = getattr(builtins, "CORS", None)
+        if cors and not getattr(app, "_p12_cors_applied", False):
+            cors(app, resources={r"/api/*": {"origins": "*"}})
+            setattr(app, "_p12_cors_applied", True)
+    except Exception:
+        pass
+    return app
+
+def _ensure_health(app: Any) -> Any:
+    try:
+        # Si ya existe /api/health, no hacemos nada
+        urls = {getattr(r, "rule", None) for r in getattr(app, "url_map", [])}
+        if "/api/health" in urls:
+            return app
+    except Exception:
+        pass
+    try:
+        from flask import jsonify
         @app.get("/api/health")
-        def _health():
-            return jsonify({"ok": True, "api": False, "ver": "shim-fallback-v3", "diag": _diag})
+        def _p12_health():
+            return jsonify({"ok": True, "api": True, "ver": "wsgi-lazy-v3"})
+    except Exception:
+        pass
+    return app
 
-        # Satisface preflight de /api/notes (204) para no bloquear front
-        @app.route("/api/notes", methods=["OPTIONS"])
-        def _notes_options():
-            return ("", 204)
+def _build_application() -> Any:
+    try:
+        real_app = _resolve_real_app()
+        real_app = _wrap_with_cors(real_app)
+        real_app = _ensure_health(real_app)
+        return real_app
+    except Exception as e:
+        diag = f"no pude resolver app WSGI: {e}"
+        return _make_fallback_app(diag)
 
-        # Index mínimo (sirve frontend/index.html si existe)
-        @app.route("/")
-        def _index():
-            try:
-                return send_from_directory("frontend","index.html")
-            except Exception:
-                return Response("<!doctype html><meta charset='utf-8'><h1>Paste12</h1><p>Backend real no cargado todavía.</p>", mimetype="text/html")
-        application = app
-else:
-    # Backend real resuelto
-    application = _real_app
+application = _build_application()  # WSGI callable
+app = application  # alias por si acaso

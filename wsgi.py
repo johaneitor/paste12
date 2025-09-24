@@ -1,8 +1,4 @@
-from __future__ import annotations
-try:
-    # Si el módulo ya expone app, úsalo
-    from backend import app as application  # type: ignore
-except Exception:
-    # Fallback a create_app
-    from backend import create_app  # type: ignore
-    application = create_app()
+# WSGI entrypoint para Gunicorn
+# Start Command en Render:
+#   gunicorn wsgi:application --chdir /opt/render/project/src -w ${WEB_CONCURRENCY:-2} -k gthread --threads ${THREADS:-4} --timeout ${TIMEOUT:-120} -b 0.0.0.0:$PORT
+from backend import app as application  # Gunicorn espera "application"
