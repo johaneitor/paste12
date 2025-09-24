@@ -148,7 +148,14 @@ def _shim_app(app):
         return [body]
     return _app
 
-application = _shim_app(_real_app)
+_orig_app = _orig_app = _orig_app = _orig_app = _orig_app = _orig_app = _orig_app = application = _shim_app(_real_app)
+application = _HeadDropMiddleware(_orig_app)
+application = _HeadDropMiddleware(_orig_app)
+application = _HeadDropMiddleware(_orig_app)
+application = _HeadDropMiddleware(_orig_app)
+application = _HeadDropMiddleware(_orig_app)
+application = _HeadDropMiddleware(_orig_app)
+application = _HeadDropMiddleware(_orig_app)
 app = application  # alias opcional
 
 # == P12: HTML inject middleware (views + AdSense) ==
@@ -310,3 +317,98 @@ try:
     application = _p12_legal_mw(application)
 except NameError:
     pass
+
+
+# == Health bypass (no DB, no framework) ==
+class _HealthBypassMiddleware:
+    def __init__(self, app):
+        self.app = app
+    def __call__(self, environ, start_response):
+        path  = environ.get('PATH_INFO','')
+        meth  = environ.get('REQUEST_METHOD','GET').upper()
+        if path in ('/api/health','/healthz') and meth in ('GET','HEAD'):
+            body = b'{"ok":true}\n'
+            headers=[('Content-Type','application/json'),
+                     ('Content-Length', str(len(body)))]
+            start_response('200 OK', headers)
+            return [] if meth=='HEAD' else [body]
+        return self.app(environ, start_response)
+
+
+# === Paste12: unify WSGI wrappers (idempotent) ===
+try:
+    _p12_base_app = application
+except NameError:
+    try:
+        _p12_base_app = app
+    except NameError:
+        _p12_base_app = None
+
+if _p12_base_app is not None:
+    # Siempre aplicar HealthBypass por dentro
+    _p12_wrapped = _HealthBypassMiddleware(_p12_base_app)
+    # Si existe HeadDrop, volver a envolver por fuera; si no, usar el envuelto base
+    try:
+        _ = _HeadDropMiddleware
+        application = _HeadDropMiddleware(_p12_wrapped)
+    except NameError:
+        application = _p12_wrapped
+
+
+
+# == HEAD drop-in middleware (idempotente) ==
+class _HeadDropMiddleware:
+    def __init__(self, app):
+        self.app = app
+    def __call__(self, environ, start_response):
+        method = environ.get('REQUEST_METHOD','GET').upper()
+        if method == 'HEAD':
+            # Finge GET para construir headers, descarta cuerpo
+            environ['REQUEST_METHOD'] = 'GET'
+            body_chunks = []
+            def _sr(status, headers, exc_info=None):
+                # devolvemos mismo status/headers
+                start_response(status, headers, exc_info)
+                return lambda x: None
+            result = self.app(environ, _sr)
+            # Consumimos el iterable sin devolver cuerpo
+            try:
+                for _ in result:
+                    pass
+            finally:
+                if hasattr(result, 'close'):
+                    result.close()
+            return []
+        return self.app(environ, start_response)
+
+
+class HtmlNoCacheMiddleware:
+    def __init__(self, app):
+        self.app = app
+    def __call__(self, environ, start_response):
+        headers_holder = []
+        def sr(status, headers, exc_info=None):
+            headers_holder[:] = headers
+            return start_response(status, headers, exc_info)
+        body_iter = self.app(environ, sr)
+
+        # content-type puede venir en headers_holder
+        ct = None
+        for k,v in headers_holder:
+            if k.lower()=="content-type":
+                ct=v; break
+        is_html = ct and ("text/html" in ct.lower())
+        if is_html:
+            # forzar revalidación de HTML
+            new=[]
+            have_cc=False
+            for k,v in headers_holder:
+                if k.lower()=="cache-control":
+                    have_cc=True
+                    new.append((k,"no-cache, must-revalidate"))
+                else:
+                    new.append((k,v))
+            if not have_cc:
+                new.append(("Cache-Control","no-cache, must-revalidate"))
+            headers_holder[:] = new
+        return body_iter

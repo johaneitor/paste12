@@ -1,9 +1,29 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 import datetime as dt
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text as sql_text
+
+# == paste12: normalize DATABASE_URL ==
+def _normalize_db_url(url: str) -> str:
+    if not url: return url
+    # postgres:// -> postgresql+psycopg2://
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg2://" + url[len("postgres://"):]
+    return url
+
+try:
+    _env_url = os.environ.get("DATABASE_URL", "") or os.environ.get("DB_URL", "")
+    _norm_url = _normalize_db_url(_env_url)
+    if _norm_url and _norm_url != _env_url:
+        os.environ["DATABASE_URL"] = _norm_url
+except Exception:
+    pass
+# == end normalize ==
+
+
 
 # --- helpers ---------------------------------------------------------------
 def normalize_db_url(u: str) -> str:
@@ -27,6 +47,46 @@ engine_opts = {
 }
 
 app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app, engine_options=engine_opts)

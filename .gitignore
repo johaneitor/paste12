@@ -75,3 +75,9 @@ backups_*/
 server.log
 .server.pid
 .env.render
+!frontend/index.html
+!frontend/terms.html
+!frontend/privacy.html
+!tools/*.sh
+!frontend/
+!tools/
