@@ -1,352 +1,283 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <link rel="canonical" href="https://paste12-rmsk.onrender.com/">
-
-  <meta property="og:type" content="website">
-
-  <meta property="og:description" content="Notas rápidas con likes, vistas y expiración automática.">
-
-  <meta property="og:title" content="Paste12">
-
-<meta name="description" content="Paste12: comparte notas anónimas e historias inspiradoras de forma simple."/>
-<script id="p12-single-detector">
-(()=>{
-  const isSingle = !!document.querySelector("meta[name=\"p12-single\"]") || (document.body && document.body.getAttribute("data-single")==="1");
-  window.__P12_SINGLE__ = isSingle;
-  if(isSingle) document.documentElement.classList.add("p12-single");
-})();
-</script>
-<meta name="p12-safe-shim" content="1">
-  <meta name="ads-client" content="ca-pub-XXXXXXXXXXXXXXX">
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>paste12</title>
-  <link rel="stylesheet" href="/css/styles.css">
-  <!-- Ads (sólo cambia tu client y slot cuando tengas el ID) -->
-  <link rel="preconnect" href="https://pagead2.googlesyndication.com">
-  <link rel="preconnect" href="https://googleads.g.doubleclick.net">
-<script>(function(){/* p12-single runtime injector */
- try {
-   var isSingle = (document.body && document.body.dataset && document.body.dataset.single === "1");
-   if (!isSingle) {
-     var q = new URLSearchParams(location.search);
-     isSingle = q.has("id") || q.has("note");
-   }
-   if (isSingle && !document.querySelector("meta[name=\"p12-single\"]")) {
-     var m = document.createElement("meta");
-     m.name = "p12-single"; m.content = "1"; document.head.appendChild(m);
-   }
- } catch(e) {}
-})();</script>
-<style id="shim-hide-menu-expand">
-.menu .expand{ display:none !important; }
-</style>
-<style id="tagline-style">#tagline{margin:.25rem 0 0;opacity:.9;line-height:1.25;font-weight:600;color:#17323a}</style>
-<script id="p12-cache-guard">
-(function(){
-  try{
-    if(!document.querySelector('span.views')){
-      if('serviceWorker' in navigator){
-      }
-      if(!/([?&])nosw=1/.test(location.search)){
-        var q = location.search ? location.search + '&nosw=1' : '?nosw=1';
-        location.replace(location.pathname + q + location.hash);
-      }
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paste12</title>
+  <style>
+    /* CSS principal, copiado del diseño original (ajustado) */
+    .brand{margin:0; font-size:clamp(22px,3.4vw,30px)}
+    .tagline{margin:6px 0 0; font-size:14px; color:#17323a; font-weight:600; opacity:.9}
+    :root{
+      --bg:#fffdfc; --fg:#24323f; --muted:#6b7a86;
+      --teal:#8fd3d0; --peach:#ffb38a; --pink:#f9a3c7;
+      --card:#ffffff; --ring: rgba(36,50,63,15);
     }
-  }catch(_){}
-})();
-</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581" crossorigin="anonymous"></script>
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:linear-gradient(180deg,var(--bg),#fff); color:var(--fg);
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:linear-gradient(90deg,var(--teal),var(--peach),var(--pink));
+      color:#17323a; padding:16px 20px; box-shadow:0 2px 12px var(--ring);
+    }
+    h1{margin:0; font-size:clamp(20px,3.2vw,28px)}
+    .container{max-width:860px; margin:20px auto; padding:0 16px}
+    .card{
+      background:var(--card); border:1px solid #eee; border-radius:16px;
+      padding:14px; box-shadow:0 4px 20px var(--ring);
+    }
+    textarea,input[type="text"]{
+      width:100%; padding:12px 14px;
+      border-radius:12px; border:1px solid #e6eef2; font-size:16px;
+      background:#fff; color:var(--fg);
+    }
+    textarea:focus,input:focus{
+      border-color:#b5dfe0; box-shadow:0 0 0 4px rgba(143,211,208,25);
+    }
+    .row{display:flex; gap:10px; margin-top:10px}
+    .btn{
+      appearance:none; border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer;
+      background:linear-gradient(90deg,var(--teal),var(--peach));
+      color:#14333a; box-shadow:0 6px 18px var(--ring);
+    }
+    .btn:active{transform:translateY(1px)}
+    .list{margin-top:18px; display:grid; gap:12px}
+    .note{
+      background:#fff; border:1px solid #eef2f5; border-radius:14px; padding:12px 14px;
+    }
+    .meta{
+      color:var(--muted); font-size:13px; margin-top:6px;
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .meta .act{
+      border:0; background:transparent; color:inherit; cursor:pointer; padding:0 6px; border-radius:8px;
+    }
+    .meta .act:hover{ background:rgba(0,0,0,05) }
+    .menu{margin-top:8px; display:flex; gap:8px;}
+    .hidden{display:none}
+    .error{color:#9a2b2b; margin-top:8px}
+    .ok{color:#0a6f57; margin-top:8px}
+    footer{
+      margin:40px 0 28px; color:var(--muted); text-align:center; font-size:14px;
+    }
+    footer a{ color:#0b7c8a; text-decoration:underline }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-<meta name="description" content="Paste12: comparte notas anónimas e historias inspiradoras de forma simple."/>
-    <h1 style="margin:0">Notas</h1>
-  <h2 id="tagline" class="tagline"></h2>
+  <header>
+    <h1 class="brand">Paste12</h1>
+    <p class="tagline" id="tagline">
+      Reta a un amigo · Dime un secreto · Confiesa algo · Manda un reto · Anónimo o no, tú decides
+    </p>
   </header>
-
-  <!-- Bloque de anuncio responsivo -->
-  <section class="adwrap" style="max-width:860px;margin:12px auto">
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-         data-ad-slot="1234567890"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-  </section>
-
   <main class="container">
-    <form id="noteForm" style="display:grid;gap:8px;margin-top:8px">
-      <textarea name="text" placeholder="Escribe tu nota…" required></textarea>
-      <input type="number" id="hours" name="hours" value="24" min="1" max="720">
-      <button type="submit">Publicar</button>
-      <span id="status"></span>
-    </form>
-    <ul id="notes" style="list-style:none;padding:0;margin:16px 0"></ul>
-    <section id="ad-below-form" class="ad-slot"><!-- ad slot --></section>
-  
-  <button id="loadMore" class="load-more" style="display:none;margin:12px auto;padding:8px 14px;border:1px solid #253044;border-radius:10px;background:#0d1320;color:#eaf2ff">Cargar más</button>
-
-</main>
-  <footer class="site">
-    <a href="/terms.html">Términos y Condiciones</a> · <a href="/privacy.html">Política de Privacidad</a>
-  <a href="/terms">Términos y Condiciones</a>
-
-
-  <footer class="footer">
-    <a href="/terms.html">Términos</a> ·
-    <a href="/privacy.html">Privacidad</a>
-  <a href="/terms">Términos y Condiciones</a>
-
-
-  <!-- Consentimiento -->
-  <div id="consent" class="consent is-hidden" aria-hidden="true"
-       style="position:fixed;left:0;right:0;bottom:0;padding:10px 14px;display:flex;gap:10px;align-items:center;z-index:9998">
-    Usamos cookies/localStorage (por ejemplo, para contar vistas y mostrar anuncios).
-    Al continuar aceptás nuestros <a href="/terms.html">Términos</a> y
-    <a href="/privacy.html">Política de Privacidad</a>.
-    <button id="consentAccept" style="margin-left:auto">Aceptar</button>
-  </div>
-
-  <script src="/js/app.js?v=3"></script>
+    <section class="card">
+      <label for="text" style="font-weight:600;">Escribe tu nota…</label>
+      <textarea id="text" rows="3" placeholder="Escribe tu nota…"></textarea>
+      <div class="row">
+        <input id="ttl" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Horas (12 por defecto)">
+        <button id="send" class="btn">Publicar</button>
+      </div>
+      <div id="msg" class="hidden"></div>
+    </section>
+    <section class="list" id="list"></section>
+    <footer>
+      <span>Usamos cookies/localStorage (e.g. para contar vistas).</span><br>
+      <a href="/terms">Términos y Condiciones</a> · <a href="/privacy">Política de Privacidad</a>
+    </footer>
+  </main>
   <script>
-  // Banner de consentimiento fiable
-  document.addEventListener('DOMContentLoaded', function(){
-    try{
-      var c = document.getElementById('consent');
-      var b = document.getElementById('consentAccept');
-      var has = (localStorage.getItem('consent') === '1');
-      if (has) { c.classList.add('is-hidden'); c.setAttribute('hidden',''); c.setAttribute('aria-hidden','true'); }
-      else     { c.classList.remove('is-hidden'); c.removeAttribute('hidden'); c.setAttribute('aria-hidden','false'); }
-      b && b.addEventListener('click', function(){
-        try{ localStorage.setItem('consent','1'); }catch(e){}
-        c.classList.add('is-hidden'); c.setAttribute('hidden',''); c.setAttribute('aria-hidden','true');
-      });
-    }catch(e){}
-  });
-  </script>
-
-<!-- p12 debug bootstrap -->
-
-<!-- p12 PE shim (solo ?pe=1) -->
-
-<style>/* oculta banners SW de versión */#deploy-stamp-banner{display:none!important}</style>
-<script id="shim-publish-fallback">
-(function(){
-  const _origFetch = window.fetch;
-  async function parseMaybeJSON(res){
-    try { return await res.clone().json(); } catch(_){
-      try {
-        const t = await res.clone().text();
-        const m = /\bid\s*=\s*(\d+)/i.exec(t);
-        if(m) return { id: parseInt(m[1],10) };
-      } catch(__) {}
-      return null;
+    /* Lógica JavaScript: carga de notas, manejo de “me gusta”, compartir, reportar, paginación, etc. */
+    const FEED_SEL = "#list";
+    let FEED = document.querySelector(FEED_SEL);
+    if(!FEED){
+      FEED = document.createElement("section");
+      FEED.id = "list";
+      (document.body||document.documentElement).appendChild(FEED);
     }
-  }
-  // Hook suave: solo para POST /api/notes
-  window.fetch = async function(input, init){
-    const url = (typeof input==="string"?input:(input&&input.url)||"");
-    const isNotesPost = /\/api\/notes\b/.test(url) && (!init|| (init.method||"POST").toUpperCase()==="POST");
-    const res = await _origFetch(input, init);
-    if(isNotesPost && res && res.ok){
-      const j = await parseMaybeJSON(res);
-      if(j && !res._shim_json){
-        // Creamos un Response JSON para el consumidor original
-        const blob = new Blob([JSON.stringify(j)], {type: "application/json"});
-        const patched = new Response(blob, res);
-        // marcamos para evitar doble parsing en cadenas posteriores
-        patched._shim_json = true;
-        return patched;
+    function flash(ok,msg){
+      let el = document.getElementById("msg");
+      if(!el){
+        el = document.createElement("div");
+        el.id = "msg";
+        (document.body||document.documentElement).prepend(el);
       }
+      el.className = ok ? "ok" : "error";
+      el.textContent = msg;
+      setTimeout(()=>{ el.className="hidden"; el.textContent=""; }, 2200);
     }
-    return res;
-  };
-})();
-</script>
-<script id="shim-parsenext-next-body">
-(function(){
-  if(typeof window.parseNext!=="function"){ return; }
-  const orig=parseNext;
-  window.parseNext = function(res, j){
-    let u = orig(res, j);
-    if(!u && j && j.next && j.next.cursor_ts && (j.next.cursor_id!=null)){
-      u = `/api/notes?cursor_ts=${encodeURIComponent(j.next.cursor_ts)}&cursor_id=${j.next.cursor_id}`;
-    }
-    return u;
-  };
-})();
-</script>
-  <div id="p12-stats" class="stats" style="margin:8px 0;font:14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif;">
-    <span class="likes" data-likes="0">&#10084; <b>0</b></span>
-    <span class="views" data-views="0" style="margin-left:12px;">&#128065; <b>0</b></span>
-    <span class="reports" data-reports="0" hidden style="margin-left:12px;">&#128681; <b>0</b></span>
+    function cardHTML(it){
+      const txt = it.text||it.content||it.summary||"";
+      let short = txt, needMore=false;
+      if(txt.length>180){ short = txt.slice(0,160)+"…"; needMore=true; }
+      // Escapar caracteres HTML básicos
+      const esc = s=> (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      return `
+<article class="note" data-id="${it.id}">
+  <div data-text="1" data-full="${esc(txt)}">${esc(short)||"(sin texto)"}</div>
+  <div class="meta">#${it.id} · ❤ ${it.likes||0} · 👁 ${it.views||0}
+    <button class="act like"  type="button">❤</button>
+    <button class="act more"  type="button">⋯</button>
   </div>
-<script id="p12-card-fix-v3">
-(function(){
-  if (window.__p12CardFixV3) return; window.__p12CardFixV3 = true;
-
-  function ensureSpans(art){
-    if (!art) return;
-    var meta = art.querySelector('.meta') || art;
-    if (!meta) return;
-    if (!meta.querySelector('.views')){
-      var span = document.createElement('span');
-      span.className='views';
-      span.innerHTML='👁️ <b>0</b>';
-      meta.insertBefore(span, meta.firstChild);
+  <div class="menu hidden">
+    ${needMore?`<button class="expand" type="button">Ver más</button>`:""}
+    <button class="share"  type="button">Compartir</button>
+    <button class="report" type="button">Reportar 🚩</button>
+  </div>
+</article>`;
     }
-    if (!meta.querySelector('.likes')){
-      var s = document.createElement('span');
-      s.className='likes';
-      s.innerHTML='❤ <b>0</b>';
-      meta.insertBefore(s, meta.firstChild);
+    function appendItems(items){
+      if(!items || !items.length) return;
+      const div = document.createElement("div");
+      div.innerHTML = items.map(cardHTML).join("");
+      FEED.append(...div.children);
     }
-  }
-
-  function bumpViews(art){
-    var b = art && art.querySelector('.views b');
-    if (b){
-      var n = parseInt(b.textContent||'0',10)||0;
-      b.textContent = String(n+1);
+    // Manejo de clics global (me gusta, más opciones, compartir, reportar, expandir)
+    window.addEventListener("click", async function(e){
+      const art = e.target.closest("article.note");
+      if(!art) return;
+      const id = art.getAttribute("data-id");
+      const like = e.target.closest("button.like");
+      const more = e.target.closest("button.more");
+      const share = e.target.closest("button.share");
+      const rpt   = e.target.closest("button.report");
+      const exp   = e.target.closest("button.expand");
+      try {
+        if(like){
+          const r = await fetch(`/api/notes/${id}/like`, {method:"POST", credentials:"include"});
+          const j = await r.json().catch(()=>({}));
+          if(j && typeof j.likes !== "undefined"){
+            const m = art.querySelector(".meta");
+            if(m) m.innerHTML = m.innerHTML.replace(/❤\s*\d+/, '❤ '+j.likes);
+          }
+        } else if(more){
+          art.querySelector(".menu").classList.toggle("hidden");
+        } else if(share){
+          const url = `${location.origin}/?id=${id}`;
+          if(navigator.share){
+            await navigator.share({title:`Nota #${id}`, url});
+          } else {
+            await navigator.clipboard.writeText(url);
+            flash(true,"Link copiado");
+          }
+          art.querySelector(".menu").classList.add("hidden");
+        } else if(rpt){
+          const r = await fetch(`/api/notes/${id}/report`, {method:"POST", credentials:"include"});
+          const j = await r.json().catch(()=>({}));
+          if(j && j.removed){
+            art.remove(); flash(true,"Nota eliminada");
+          } else {
+            flash(true,"Reporte enviado");
+          }
+          art.querySelector(".menu").classList.add("hidden");
+        } else if(exp){
+          const box = art.querySelector("[data-text]");
+          if(!box) return;
+          const full = box.getAttribute("data-full")||"";
+          const expanded = exp.getAttribute("data-expanded")==="1";
+          if(expanded){
+            box.textContent = full.length>180? full.slice(0,160)+"…" : full;
+            exp.textContent = "Ver más";
+            exp.setAttribute("data-expanded","0");
+          } else {
+            box.textContent = full;
+            exp.textContent = "Ver menos";
+            exp.setAttribute("data-expanded","1");
+          }
+        }
+      } catch(_){ }
+    });
+    // Publicar nota (envío POST, con fallback a form si es necesario)
+    async function publish(ev){
+      ev && ev.preventDefault && ev.preventDefault();
+      const ta = document.querySelector("#text");
+      const ttl = document.querySelector("#ttl");
+      const text = (ta?.value||"").trim();
+      if(text.length < 12){ flash(false,"Escribí un poco más (≥ 12 caracteres)."); return; }
+      const body = { text };
+      const v = parseInt(ttl?.value||"",10);
+      if(Number.isFinite(v) && v>0) body.ttl_hours = v;
+      // Intentar JSON primero
+      let r, j;
+      try {
+        r = await fetch('/api/notes', {
+          method:'POST', credentials:'include',
+          headers:{'Content-Type':'application/json','Accept':'application/json'},
+          body: JSON.stringify(body)
+        });
+      } catch(_){}
+      if(!r || !r.ok){
+        // Fallback: enviar como formulario x-www-form-urlencoded
+        const params = new URLSearchParams();
+        params.set('text', text);
+        if(body.ttl_hours) params.set('ttl_hours', String(body.ttl_hours));
+        try {
+          r = await fetch('/api/notes', {
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},
+            body: params
+          });
+        } catch(_){}
+      }
+      try { j = await r.json(); } catch(_){ j = null; }
+      if(!r || !r.ok || !j || j.ok===false){
+        flash(false, (j&&j.error) || (`Error HTTP ${(r&&r.status)}`));
+        return;
+      }
+      // Prepend nueva nota publicada
+      const it = j.item || {id:j.id, text, likes:j.likes||0, views:0, timestamp:new Date().toISOString()};
+      const wrap = document.createElement('div');
+      wrap.innerHTML = cardHTML(it);
+      FEED.prepend(wrap.firstElementChild);
+      if(ta) ta.value='';
+      if(ttl) ttl.value='';
+      flash(true,"Publicado ✅");
     }
-  }
-
-  var io = ('IntersectionObserver' in window) ? new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if (e.isIntersecting){
-        var art=e.target, id=art.getAttribute('data-id');
-        if (id){
-          try{ fetch('/api/notes/'+id+'/view', {method:'POST'}).catch(function(){}); }catch(_){}
-        }
-        bumpViews(art);
-        try{ io.unobserve(art); }catch(_){}
-      }
+    document.addEventListener("DOMContentLoaded", ()=>{
+      const btn = document.getElementById("send");
+      if(btn) btn.addEventListener("click", publish);
     });
-  }, {rootMargin:'0px 0px -60% 0px', threshold:0.2}) : null;
-
-  function watch(){
-    document.querySelectorAll('article.note').forEach(function(art){
-      ensureSpans(art);
-      if (io) try{ io.observe(art); }catch(_){}
+    // Paginación por keyset (cargar más notas)
+    async function fetchPage(url){
+      let nextURL = null;
+      try {
+        const r = await fetch(url, {headers:{"Accept":"application/json"}, credentials:"include"});
+        const j = await r.json().catch(()=>({}));
+        const items = (Array.isArray(j) ? j : (j.items||[]));
+        appendItems(items);
+        // Verificar cabeceras Link o X-Next-Cursor para próxima página
+        const link = r.headers.get("Link") || r.headers.get("link");
+        if(link){
+          const m = /<([^>]+)>;\s*rel="?next"?/i.exec(link);
+          if(m) nextURL = m[1];
+        }
+        if(!nextURL){
+          try {
+            const xn = JSON.parse(r.headers.get("X-Next-Cursor")||"null");
+            if(xn && xn.cursor_ts && xn.cursor_id){
+              nextURL = `/api/notes?cursor_ts=${encodeURIComponent(xn.cursor_ts)}&cursor_id=${xn.cursor_id}`;
+            }
+          } catch(_){}
+        }
+        // Mostrar botón "Cargar más" si hay siguiente
+        if(nextURL){
+          let b = document.getElementById("p12-more");
+          if(!b){
+            b = document.createElement("button");
+            b.id = "p12-more"; b.type = "button"; b.textContent = "Cargar más";
+            b.style.cssText = "display:block;margin:12px auto;padding:.6rem 1rem;border-radius:999px;border:1px solid #e5e7eb;background:#fff;";
+            FEED.after(b);
+            b.addEventListener("click", ()=>{ fetchPage(nextURL); });
+          }
+        }
+      } catch(_){}
+    }
+    // Iniciar cargando primeras notas
+    window.addEventListener("DOMContentLoaded", ()=>{
+      fetchPage('/api/notes?limit=10');
     });
-  }
-
-  var mo = new MutationObserver(function(ms){
-    var changed=false;
-    ms.forEach(function(m){
-      m.addedNodes && m.addedNodes.forEach(function(n){
-        if (n.nodeType===1 && ( (n.matches && n.matches('article.note')) || (n.querySelector && n.querySelector('article.note')) )){
-          changed=true;
-        }
-      });
-    });
-    if (changed) watch();
-  });
-
-  try{ mo.observe(document.documentElement,{childList:true,subtree:true}); }catch(_){}
-  try{ document.addEventListener('DOMContentLoaded', watch); }catch(_){}
-  try{ window.addEventListener('load', watch); }catch(_){}
-  try{ setTimeout(watch, 0); }catch(_){}
-})();
-</script>
-
-<div id="p12-stats" style="margin:.75rem 0;font:14px system-ui;">Views: <span class="views">0</span> · Likes: <span class="likes">0</span> · Reports: <span class="reports">0</span></div>
-
-<div id="p12-stats" style="margin:.75rem 0;font:14px system-ui;">Views: <span class="views">0</span> · Likes: <span class="likes">0</span> · Reports: <span class="reports">0</span></div>
-
-<script id="p12-metrics-enhancer-v1">
-(function(){
-  try{
-    const attach = () => {
-      const metaBlocks = Array.from(document.querySelectorAll('.meta, .note .meta, .card .meta'));
-      for (const mb of metaBlocks){
-        let t = mb.innerHTML;
-        // likes
-        t = t.replace(/(❤\s*)([0-9]+|\$\{[^}]+\})(?![^<]*<\/span>)/, '<span class="likes">ca-pub-9479870293204581https://paste12-rmsk.onrender.com</span>');
-        // views
-        t = t.replace(/(👁\s*)([0-9]+|\$\{[^}]+\})(?![^<]*<\/span>)/, '<span class="views">ca-pub-9479870293204581https://paste12-rmsk.onrender.com</span>');
-        // reports (si no hay)
-        if(!/class=["']reports["']/.test(t)){
-          t = t.replace(/(<span class="views"[^>]*>[^<]*<\/span>)/, 'ca-pub-9479870293204581 · <span class="reports">🚩 0</span>');
-        }
-        mb.innerHTML = t;
-      }
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
-    else attach();
-  }catch(e){ console.warn('metrics-enhancer', e); }
-})();
-</script>
-
-<script id="p12-405-tip">(function(){try{
-  var _f = window.fetch; if(!_f) return;
-  window.fetch = function(u,i){
-    return _f.apply(this,arguments).then(function(r){
-      try{ if(r && r.status===405){
-        var host = location.hostname;
-        var tip  = (host.indexOf("paste12-")===-1)? " ¿Estás en paste12-rmsk.onrender.com? (ojo: pastel2 no es lo mismo)" : " Endpoint sin POST habilitado.";
-        var box = document.getElementById("msg");
-        if(!box){ box=document.createElement("div"); box.id="msg"; (document.body||document.documentElement).prepend(box); }
-        box.className="error"; box.textContent = "Error HTTP 405." + tip;
-      }}catch(_){ }
-      return r;
-    });
-  };
-}catch(_){}})();</script>
-</body>
-
-<script id="p12-metrics-enhancer-v1">
-(function(){
-  try{
-    const attach = () => {
-      const metaBlocks = Array.from(document.querySelectorAll('.meta, .note .meta, .card .meta'));
-      for (const mb of metaBlocks){
-        let t = mb.innerHTML;
-        // likes
-        t = t.replace(/(❤\s*)([0-9]+|\$\{[^}]+\})(?![^<]*<\/span>)/, '<span class="likes">ca-pub-9479870293204581https://paste12-rmsk.onrender.com</span>');
-        // views
-        t = t.replace(/(👁\s*)([0-9]+|\$\{[^}]+\})(?![^<]*<\/span>)/, '<span class="views">ca-pub-9479870293204581https://paste12-rmsk.onrender.com</span>');
-        // reports (si no hay)
-        if(!/class=["']reports["']/.test(t)){
-          t = t.replace(/(<span class="views"[^>]*>[^<]*<\/span>)/, 'ca-pub-9479870293204581 · <span class="reports">🚩 0</span>');
-        }
-        mb.innerHTML = t;
-      }
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
-    else attach();
-  }catch(e){ console.warn('metrics-enhancer', e); }
-})();
-</script>
-
-</body>
-
-<script id="p12-metrics-enhancer-v1">
-(function(){
-  try{
-    const attach = () => {
-      const metaBlocks = Array.from(document.querySelectorAll('.meta, .note .meta, .card .meta'));
-      for (const mb of metaBlocks){
-        let t = mb.innerHTML;
-        // likes
-        t = t.replace(/(❤\s*)([0-9]+|\$\{[^}]+\})(?![^<]*<\/span>)/, '<span class="likes">ca-pub-9479870293204581https://paste12-rmsk.onrender.com</span>');
-        // views
-        t = t.replace(/(👁\s*)([0-9]+|\$\{[^}]+\})(?![^<]*<\/span>)/, '<span class="views">ca-pub-9479870293204581https://paste12-rmsk.onrender.com</span>');
-        // reports (si no hay)
-        if(!/class=["']reports["']/.test(t)){
-          t = t.replace(/(<span class="views"[^>]*>[^<]*<\/span>)/, 'ca-pub-9479870293204581 · <span class="reports">🚩 0</span>');
-        }
-        mb.innerHTML = t;
-      }
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
-    else attach();
-  }catch(e){ console.warn('metrics-enhancer', e); }
-})();
-</script>
-
+  </script>
 </body>
 </html>
