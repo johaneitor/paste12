@@ -165,3 +165,36 @@ def api_notes_head():
     # Opcional: tipo json para clientes que lo esperan aunque no haya body
     resp.headers['Content-Type'] = 'application/json'
     return resp
+
+
+# --- compat: evitar 405 por trailing slash en /api/notes/
+try:
+    from flask import Blueprint, redirect, request
+    from flask import current_app as _cur
+    bp  # noqa: F401
+except Exception:
+    pass
+else:
+    @bp.route("/api/notes/", methods=["GET","POST","OPTIONS"], strict_slashes=False)
+    def _notes_slash_compat():
+        # 307 mantiene método y body para POST
+        return redirect("/api/notes", code=307)
+
+
+# --- no-cache en HTML para evitar servir versiones viejas
+try:
+    from flask import after_this_request
+    from flask import current_app as _cur
+except Exception:
+    pass
+else:
+    try:
+        @bp.after_request
+        def _add_nocache_headers(resp):
+            ct = resp.headers.get("Content-Type","")
+            if ct.startswith("text/html"):
+                resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                resp.headers["Pragma"] = "no-cache"
+            return resp
+    except Exception:
+        pass

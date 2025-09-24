@@ -87,6 +87,14 @@ app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
     "max_overflow": 10,
 })
 
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app, engine_options=engine_opts)

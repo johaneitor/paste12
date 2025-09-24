@@ -172,7 +172,7 @@
       const exp   = e.target.closest("button.expand");
       try {
         if(like){
-          const r = await fetch(`/api/notes/${id}/like`, {method:"POST", credentials:"include"});
+          const r = await fetch(`/api/notes${id}/like`, {method:"POST", credentials:"include"});
           const j = await r.json().catch(()=>({}));
           if(j && typeof j.likes !== "undefined"){
             const m = art.querySelector(".meta");
@@ -190,7 +190,7 @@
           }
           art.querySelector(".menu").classList.add("hidden");
         } else if(rpt){
-          const r = await fetch(`/api/notes/${id}/report`, {method:"POST", credentials:"include"});
+          const r = await fetch(`/api/notes${id}/report`, {method:"POST", credentials:"include"});
           const j = await r.json().catch(()=>({}));
           if(j && j.removed){
             art.remove(); flash(true,"Nota eliminada");
@@ -353,7 +353,7 @@
     const v=parseInt(ttl?.value||'',10); const body={text}; if(Number.isFinite(v)&&v>0) body.ttl_hours=v;
 
     // cascada de endpoints (cubre backends viejos/nuevos)
-    const ENDS=['/api/notes','/api/notes/publish','/api/publish','/api/note','/api/notes/create'];
+    const ENDS=['/api/notes','/api/notespublish','/api/publish','/api/note','/api/notescreate'];
     let j=null;
     for (const u of ENDS){ j = await tryPost(u, body); if (j && (j.ok!==false) ) break; }
 
@@ -380,5 +380,47 @@
   }, {once:true});
 })();</script>
 
+
+<script>
+// p12-submit-v3
+(function() {
+  const API = "/api/notes"; // sin trailing slash
+  function toast(msg) {
+    const el = document.querySelector('#p12-error') || (function(){
+      const d=document.createElement('div'); d.id='p12-error'; d.style.color='#b00';
+      d.style.marginTop='8px'; document.querySelector('form')?.appendChild(d); return d;
+    })(); el.textContent = msg;
+  }
+  async function submitNote(ev) {
+    ev && ev.preventDefault();
+    const ta = document.querySelector('textarea'); if (!ta) return;
+    const hoursSel = document.querySelector('select'); 
+    const hours = parseInt(hoursSel?.value || '12') || 12;
+    const payload = { text: ta.value.trim(), hours };
+    if (!payload.text) return toast("Escribe algo primero");
+    // intento JSON
+    try {
+      let r = await fetch(API, {
+        method: "POST", mode: "cors", redirect: "follow", credentials: "omit",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (r.status===201) { ta.value=""; toast(""); return; }
+      if (r.status===405 || r.status===415) throw new Error("retry-form");
+      if (!r.ok) throw new Error("HTTP "+r.status);
+    } catch(e) {
+      // fallback FORM
+      try {
+        const fd = new FormData(); fd.set("text", payload.text); fd.set("hours", String(hours));
+        let r = await fetch(API, { method:"POST", body: fd });
+        if (r.status===201) { ta.value=""; toast(""); return; }
+        throw new Error("HTTP "+r.status);
+      } catch(e2) { toast("Error "+e2.message); }
+    }
+  }
+  document.querySelector('form')?.addEventListener('submit', submitNote);
+  document.querySelector('#p12-submit')?.addEventListener('click', submitNote);
+})();
+</script>
 </body>
 </html>
