@@ -85,3 +85,7 @@ server.log
 # allow deploy tools & HTML
 !tools/*.sh
 !frontend/*.html
+
+# allow deploy tools & HTML
+!tools/*.sh
+!frontend/*.html
