@@ -1,3 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PY=${PYTHON:-python}
+
+# --- contract_shim.py (robusto, nunca raise en import) ---
+ts="$(date -u +%Y%m%d-%H%M%SZ)"
+shim="contract_shim.py"
+[[ -f "$shim" ]] && cp -f "$shim" "${shim}.${ts}.bak" || true
+echo "[wsgi-fix] Backup: ${shim}.${ts}.bak"
+
+cat > "$shim" <<'PYCODE'
 # contract_shim.py — v3 (robusto)
 # Garantiza que siempre exista `application` aunque el backend real no cargue.
 import importlib, os, types, traceback
@@ -106,3 +117,21 @@ if _real_app is None:
 else:
     # Backend real resuelto
     application = _real_app
+PYCODE
+
+$PY -m py_compile "$shim" && echo "[wsgi-fix] py_compile OK"
+
+# --- wsgi.py (mínimo) ---
+wsgi="wsgi.py"
+[[ -f "$wsgi" ]] && cp -f "$wsgi" "${wsgi}.${ts}.bak" || true
+echo "[wsgi-fix] Backup: ${wsgi}.${ts}.bak"
+
+cat > "$wsgi" <<'PYCODE'
+# wsgi.py — mínimo y estable
+from contract_shim import application  # WSGI callable
+PYCODE
+
+$PY -m py_compile "$wsgi" && echo "[wsgi-fix] wsgi.py py_compile OK"
+
+echo "[wsgi-fix] Listo. Usa Start Command:"
+echo "  gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT"
