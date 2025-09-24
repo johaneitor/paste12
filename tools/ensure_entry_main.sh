@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Crea/valida un entrypoint explícito (sin deps raras) y lo commitea si falta.
+
+need_commit=0
+if ! git ls-files --error-unmatch entry_main.py >/dev/null 2>&1; then
+  cat > entry_main.py <<'PY'
+from importlib import import_module
+import inspect
+
+CANDIDATES = [
+    ("backend.app", "app"),
+    ("backend.main", "app"),
+    ("backend.wsgi", "app"),
+    ("app", "app"),
+    ("run", "app"),
+    ("wsgiapp", "app"),
+    ("wsgiapp", "application"),
+]
+
+def _positional_names(fn):
+    try:
+        sig = inspect.signature(fn)
+    except (ValueError, TypeError):
+        return []
+    return [p.name.lower() for p in sig.parameters.values()
+            if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+
+def _is_wsgi_function(obj):
+    if not callable(obj) or inspect.isclass(obj):
+        return False
+    names = _positional_names(obj)
+    return len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response"
+
+def _is_wsgi_object(obj):
+    if inspect.isclass(obj):
+        return False
+    if hasattr(obj, "wsgi_app") and callable(obj):
+        return True
+    call = getattr(obj, "__call__", None)
+    if call and callable(call):
+        names = _positional_names(call)
+        return len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response"
+    return False
+
+def _build():
+    for modname, attr in CANDIDATES:
+        try:
+            mod = import_module(modname)
+            obj = getattr(mod, attr, None)
+            if obj and (_is_wsgi_function(obj) or _is_wsgi_object(obj)):
+                return obj
+        except Exception:
+            pass
+    try:
+        wa = import_module("wsgiapp")
+        if hasattr(wa, "_resolve_app"):
+            obj = wa._resolve_app()
+            if obj and (_is_wsgi_function(obj) or _is_wsgi_object(obj)):
+                return obj
+    except Exception:
+        pass
+    tried = ", ".join([f"{m}:{a}" for m,a in CANDIDATES]) + " + wsgiapp._resolve_app()"
+    raise RuntimeError(f"entry_main: no encontré una app WSGI válida (intenté {tried})")
+
+_APP = _build()
+
+def app(environ, start_response):
+    return _APP(environ, start_response)
+PY
+  need_commit=1
+fi
+
+python - <<'PY'
+import py_compile; py_compile.compile('entry_main.py', doraise=True); print("py_compile entry_main.py OK")
+PY
+
+if [ "$need_commit" = 1 ]; then
+  git add entry_main.py
+  git commit -m "ops: entry_main:app explícito (sin deps extras, fallback controlado)"
+fi
+echo "OK - entry_main.py presente y compilado"

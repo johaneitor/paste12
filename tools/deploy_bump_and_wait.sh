@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+BASE="${1:?Uso: $0 https://host}"
+STAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+echo "$STAMP" > .deploystamp
+git add .deploystamp && git commit -m "deploy: bump $STAMP" >/dev/null
+git push origin main
+TARGET="$(git rev-parse HEAD | head -c 40)"
+for i in $(seq 1 48); do
+  D="$(curl -fsS "$BASE/api/deploy-stamp" | sed -n 's/.*"commit": *"\([0-9a-f]\{7,40\}\)".*/\1/p' || true)"
+  [ -n "$D" ] && echo "• intento $i: $D"
+  [ "$D" = "$TARGET" ] && { echo "✓ Deploy == HEAD"; exit 0; }
+  sleep 5
+done
+echo "✗ Deploy no igualó a tiempo"; exit 2

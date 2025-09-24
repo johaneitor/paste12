@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(pwd)"
+TARGET="$ROOT/contract_shim.py"
+WSGI="$ROOT/wsgi.py"
+
+bk() { local f="$1"; [[ -f "$f" ]] && cp -a "$f" "$f.bak.$(date +%s)" || true; }
+
+echo "== Patch backend export (contract_shim.application) =="
+
+# 1) Escribimos un contract_shim.py robusto que localiza una app Flask y la expone como "application".
+bk "$TARGET"
+cat > "$TARGET" <<'PY'
+# -*- coding: utf-8 -*-
+"""
+Contract shim: garantiza que exista `application` (WSGI callable) para gunicorn.
+Intenta importar la app Flask desde módulos comunes y expone:
+    - application  (WSGI)
+    - app          (alias opcional)
+Además, agrega un after_request con CORS y soporta OPTIONS 204 para /api/notes.
+"""
+from __future__ import annotations
+
+import importlib
+from typing import Any
+
+_app = None
+
+CANDIDATES = [
+    # (module, attr)
+    ("wsgiapp", "app"),           # paquete local común
+    ("app", "app"),               # app.py -> app = Flask(...)
+    ("application", "application"),
+    ("main", "app"),
+]
+
+def _load_app():
+    global _app
+    for mod, attr in CANDIDATES:
+        try:
+            m = importlib.import_module(mod)
+            a = getattr(m, attr, None)
+            if a is not None:
+                return a
+        except Exception:
+            continue
+    # como último intento: buscar variable "application" en wsgi.py
+    try:
+        m = importlib.import_module("wsgi")
+        a = getattr(m, "application", None) or getattr(m, "app", None)
+        if a is not None:
+            return a
+    except Exception:
+        pass
+    raise RuntimeError("No se pudo localizar una app WSGI (Flask) para exponer como `application`")
+
+_app = _load_app()
+
+# Exponer API esperada por gunicorn
+application = _app
+app = _app  # alias, por compatibilidad
+
+# ====== Endurecer CORS & OPTIONS en /api/notes ======
+try:
+    from flask import request, make_response
+    @app.after_request
+    def _p12_cors(resp):
+        # CORS estándar
+        resp.headers.setdefault("Access-Control-Allow-Origin", "*")
+        resp.headers.setdefault("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS")
+        resp.headers.setdefault("Access-Control-Allow-Headers", "Content-Type, Accept")
+        resp.headers.setdefault("Access-Control-Max-Age", "600")
+        return resp
+
+    # Preflight manual para /api/notes
+    @app.route("/api/notes", methods=["OPTIONS"])
+    def _p12_options_notes():
+        r = make_response("", 204)
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        r.headers["Access-Control-Allow-Methods"] = "GET,POST,HEAD,OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
+        r.headers["Access-Control-Max-Age"] = "600"
+        return r
+except Exception:
+    # si no es Flask o falla, no bloqueamos el arranque
+    pass
+PY
+python -m py_compile "$TARGET"
+echo "✓ contract_shim.py actualizado y compilado"
+
+# 2) Asegurar que wsgi.py reexporta desde contract_shim (sin romper si ya está bien)
+if [[ -f "$WSGI" ]]; then
+  bk "$WSGI"
+  if ! grep -q "from contract_shim import application" "$WSGI"; then
+    cat > "$WSGI" <<'PY'
+# Reexporta la app para gunicorn: wsgi:application
+from contract_shim import application  # type: ignore
+app = application  # opcional
+PY
+    echo "✓ wsgi.py actualizado"
+  else
+    echo "→ wsgi.py ya importaba application desde contract_shim"
+  fi
+else
+  cat > "$WSGI" <<'PY'
+# Reexporta la app para gunicorn: wsgi:application
+from contract_shim import application  # type: ignore
+app = application
+PY
+  echo "✓ wsgi.py creado"
+fi
+
+echo "Listo. Sugerido en Render (Start Command):"
+echo "  gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT"
