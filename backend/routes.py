@@ -1,6 +1,6 @@
+from __future__ import annotations
 from flask import Blueprint
 api=Blueprint('api',__name__)
-from __future__ import annotations
 
 import os, hashlib
 from datetime import datetime, timedelta
