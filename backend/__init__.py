@@ -36,6 +36,7 @@ def normalize_db_url(u: str) -> str:
 
 # --- app -------------------------------------------------------------------
 app = Flask(__name__, static_folder="../frontend", static_url_path="")
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
 
 db_uri = normalize_db_url(os.getenv("DATABASE_URL", ""))
 
@@ -47,6 +48,14 @@ engine_opts = {
 }
 
 app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+    "pool_pre_ping": True,
+    "pool_recycle": 180,
+    "pool_timeout": 15,
+    "pool_size": 5,
+    "max_overflow": 10,
+})
+
 app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
     "pool_pre_ping": True,
     "pool_recycle": 180,
@@ -154,3 +163,40 @@ def create_app():
     @app.get('/api/health')
     def _health(): return {'ok': True, 'api': True, 'ver':'fallback'}
     return app
+
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from datetime import timedelta
+
+# == soft DB guard / helpers ==
+try:
+    from sqlalchemy import text
+except Exception:
+    text = None
+
+def _db_ping_ok(app, db):
+    if not text:  # sin SQLAlchemy text, salir "ok"
+        return True
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        try:
+            app.logger.warning("db ping fail: %s", e)
+        except Exception:
+            pass
+        return False
+
+def _install_soft_db_guard(app, db):
+    @app.before_request
+    def _only_guard_writes():
+        # dejar pasar health y todo GET/HEAD/OPTIONS
+        if request.method in ("GET","HEAD","OPTIONS"):
+            return None
+        if not request.path.startswith("/api/"):
+            return None
+        if not _db_ping_ok(app, db):
+            return ("Service temporarily unavailable (db)", 503, {"Content-Type":"text/plain"})
+        return None
+

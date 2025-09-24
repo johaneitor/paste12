@@ -209,3 +209,15 @@ def _p12_options(anypath):
     resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     resp.headers['Access-Control-Max-Age'] = '86400'
     return resp
+
+# == OPTIONS shim para /api/notes ==
+try:
+    from flask import current_app as _ca
+    _bp = globals().get('bp')
+except Exception:
+    _bp = None
+
+if _bp:
+    @_bp.route("/api/notes", methods=["OPTIONS"])
+    def _notes_options_():
+        return ("", 204)

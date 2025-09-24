@@ -82,8 +82,6 @@
   try{
     var q=new URLSearchParams(location.search);
     if(q.has('nosw')||q.has('nukesw')){
-      if('serviceWorker' in navigator){
-        navigator.serviceWorker.getRegistrations()
         .then(rs=>Promise.all(rs.map(r=>r.unregister())))
         .then(()=>{ if(window.caches){ return caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))) }})
         .finally(()=>console.log('[sw-nuke] done'));
@@ -310,8 +308,6 @@
 (()=>{ if (window.__P12_PATCH_PUBLISH__) return; window.__P12_PATCH_PUBLISH__=true;
   // matar SW si debug/nosw (no rompe si no hay)
   try{const q=new URLSearchParams(location.search);
-      if((q.has('debug')||q.has('nosw'))&&'serviceWorker'in navigator){
-        navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));
         if (window.caches && caches.keys) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)));
       }}catch(_){}
 
@@ -424,3 +420,42 @@
 </script>
 </body>
 </html>
+
+<script>
+
+function publishNote() {
+  const text = (document.querySelector('#note')||{}).value || '';
+  const hoursSel = document.querySelector('#hours');
+  const hours = hoursSel ? (parseInt(hoursSel.value||'12',10)||12) : 12;
+  const err = document.querySelector('#err') || (function(){
+    const e=document.createElement('div'); e.id='err'; e.style.margin='8px 0'; e.style.color='#b00';
+    (document.querySelector('form')||document.body).prepend(e); return e;
+  })();
+
+  const endpoint = '/api/notes';
+  const common = {mode:'cors', cache:'no-store'};
+
+  const tryJSON = fetch(endpoint, {
+    ...common,
+    method:'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ text, hours })
+  });
+
+  function show(e, status, body){
+    err.textContent = (status?`Error HTTP ${status}`:'') + (body?` — ${body}`:'');
+  }
+
+  return tryJSON.then(async r=>{
+    if(r.ok){ err.textContent=''; location.reload(); return; }
+    // fallback a form
+    const fd = new FormData(); fd.set('text', text); fd.set('hours', String(hours));
+    const r2 = await fetch(endpoint, { ...common, method:'POST', body: fd });
+    if(r2.ok){ err.textContent=''; location.reload(); return; }
+    show(null, r.status||r2.status, (await r.text().catch(()=>'')) || (await r2.text().catch(()=>'')));
+  }).catch(async e=>{
+    show(e, 0, (e&&e.message)||'falló la red');
+  });
+}
+
+</script>
