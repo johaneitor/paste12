@@ -1,3 +1,4 @@
+from backend.routes import api
 # -*- coding: utf-8 -*-
 import os
 import re
@@ -203,3 +204,9 @@ def _install_soft_db_guard(app, db):
             return ("Service temporarily unavailable (db)", 503, {"Content-Type":"text/plain"})
         return None
 
+
+app.register_blueprint(api)
+
+@app.route('/api/health')
+def health():
+    return {"ok": True, "api": True, "ver": "wsgi-lazy-v2"}

@@ -1,3 +1,5 @@
+from flask import Blueprint
+api=Blueprint('api',__name__)
 from __future__ import annotations
 
 import os, hashlib
@@ -221,3 +223,36 @@ if _bp:
     @_bp.route("/api/notes", methods=["OPTIONS"])
     def _notes_options_():
         return ("", 204)
+
+
+@api.route('/api/notes', methods=['GET'])
+def list_notes():
+    from backend.models import Note
+    limit = 10
+    try:
+        from flask import request
+        limit = int(request.args.get('limit', 10))
+    except Exception:
+        pass
+    notes = Note.query.order_by(Note.timestamp.desc()).limit(limit).all()
+    def ser(n): 
+        return dict(id=n.id,text=n.text,timestamp=str(n.timestamp),
+                    expires_at=str(n.expires_at) if getattr(n,'expires_at',None) else None,
+                    likes=getattr(n,'likes',0),views=getattr(n,'views',0),reports=getattr(n,'reports',0),
+                    author_fp=getattr(n,'author_fp',None))
+    return jsonify([ser(n) for n in notes])
+
+
+@api.route('/api/notes', methods=['POST'])
+def create_note():
+    from backend import db
+    from backend.models import Note
+    from flask import request, jsonify
+    data = request.get_json(silent=True) or {}
+    text = (data.get('text') or request.form.get('text') or '').strip()
+    if not text:
+        return ("missing text", 400)
+    n = Note(text=text)
+    db.session.add(n)
+    db.session.commit()
+    return jsonify({"ok": True, "id": n.id}), 201
