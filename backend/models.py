@@ -1,44 +1,17 @@
 from __future__ import annotations
-import sqlalchemy as sa
+from datetime import datetime, timedelta
+from . import db
 
-from datetime import datetime, date
-from backend import db
+def default_exp():
+    return datetime.utcnow() + timedelta(days=1)
 
 class Note(db.Model):
     __tablename__ = "notes"
     id         = db.Column(db.Integer, primary_key=True)
     text       = db.Column(db.Text, nullable=False)
-    timestamp  = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    expires_at = db.Column(db.DateTime, nullable=True, index=True)
-    likes      = db.Column(db.Integer, default=0, nullable=False)
-    views      = db.Column(db.Integer, default=0, nullable=False)
-    reports    = db.Column(db.Integer, default=0, nullable=False)
-    author_fp  = db.Column(db.String(128), index=True, nullable=True)
-
-class ReportLog(db.Model):
-    __tablename__ = "report_log"
-    id = db.Column(db.Integer, primary_key=True)
-    note_id = db.Column(db.Integer, db.ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
-    fingerprint = db.Column(db.String(128), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_report_note_fp"),)
-
-
-class LikeLog(db.Model):
-    __tablename__ = "like_log"
-    id = db.Column(db.Integer, primary_key=True)
-    note_id = db.Column(db.Integer, db.ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
-    fingerprint = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", name="uq_like_note_fp"),)
-
-class ViewLog(db.Model):
-    day = db.Column(db.Date, nullable=False, default=sa.func.current_date())
-
-    __tablename__ = "view_log"
-    id = db.Column(db.Integer, primary_key=True)
-    note_id = db.Column(db.Integer, db.ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
-    fingerprint = db.Column(db.String(128), nullable=False, index=True)
-    view_date = db.Column(db.Date, nullable=False, index=True)  # 1 vista/día/nota/fp
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    __table_args__ = (db.UniqueConstraint("note_id", "fingerprint", "view_date", name="uq_view_note_fp_day"),)
+    timestamp  = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False, default=default_exp)
+    likes      = db.Column(db.Integer, nullable=False, default=0)
+    views      = db.Column(db.Integer, nullable=False, default=0)
+    reports    = db.Column(db.Integer, nullable=False, default=0)
+    author_fp  = db.Column(db.String(64), nullable=False, default="")
