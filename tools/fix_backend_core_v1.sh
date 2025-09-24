@@ -1,3 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+backup() { [[ -f "$1" ]] && cp -f "$1" "$1.$(date -u +%Y%m%d-%H%M%SZ).bak" || true; }
+
+mkdir -p backend
+
+# 1) backend/db.py : fuente única del objeto db
+if [[ ! -f backend/db.py ]]; then
+  cat > backend/db.py <<'PY'
+from flask_sqlalchemy import SQLAlchemy
+# Objeto global, sin importar 'backend' para evitar ciclos
+db = SQLAlchemy()
+PY
+  echo "[corefix] creado backend/db.py"
+else
+  echo "[corefix] backend/db.py ya existe (ok)"
+fi
+
+# 2) backend/__init__.py : factoría + reexport de db + health
+backup backend/__init__.py
+cat > backend/__init__.py <<'PY'
 from __future__ import annotations
 import os
 from flask import Flask, jsonify
@@ -45,3 +67,18 @@ def create_app() -> Flask:
 
 # Export para gunicorn/WSGI shims
 app = create_app()
+PY
+echo "[corefix] backend/__init__.py actualizado"
+
+# 3) Validación rápida
+python -m py_compile backend/__init__.py
+echo "[corefix] py_compile OK (backend/__init__.py)"
+
+# 4) Mensaje final
+cat <<MSG
+Listo. Siguiente:
+  - Deploy en Render (mismo Start Command):
+    gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT
+  - Luego corre el smoke:
+    tools/smoke_after_corefix_v1.sh "https://paste12-rmsk.onrender.com" "/sdcard/Download"
+MSG
