@@ -148,7 +148,8 @@ def _shim_app(app):
         return [body]
     return _app
 
-_orig_app = _orig_app = _orig_app = _orig_app = _orig_app = _orig_app = _orig_app = application = _shim_app(_real_app)
+_orig_app = _orig_app = _orig_app = _orig_app = _orig_app = _orig_app = _orig_app = _orig_app = application = _shim_app(_real_app)
+application = _HeadDropMiddleware(_orig_app)
 application = _HeadDropMiddleware(_orig_app)
 application = _HeadDropMiddleware(_orig_app)
 application = _HeadDropMiddleware(_orig_app)
