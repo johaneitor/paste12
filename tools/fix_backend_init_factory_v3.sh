@@ -1,3 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+TS="$(date -u +%Y%m%d-%H%M%SZ)"
+TGT="backend/__init__.py"
+[[ -f "$TGT" ]] && cp -f "$TGT" "${TGT}.${TS}.bak" && echo "[init-factory] Backup: ${TGT}.${TS}.bak"
+
+cat > "$TGT" <<'PY'
 import os
 from flask import Flask, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -62,3 +69,6 @@ def create_app():
         return resp
 
     return app
+PY
+
+echo "[init-factory] backend/__init__.py actualizado"

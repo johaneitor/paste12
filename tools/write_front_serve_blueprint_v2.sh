@@ -1,3 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+TS="$(date -u +%Y%m%d-%H%M%SZ)"
+OUT="backend/front_serve.py"
+[[ -f "$OUT" ]] && cp -f "$OUT" "${OUT}.${TS}.bak" && echo "[front-serve] Backup: ${OUT}.${TS}.bak"
+
+cat > "$OUT" <<'PY'
 from flask import Blueprint, Response
 from pathlib import Path
 
@@ -25,3 +32,6 @@ def terms():
 @front_bp.get("/privacy")
 def privacy():
     return _read_html("privacy.html")
+PY
+
+echo "[front-serve] backend/front_serve.py escrito"
