@@ -56,13 +56,15 @@ def _safe_register_routes(app: Flask) -> Tuple[bool, Optional[str]]:
         return False, "backend.routes no expone bp/register_routes/attach"
     except Exception as e:  # pragma: no cover
         return False, f"{type(e).__name__}: {e}"
+def _api_unavailable(e: Exception):
+    # Fallback global para cuando las rutas no cargan
+    # Evita NameError y devuelve JSON coherente
+    try:
+        msg = (str(e) if e is not None else "unavailable")[:500]
+    except Exception:
+        msg = "unavailable"
+    return jsonify(error="API routes not loaded", detail=msg), 500
 
-
-def _api_unavailable_factory(err_text: str):
-    """
-    Fallback estable para /api/notes. No captura variables libres 'e',
-    usa el texto ya materializado.
-    """
     def _handler():
         if request.method == "OPTIONS":
             # Devolvemos 204 para que CORS/options pasen igual
@@ -120,6 +122,10 @@ def create_app() -> Flask:
         # fuera de /api lo maneja el front
         return e, 404
 
+    # asegurar fallback de errores
+
+    app.register_error_handler(Exception, _api_unavailable)
+
     return app
 
 
@@ -161,7 +167,21 @@ def register_front_routes(app: Flask) -> None:
 # === auto: api fallback ===
 def register_api_fallback(app: Flask) -> None:
     @app.route("/api/<path:_rest>", methods=["GET","POST","HEAD","OPTIONS"])
-    def _api_unavailable(_rest):
-        # No referenciar 'e' inexistente aquí
-        return jsonify(error="api_unavailable", path=_rest), 500
+def _api_unavailable(e: Exception):
+    # Fallback global para cuando las rutas no cargan
+    # Evita NameError y devuelve JSON coherente
+    try:
+        msg = (str(e) if e is not None else "unavailable")[:500]
+    except Exception:
+        msg = "unavailable"
+    return jsonify(error="API routes not loaded", detail=msg), 500
+
+def _api_unavailable(e: Exception):
+    # Fallback global para cuando las rutas no cargan
+    # Evita NameError y devuelve JSON coherente
+    try:
+        msg = (str(e) if e is not None else "unavailable")[:500]
+    except Exception:
+        msg = "unavailable"
+    return jsonify(error="API routes not loaded", detail=msg), 500
 
