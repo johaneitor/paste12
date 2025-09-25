@@ -1,4 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
 
+TARGET="backend/__init__.py"
+TS="$(date -u +%Y%m%d-%H%M%SZ)"
+BAK="${TARGET}.${TS}.bak"
+
+[[ -f "$TARGET" ]] || { echo "ERROR: falta $TARGET"; exit 1; }
+cp -f "$TARGET" "$BAK"
+echo "[backup] $BAK"
+
+python - <<'PY'
+import os, io, textwrap
+
+code = r'''
 from __future__ import annotations
 
 import os
@@ -119,3 +133,13 @@ def create_app() -> Flask:
         return e, 404
 
     return app
+'''
+
+p = "backend/__init__.py"
+io.open(p, "w", encoding="utf-8").write(code)
+print("[fix] backend/__init__.py reescrito (factory estable)")
+PY
+
+python -m py_compile backend/__init__.py && echo "[py_compile] OK"
+
+echo "Listo. Ahora haz deploy en Render y probamos."
