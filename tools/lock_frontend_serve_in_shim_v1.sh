@@ -1,3 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+TS="$(date -u +%Y%m%d-%H%M%SZ)"
+[[ -f contract_shim.py ]] && cp -f contract_shim.py "contract_shim.py.${TS}.bak" || true
+echo "[shim] Backup: contract_shim.py.${TS}.bak"
+
+cat > contract_shim.py <<'PY'
 # contract_shim: front-lock serving + backend passthrough
 import os, json, importlib
 
@@ -68,3 +75,7 @@ def application(environ, start_response):
         start_response('500 Internal Server Error', [('Content-Type','text/plain; charset=utf-8')])
         return [f"Shim can't import app: {DIAG}".encode('utf-8')]
     return REAL_APP.wsgi_app(environ, start_response)
+PY
+
+python -m py_compile contract_shim.py && echo "[shim] py_compile OK"
+echo "[shim] listo"
