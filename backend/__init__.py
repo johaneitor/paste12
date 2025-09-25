@@ -1,5 +1,7 @@
 
 from __future__ import annotations
+from pathlib import Path
+
 
 import os
 from typing import Tuple, Optional
@@ -119,3 +121,47 @@ def create_app() -> Flask:
         return e, 404
 
     return app
+
+
+# === auto: helpers frontend ===
+def _frontend_dir() -> Path:
+    return Path(__file__).resolve().parent.parent / "frontend"
+
+def _send_html_file(path: Path):
+    if path.exists():
+        resp = send_file(str(path), mimetype="text/html")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    # mini fallback
+    html = (
+        "<!doctype html><meta charset='utf-8'>"
+        "<title>Paste12</title>"
+        "<h1>Paste12</h1><p>Frontend base no encontrado.</p>"
+    )
+    return (html, 200, {"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store"})
+
+
+
+# === auto: front routes (/, /terms, /privacy) ===
+def register_front_routes(app: Flask) -> None:
+    @app.get("/")
+    def index():
+        return _send_html_file(_frontend_dir() / "index.html")
+
+    @app.get("/terms")
+    def terms():
+        return _send_html_file(_frontend_dir() / "terms.html")
+
+    @app.get("/privacy")
+    def privacy():
+        return _send_html_file(_frontend_dir() / "privacy.html")
+
+
+
+# === auto: api fallback ===
+def register_api_fallback(app: Flask) -> None:
+    @app.route("/api/<path:_rest>", methods=["GET","POST","HEAD","OPTIONS"])
+    def _api_unavailable(_rest):
+        # No referenciar 'e' inexistente aquí
+        return jsonify(error="api_unavailable", path=_rest), 500
+
