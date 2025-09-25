@@ -1,75 +1,52 @@
 #!/usr/bin/env bash
 set -euo pipefail
-HTML="${1:-frontend/index.html}"
-ADS="${2:-}"  # ej: ca-pub-xxxxxxxxxxxxxxxx
-
-[[ -f "$HTML" ]] || { echo "ERROR: falta $HTML"; exit 2; }
-
+FILE="${1:-frontend/index.html}"
+ADS="${2:-ca-pub-XXXXXXXXXXXXXXXX}"
+[[ -f "$FILE" ]] || { echo "ERROR: falta $FILE"; exit 2; }
 TS="$(date -u +%Y%m%d-%H%M%SZ)"
-cp -f "$HTML" "${HTML}.${TS}.reconcile.bak"
-echo "[reconcile] Backup: ${HTML}.${TS}.reconcile.bak"
+BAK="$FILE.$TS.reconcile.bak"
+cp -f "$FILE" "$BAK"
+echo "[reconcile] Backup: $BAK"
 
-python - "$HTML" "$ADS" <<'PY'
-import io, sys, re
-
-path = sys.argv[1]
-ads  = sys.argv[2] if len(sys.argv) > 2 else ""
-s = io.open(path, 'r', encoding='utf-8').read()
+python - <<PY
+import io, re, sys
+p = sys.argv[1]
+ads = sys.argv[2]
+s = io.open(p, 'r', encoding='utf-8').read()
 orig = s
 
-def ensure_ads_meta(s):
-    if 'google-adsense-account' in s.lower():
-        return s
-    if not ads:
-        return s
-    tag = f'<meta name="google-adsense-account" content="{ads}">'
-    m = re.search(r'<head[^>]*>', s, re.I)
-    if m:
-        i = m.end()
-        return s[:i] + "\n  " + tag + "\n" + s[i:]
-    return tag + "\n" + s
+# 1) <meta name="google-adsense-account" content="ca-pub-...">
+meta_rx = re.compile(r'<meta\s+name=(["\'])google-adsense-account\1\s+content=(["\'])(.*?)\2\s*/?>', re.I)
+if meta_rx.search(s):
+    s = meta_rx.sub(lambda m: f'<meta name="google-adsense-account" content="{ads}">', s, count=1)
+else:
+    # insertar tras <head>
+    s = re.sub(r'(?i)<head([^>]*)>', lambda m: f'<head{m.group(1)}>\n<meta name="google-adsense-account" content="{ads}">', s, count=1)
 
-def ensure_ads_script(s):
-    if 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js' in s:
-        return s
-    if not ads:
-        return s
-    tag = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ads}" crossorigin="anonymous"></script>'
-    m = re.search(r'</head>', s, re.I)
-    if m:
-        i = m.start()
-        return s[:i] + "  " + tag + "\n" + s[i:]
-    return s + "\n" + tag + "\n"
+# 2) Asegurar bloque de métricas con <span class="views">
+if re.search(r'<span[^>]+class=(["\']).*?\\bviews\\b.*?\\1', s):
+    pass
+else:
+    # insertar un bloque compacto antes de cierre de header o al inicio del main
+    injected = '\n<div id="p12-stats" style="opacity:.9;font:14px system-ui,Segoe UI,Roboto,Arial">\n  <span class="views" title="Vistas">0</span>\n  · <span class="likes" title="Me gusta">0</span>\n  · <span class="reports" title="Reportes">0</span>\n</div>\n'
+    if re.search(r'</header>', s, re.I):
+        s = re.sub(r'(?i)</header>', injected + '</header>', s, count=1)
+    elif re.search(r'(?i)<main', s):
+        s = re.sub(r'(?i)<main([^>]*)>', lambda m: f'<main{m.group(1)}>{injected}', s, count=1)
+    else:
+        s = s.replace('</body>', injected + '\n</body>')
 
-def ensure_views_block(s):
-    if re.search(r'class=["\']views["\']', s, re.I):
-        return s
-    block = '''
-<section id="p12-stats" class="stats" style="margin-top:1rem;opacity:.88">
-  <span class="views">0</span> views ·
-  <span class="likes">0</span> likes ·
-  <span class="reports">0</span> reports
-</section>
-'''.lstrip()
-    m = re.search(r'</main>', s, re.I)
-    if m:
-        i = m.start()
-        return s[:i] + block + s[i:]
-    m = re.search(r'</body>', s, re.I)
-    if m:
-        i = m.start()
-        return s[:i] + block + s[i:]
-    return s + "\n" + block
-
-s = ensure_ads_meta(s)
-s = ensure_ads_script(s)
-s = ensure_views_block(s)
+# 3) Pequeña limpieza de duplicados obvios del <title>/<h1> (cuando están idénticos)
+title_m = re.search(r'(?is)<title>(.*?)</title>', s)
+h1_m    = re.search(r'(?is)<h1[^>]*>(.*?)</h1>', s)
+if title_m and h1_m and title_m.group(1).strip()==h1_m.group(1).strip():
+    # mantener <title>, dejar <h1> como subtítulo (h2) para evitar “doble título”
+    s = re.sub(r'(?is)<h1([^>]*)>(.*?)</h1>', r'<h2\1>\2</h2>', s, count=1)
 
 if s != orig:
-    io.open(path, 'w', encoding='utf-8').write(s)
-    print("mod: index.html actualizado")
+    io.open(p, 'w', encoding='utf-8').write(s)
+    print("OK: index reconciliado (AdSense + views + título).")
 else:
-    print("index.html ya cumplía (sin cambios)")
+    print("INFO: index ya estaba OK.")
 PY
-
-echo "[reconcile] listo"
+"$FILE" "$ADS"
