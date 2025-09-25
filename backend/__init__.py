@@ -1,67 +1,71 @@
 import os
-from flask import Flask, jsonify, make_response
-from flask_sqlalchemy import SQLAlchemy
+from typing import Optional
+from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 
+# SQLAlchemy en módulo (evita circular import si routes importa models)
 db = SQLAlchemy()
 
-def _normalize_db_url(url: str) -> str:
-    if not url:
-        return ""
-    # Render a veces pasa postgres:// → normalizamos a postgresql://
-    return url.replace("postgres://", "postgresql://", 1)
+def _normalize_db_url(raw: Optional[str]) -> Optional[str]:
+    if not raw:
+        return None
+    # render/heroku style
+    if raw.startswith("postgres://"):
+        return "postgresql://" + raw[len("postgres://"):]
+    return raw
 
-def create_app():
-    app = Flask(__name__, static_folder=None)
+def create_app() -> Flask:
+    app = Flask(__name__)
 
-    uri = _normalize_db_url(os.getenv("DATABASE_URL", ""))
-    if not uri:
-        # Fallback local para py_compile / scripts
-        uri = "sqlite:///local.db"
-    app.config["SQLALCHEMY_DATABASE_URI"] = uri
+    # Config DB (permitir boot sin DB para health/HTML)
+    raw = (
+        os.environ.get("DATABASE_URL")
+        or os.environ.get("POSTGRES_URL")
+        or os.environ.get("POSTGRESQL_ADDON_URI")
+        or os.environ.get("POSTGRESQL_URL")
+    )
+    uri = _normalize_db_url(raw)
+    if uri:
+        app.config["SQLALCHEMY_DATABASE_URI"] = uri
+    else:
+        # arranca sin DB para que /api/health responda 200
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # CORS sólo para /api/*
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-    # Inicializar SQLAlchemy
+    CORS(app)
     db.init_app(app)
 
-    # Registrar API (si está) — se importa dentro para evitar ciclos
+    # health provisional (se sobrescribe si cargan las rutas reales)
+    @app.get("/api/health")
+    def _health_boot():
+        return jsonify(ok=True, api=False, ver="factory-v3")
+
+    # Intentar registrar blueprint real de la API
     try:
         from .routes import api_bp  # type: ignore
         app.register_blueprint(api_bp, url_prefix="/api")
+
+        @app.get("/api/health")
+        def _health_ok():
+            return jsonify(ok=True, api=True, ver="factory-v3")
     except Exception as e:
-        # Si la API falla al importar, dejamos health y un mensaje explícito
-        @app.get("/api/notes")
-        def _api_unavailable():
-    # Handler de respaldo cuando las rutas /api aún no están montadas
-    from flask import jsonify
-    return jsonify(error="API routes not loaded"), 500
+        # Fallback limpio si no cargó el blueprint
+        @app.route("/api/notes", methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"])
+        @app.route("/api/notes/<path:_rest>", methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"])
+        def _api_unavailable(_rest=None):
+            return jsonify(error="API routes not loaded", detail=str(e)), 500
 
-
-    # Registrar frontend blueprint (sirve index/terms/privacy)
-    try:
-        from .front_serve import front_bp  # type: ignore
-        app.register_blueprint(front_bp)
-    except Exception:
-        pass
-
-    @app.get("/api/health")
-    def health():
-        # ok=true siempre que el proceso esté vivo; api=true si el blueprint de API cargó
-        api_ok = any(r.rule.startswith("/api/notes") for r in app.url_map.iter_rules())
-        return jsonify(ok=True, api=api_ok, ver="factory-v3")
-
-    # Preflight manual para /api/notes (CORS)
-    @app.route("/api/notes", methods=["OPTIONS"])
-    def notes_options():
-        resp = make_response("", 204)
-        h = resp.headers
-        h["Access-Control-Allow-Origin"] = "*"
-        h["Access-Control-Allow-Methods"] = "GET, POST, HEAD, OPTIONS"
-        h["Access-Control-Allow-Headers"] = "Content-Type"
-        h["Access-Control-Max-Age"] = "86400"
-        return resp
+    # Servir index (simple) para no romper el root si el frontend está en /frontend/index.html
+    @app.get("/")
+    def _index_html():
+        try:
+            root = os.path.dirname(os.path.abspath(__file__))
+            path = os.path.normpath(os.path.join(root, "..", "frontend", "index.html"))
+            with open(path, "r", encoding="utf-8") as fh:
+                return fh.read(), 200, {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"}
+        except Exception:
+            return "<!doctype html><meta charset='utf-8'><title>Paste12</title><h1>Paste12</h1>", 200, {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"}
 
     return app
