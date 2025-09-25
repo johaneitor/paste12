@@ -1,128 +1,114 @@
 #!/usr/bin/env bash
+# Uso: tools/frontend_reconcile_v4.sh <ADSENSE_CLIENT_ID>
+# Ej.: tools/frontend_reconcile_v4.sh ca-pub-9479870293204581
 set -euo pipefail
-# Uso:
-#   tools/frontend_reconcile_v4.sh <ADSENSE_CLIENT_ID>
-# Ej:
-#   tools/frontend_reconcile_v4.sh ca-pub-9479870293204581
 
-CID="${1:-}"
-if [[ -z "$CID" ]]; then
-  echo "ERROR: debes pasar el Client ID de AdSense, ej: ca-pub-XXXX"; exit 2
-fi
-
+ADS_CLIENT="${1:-}"
 HTML="frontend/index.html"
+[[ -n "$ADS_CLIENT" ]] || { echo "ERROR: falta client AdSense"; exit 2; }
 [[ -f "$HTML" ]] || { echo "ERROR: falta $HTML"; exit 3; }
 
 TS="$(date -u +%Y%m%d-%H%M%SZ)"
-BAK="${HTML}.${TS}.reconcile.bak"
+BAK="$HTML.$TS.reconcile.bak"
 cp -f "$HTML" "$BAK"
 echo "[reconcile] Backup: $BAK"
 
-python3 - <<PY "$HTML" "$CID"
-import io, sys, re
-path, CID = sys.argv[1], sys.argv[2]
-s = io.open(path, "r", encoding="utf-8").read()
+python - <<PY
+import io, re, sys, os
+p = "$HTML"
+s = io.open(p, "r", encoding="utf-8").read()
 orig = s
-sl = s.lower()
 
-def ensure_in_head(s, snippet):
-    # Inserta justo después de <head> si existe; si no, al principio del doc.
-    idx = s.lower().find("<head")
-    if idx == -1:
-        return snippet + "\n" + s
-    # Ubicar cierre de la etiqueta <head> de apertura (>)
-    gt = s.find(">", idx)
-    if gt == -1: return snippet + "\n" + s
-    return s[:gt+1] + "\n" + snippet + "\n" + s[gt+1:]
+def ensure_in_head(snippet: str):
+    global s
+    head_close = re.search(r"</head\s*>", s, flags=re.I)
+    if head_close and snippet not in s:
+        s = s[:head_close.start()] + snippet + "\n" + s[head_close.start():]
 
-def once(s, needle, add_func):
-    if needle.lower() in s.lower(): return s, False
-    t = add_func(s); return t, True
+def ensure_meta(name, content):
+    global s
+    rx = re.compile(rf'<meta\s+name=[\'"]{re.escape(name)}[\'"]\s+content=[\'"][^\'"]+[\'"]\s*/?>', re.I)
+    if not rx.search(s):
+        ensure_in_head(f'<meta name="{name}" content="{content}">')
 
-# 1) Adsense <meta> (nuevo formato)
-meta_tag = f'<meta name="google-adsense-account" content="{CID}">'
-s, added_meta = once(s, 'name="google-adsense-account"', lambda x: ensure_in_head(x, meta_tag))
+def ensure_tag(rx, snippet):
+    global s
+    if not re.search(rx, s, re.I|re.S):
+        ensure_in_head(snippet)
 
-# 2) Adsense <script async> (pagead2 googlesyndication)
-ads_script = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={CID}" crossorigin="anonymous"></script>'
-s, added_js = once(s, 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', lambda x: ensure_in_head(x, ads_script))
+# 1) Quitar registros de Service Worker (evitar caches viejas)
+s = re.sub(r'(?is).*?navigator\.serviceWorker.*?\n', '', s)
+s = re.sub(r'(?is).*?serviceWorker\.register.*?\n', '', s)
 
-# 3) SEO básico: description + canonical (si faltan)
-desc_rx = re.compile(r'<meta\s+name=["\']description["\']', re.I)
-if not desc_rx.search(s):
-    s = ensure_in_head(s, '<meta name="description" content="Paste12 — notas efímeras y compartibles con métricas (vistas, likes, reports). Privado y simple.">')
+# 2) Asegurar meta & script de AdSense
+ensure_meta("google-adsense-account", "${ADS_CLIENT}")
+ensure_tag(r'pagead2\.googlesyndication\.com/pagead/js/adsbygoogle\.js\?client=',
+          f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS_CLIENT}" crossorigin="anonymous"></script>')
 
-canon_rx = re.compile(r'<link\s+rel=["\']canonical["\']', re.I)
-if not canon_rx.search(s):
-    # canonical por defecto a "/"
-    s = ensure_in_head(s, '<link rel="canonical" href="/">')
+# 3) Canonical + robots (SEO mínimos)
+ensure_meta("robots", "index,follow")
+if not re.search(r'<link\s+rel=["\']canonical["\']', s, re.I):
+    ensure_in_head('<link rel="canonical" href="/">')
 
-# 4) Desregistrar/evitar Service Worker en el HTML (limpia restos)
-s = re.sub(r'^\s*//\s*service\s*worker.*$', '', s, flags=re.I|re.M)
-s = re.sub(r'navigator\.serviceWorker\.[^\n;]+[;\n]', '', s, flags=re.I)
-s = re.sub(r'serviceWorker\.register\([^)]+\);?', '', s, flags=re.I)
-
-# 5) Bloque de métricas (views/likes/reports) si falta .views
-if 'class="views"' not in s.lower():
-    # insertar cerca del inicio del body
-    block = """<div id="p12-stats" class="stats" style="display:flex;gap:.75rem;align-items:center;margin:.5rem 0;font:14px/1.4 system-ui">
-  <span class="views"   title="Vistas">👁️ 0</span>
-  <span class="likes"   title="Likes">❤️ 0</span>
-  <span class="reports" title="Reports">🚩 0</span>
-</div>"""
-    # Insertar después de <body>
-    ib = s.lower().find("<body")
-    if ib != -1:
-        gt = s.find(">", ib)
-        if gt != -1:
-            s = s[:gt+1] + "\n" + block + "\n" + s[gt+1:]
-        else:
-            s = block + "\n" + s
+# 4) Deduplicar H1 (dejar solo el primero; si no hay, crear uno simple)
+h1_iter = list(re.finditer(r'(?is)<h1[^>]*>.*?</h1>', s))
+if not h1_iter:
+    # Insertar h1 después de <body>
+    s = re.sub(r'(?is)<body([^>]*)>', r'<body\1>\n<h1>Paste12</h1>', s, count=1)
+else:
+    first_h1 = h1_iter[0].group(0)
+    # borrar TODOS los h1
+    s = re.sub(r'(?is)\s*<h1[^>]*>.*?</h1>', '', s)
+    # re-insertar el primero después de <body>
+    if re.search(r'(?is)<body[^>]*>', s):
+        s = re.sub(r'(?is)<body([^>]*)>', lambda m: m.group(0) + "\n" + first_h1, s, count=1)
     else:
-        s = block + "\n" + s
+        s = first_h1 + "\n" + s
 
-# 6) Deduplicar títulos h1/h2 exactos seguidos (caso subtítulo duplicado)
-def dedupe_headings(s):
-    lines = s.splitlines()
-    out = []
-    last_norm = None
-    for ln in lines:
-        ln_low = ln.strip().lower()
-        if ln_low.startswith("<h1") or ln_low.startswith("<h2"):
-            # normalizar el texto interno (muy simple)
-            txt = re.sub(r'<[^>]+>', '', ln_low)
-            if txt == last_norm: 
-                continue
-            last_norm = txt
-        else:
-            last_norm = None
-        out.append(ln)
-    return "\n".join(out)
+# 5) Bloque de métricas (views/likes/reports)
+need_views = not re.search(r'class=["\']views["\']', s, re.I)
+need_stats = not re.search(r'id=["\']p12-stats["\']', s, re.I)
+if need_views or need_stats:
+    stats = """
+<section id="p12-stats" style="margin:.75rem 0; font-size:.9rem; opacity:.9">
+  <span class="views" title="Vistas">👁️ <b>0</b></span> ·
+  <span class="likes" title="Me gusta">❤️ <b>0</b></span> ·
+  <span class="reports" title="Reportes">🚩 <b>0</b></span>
+</section>
+""".strip()
+    # Insertarlo después del H1
+    s = re.sub(r'(?is)(<h1[^>]*>.*?</h1>)', r'\1\n' + stats, s, count=1)
 
-s = dedupe_headings(s)
-
-# 7) Footer con /terms y /privacy (añadir si faltan enlaces)
-has_terms  = re.search(r'href=["\']/terms["\']', s, re.I)
-has_priv   = re.search(r'href=["\']/privacy["\']', s, re.I)
+# 6) Footer legal (terms/privacy) si faltan
+has_terms  = re.search(r'href=["\']/terms["\']', s, re.I) is not None
+has_priv   = re.search(r'href=["\']/privacy["\']', s, re.I) is not None
 if not (has_terms and has_priv):
-    foot = """<footer style="margin:2rem 0;opacity:.85">
-  <a href="/terms">Términos y Condiciones</a> · <a href="/privacy">Política de Privacidad</a>
-</footer>"""
-    # Antes de </body> si existe
-    idx_end = s.lower().rfind("</body>")
-    if idx_end != -1:
-        s = s[:idx_end] + foot + "\n" + s[idx_end:]
+    if re.search(r'</footer\s*>', s, re.I):
+        def ensure_link(ss, text, href):
+            if re.search(re.escape(href), ss, re.I): return ss
+            return re.sub(r'(?is)</footer\s*>', f'  <a href="{href}">{text}</a>\n</footer>', ss, count=1)
+        s = ensure_link(s, "Términos y Condiciones", "/terms")
+        s = ensure_link(s, "Política de Privacidad", "/privacy")
     else:
-        s = s + "\n" + foot
+        s = re.sub(r'(?is)</body\s*>',
+                   '\n<footer style="margin-top:2rem;opacity:.85">'
+                   '<a href="/terms">Términos y Condiciones</a> · '
+                   '<a href="/privacy">Política de Privacidad</a>'
+                   '</footer>\n</body>', s, count=1)
 
-# 8) Minilimpiezas de espacios en blanco repetidos (cosmético)
+# 7) Marcar versión para verificación visual
+stamp = f"hotfix v5 {os.environ.get('TZ','UTC')}"
+if "hotfix v5" not in s:
+    s = s.replace("</body>", f"\n<!-- {stamp} -->\n</body>")
+
+# Limpieza de espacios
 s = re.sub(r'\n{3,}', '\n\n', s)
 
 if s != orig:
-    io.open(path, "w", encoding="utf-8").write(s)
-    print("[reconcile] index.html actualizado")
+    io.open(p, "w", encoding="utf-8").write(s)
+    print("mod: index.html actualizado")
 else:
-    print("[reconcile] index.html ya estaba OK")
+    print("INFO: index.html ya estaba OK")
 PY
 
 echo "[reconcile] Hecho."
