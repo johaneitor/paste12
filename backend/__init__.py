@@ -65,6 +65,7 @@ def _api_unavailable(e: Exception):
         msg = "unavailable"
     return jsonify(error="API routes not loaded", detail=msg), 500
 
+
     def _handler():
         if request.method == "OPTIONS":
             # Devolvemos 204 para que CORS/options pasen igual
@@ -175,6 +176,7 @@ def _api_unavailable(e: Exception):
     except Exception:
         msg = "unavailable"
     return jsonify(error="API routes not loaded", detail=msg), 500
+
 
 def _api_unavailable(e: Exception):
     # Fallback global para cuando las rutas no cargan
