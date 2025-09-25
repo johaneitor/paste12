@@ -1,33 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
-MSG="${1:-ops: corefix — smoke+audit (max6) + frontend reconcile + stage tools}"
+MSG="${1:-ops: backend handler fix + unified audit (v2)}"
 
-# Gate bash
-for f in tools/run_smoke_now_v3.sh tools/unified_audit_max6_v2.sh tools/frontend_reconcile_v3.sh; do
-  bash -n "$f"
-done
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "ERROR: no es repo git"; exit 2; }
 
-# Gate py_compile (si existen)
-pyok=1
-for py in contract_shim.py wsgi.py backend/__init__.py backend/routes.py; do
-  [[ -f "$py" ]] && python -m py_compile "$py" || true
-done
+# stage seguro (tools ignorados por .gitignore)
+git add -f tools/fix_api_unavailable_v1.sh tools/unified_audit_max6_v2.sh 2>/dev/null || true
+# si tocamos backend/__init__.py entrará por el fix
+git add backend/__init__.py 2>/dev/null || true
 
-# Stage (forzado por .gitignore)
-git add -f tools/run_smoke_now_v3.sh tools/unified_audit_max6_v2.sh tools/frontend_reconcile_v3.sh 2>/dev/null || true
-git add frontend/index.html 2>/dev/null || true
-
-# Commit si hay cambios
 if [[ -n "$(git status --porcelain)" ]]; then
   git commit -m "$MSG"
 else
-  echo "ℹ️  Nada para commitear"
+  echo "ℹ️  Nada que commitear"
 fi
 
-echo "== push =="
+echo "== prepush gate =="
+python -m py_compile backend/__init__.py && echo "✓ py_compile backend/__init__.py"
 git push -u origin main
-
-echo "== HEADs =="
-echo "Local : $(git rev-parse HEAD)"
-UP="$(git rev-parse @{u} 2>/dev/null || true)"
-[[ -n "$UP" ]] && echo "Remote: $UP" || echo "Remote: (upstream recién creado)"
+echo "== HEAD =="
+git rev-parse HEAD

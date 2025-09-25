@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
+# Uso: tools/git_push_frontend_reconcile_v3.sh "ops: frontend reconcile v4"
 set -euo pipefail
-MSG="${1:-ops: frontend reconcile v4 (adsense+metrics+dedupe+footer) + auditoría v4}"
+MSG="${1:-ops: frontend reconcile v4 (h1 dedup + adsense + stats + nosw + seo)}"
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "ERROR: no es repo git"; exit 2; }
+git rev-parse --is-inside-work-tree >/dev/null || { echo "ERROR: no es repo git"; exit 2; }
 
-# Gate rápido bash
-for f in tools/frontend_reconcile_v4.sh tools/audit_frontend_extensive_v4.sh tools/run_reconcile_and_audit_v3.sh; do
-  bash -n "$f"
-done
-
-# Stage (forzado por .gitignore)
-git add -f tools/frontend_reconcile_v4.sh tools/audit_frontend_extensive_v4.sh tools/run_reconcile_and_audit_v3.sh 2>/dev/null || true
-# HTML si cambió
-git add frontend/index.html 2>/dev/null || true
+# Stage forzado (por .gitignore de tools/)
+git add -f tools/frontend_reconcile_v4.sh 2>/dev/null || true
+[[ -f frontend/index.html ]] && git add frontend/index.html
 
 if [[ -n "$(git status --porcelain)" ]]; then
   git commit -m "$MSG"
@@ -24,5 +19,7 @@ echo "== prepush =="
 echo "✓ listo"
 git push -u origin main
 
+echo "== HEADs =="
 echo "Local : $(git rev-parse HEAD)"
-echo "Remote: $(git rev-parse @{u})"
+UP="$(git rev-parse @{u} 2>/dev/null || true)"
+[[ -n "$UP" ]] && echo "Remote: $UP" || echo "Remote: (upstream definido recién)"
