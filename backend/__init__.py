@@ -35,7 +35,10 @@ def create_app():
         # Si la API falla al importar, dejamos health y un mensaje explícito
         @app.get("/api/notes")
         def _api_unavailable():
-            return jsonify(error="API routes not loaded", detail=str(e)), 500
+    # Handler de respaldo cuando las rutas /api aún no están montadas
+    from flask import jsonify
+    return jsonify(error="API routes not loaded"), 500
+
 
     # Registrar frontend blueprint (sirve index/terms/privacy)
     try:
