@@ -79,20 +79,6 @@
   <meta name="p12-commit" content="a528d851973c3d086a65bb8e1e374d4f1de6f1ec">
   <meta name="p12-built-at" content="20250924-022113Z">
 
-<script>
-(function(){
-  try{
-    var q=new URLSearchParams(location.search);
-    if(q.has('nosw')||q.has('nukesw')){
-        .then(rs=>Promise.all(rs.map(r=>r.unregister())))
-        .then(()=>{ if(window.caches){ return caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))) }})
-        .finally(()=>console.log('[sw-nuke] done'));
-      }
-    }
-  }catch(e){}
-})();
-</script>
-
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -178,7 +164,7 @@
       const exp   = e.target.closest("button.expand");
       try {
         if(like){
-          const r = await fetch(`/api/notes${id}/like`, {method:"POST", credentials:"include"});
+          const r = await fetch(`/api/notes/${id}/like`, {method:"POST", credentials:"include"});
           const j = await r.json().catch(()=>({}));
           if(j && typeof j.likes !== "undefined"){
             const m = art.querySelector(".meta");
@@ -196,7 +182,7 @@
           }
           art.querySelector(".menu").classList.add("hidden");
         } else if(rpt){
-          const r = await fetch(`/api/notes${id}/report`, {method:"POST", credentials:"include"});
+          const r = await fetch(`/api/notes/${id}/report`, {method:"POST", credentials:"include"});
           const j = await r.json().catch(()=>({}));
           if(j && j.removed){
             art.remove(); flash(true,"Nota eliminada");
@@ -312,158 +298,6 @@
     });
   </script>
 
-<script id="p12-publish-fallback">
-(()=>{ if (window.__P12_PATCH_PUBLISH__) return; window.__P12_PATCH_PUBLISH__=true;
-  // matar SW si debug/nosw (no rompe si no hay)
-  try{const q=new URLSearchParams(location.search);
-        if (window.caches && caches.keys) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k)));
-      }}catch(_){}
-
-  // Si quedaron dos subtítulos por HTML legacy, mantén solo el rotador
-  try{var rot=document.getElementById('tagline-rot'), p=document.getElementById('tagline'); if(rot&&p){ p.remove(); }}catch(_){}
-
-  function esc(t){return (t||'').toString(); }
-  function pickTA(){ return document.querySelector('textarea[name=text], #text, textarea'); }
-  function pickTTL(){return document.querySelector('input[name=ttl_hours], #ttl, select[name=ttl_hours], select');}
-  function msg(ok,txt){
-    var el=document.getElementById('msg'); if(!el){el=document.createElement('div'); el.id='msg'; document.body.prepend(el);}
-    el.className = ok?'ok':'error'; el.textContent = txt; setTimeout(()=>{el.className='hidden'; el.textContent='';}, 2500);
-  }
-
-  async function tryPost(url, body){
-    // intento JSON
-    try{
-      let r = await fetch(url,{method:'POST',credentials:'include',
-                               headers:{'Content-Type':'application/json','Accept':'application/json'},
-                               body:JSON.stringify(body)});
-      if (r.ok) return await r.json().catch(()=>null);
-      if (r.status!==405 && r.status!==404) throw new Error(String(r.status));
-    }catch(_){}
-    // intento FORM
-    try{
-      const fd = new URLSearchParams(); fd.set('text', body.text); if(body.ttl_hours) fd.set('ttl_hours', String(body.ttl_hours));
-      let r = await fetch(url,{method:'POST',credentials:'include',
-                               headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},
-                               body:fd});
-      if (r.ok) return await r.json().catch(()=>null);
-    }catch(_){}
-    return null;
-  }
-
-  async function publishPatched(ev){
-    ev && ev.preventDefault && ev.preventDefault();
-    const ta=pickTA(), ttl=pickTTL();
-    const text=(ta?.value||'').trim(); if (text.length<12){ msg(false,'Escribí un poco más (≥ 12 caracteres).'); return; }
-    const v=parseInt(ttl?.value||'',10); const body={text}; if(Number.isFinite(v)&&v>0) body.ttl_hours=v;
-
-    // cascada de endpoints (cubre backends viejos/nuevos)
-    const ENDS=['/api/notes','/api/notespublish','/api/publish','/api/note','/api/notescreate'];
-    let j=null;
-    for (const u of ENDS){ j = await tryPost(u, body); if (j && (j.ok!==false) ) break; }
-
-    if(!j || j.ok===false){ msg(false, (j&&j.error)||'Error HTTP 405/404'); return; }
-
-    // inyectar la nota arriba si vino id
-    try{
-      const FEED=document.querySelector('#list,.list,[data-feed]')||document.body;
-      const id = j.id || (j.item && j.item.id);
-      const likes = j.likes || (j.item && j.item.likes) || 0;
-      const html = '<article class="note" data-id="'+esc(id)+'">'+
-                   '<div data-text="1">'+esc(body.text)+'</div>'+
-                   '<div class="meta">#'+esc(id)+' · ❤ '+esc(likes)+' · 👁 0</div></article>';
-      const wrap=document.createElement('div'); wrap.innerHTML=html; FEED.prepend(wrap.firstElementChild);
-    }catch(_){}
-    if(ta) ta.value=''; if(ttl) ttl.value='';
-    msg(true,'Publicado ✅');
-  }
-
-  // Re-bind: botón y Ctrl/Cmd+Enter
-  window.addEventListener('DOMContentLoaded', ()=>{
-    const btn=document.getElementById('send'); if(btn){ btn.addEventListener('click', publishPatched, {capture:true}); }
-    const ta=pickTA(); if(ta){ ta.addEventListener('keydown', e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) publishPatched(e); }); }
-  }, {once:true});
-})();</script>
-
-
-<script>
-// p12-submit-v3
-(function() {
-  const API = "/api/notes"; // sin trailing slash
-  function toast(msg) {
-    const el = document.querySelector('#p12-error') || (function(){
-      const d=document.createElement('div'); d.id='p12-error'; d.style.color='#b00';
-      d.style.marginTop='8px'; document.querySelector('form')?.appendChild(d); return d;
-    })(); el.textContent = msg;
-  }
-  async function submitNote(ev) {
-    ev && ev.preventDefault();
-    const ta = document.querySelector('textarea'); if (!ta) return;
-    const hoursSel = document.querySelector('select'); 
-    const hours = parseInt(hoursSel?.value || '12') || 12;
-    const payload = { text: ta.value.trim(), hours };
-    if (!payload.text) return toast("Escribe algo primero");
-    // intento JSON
-    try {
-      let r = await fetch(API, {
-        method: "POST", mode: "cors", redirect: "follow", credentials: "omit",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (r.status===201) { ta.value=""; toast(""); return; }
-      if (r.status===405 || r.status===415) throw new Error("retry-form");
-      if (!r.ok) throw new Error("HTTP "+r.status);
-    } catch(e) {
-      // fallback FORM
-      try {
-        const fd = new FormData(); fd.set("text", payload.text); fd.set("hours", String(hours));
-        let r = await fetch(API, { method:"POST", body: fd });
-        if (r.status===201) { ta.value=""; toast(""); return; }
-        throw new Error("HTTP "+r.status);
-      } catch(e2) { toast("Error "+e2.message); }
-    }
-  }
-  document.querySelector('form')?.addEventListener('submit', submitNote);
-  document.querySelector('#p12-submit')?.addEventListener('click', submitNote);
-})();
-</script>
 </body>
 </html>
 
-<script>
-
-function publishNote() {
-  const text = (document.querySelector('#note')||{}).value || '';
-  const hoursSel = document.querySelector('#hours');
-  const hours = hoursSel ? (parseInt(hoursSel.value||'12',10)||12) : 12;
-  const err = document.querySelector('#err') || (function(){
-    const e=document.createElement('div'); e.id='err'; e.style.margin='8px 0'; e.style.color='#b00';
-    (document.querySelector('form')||document.body).prepend(e); return e;
-  })();
-
-  const endpoint = '/api/notes';
-  const common = {mode:'cors', cache:'no-store'};
-
-  const tryJSON = fetch(endpoint, {
-    ...common,
-    method:'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ text, hours })
-  });
-
-  function show(e, status, body){
-    err.textContent = (status?`Error HTTP ${status}`:'') + (body?` — ${body}`:'');
-  }
-
-  return tryJSON.then(async r=>{
-    if(r.ok){ err.textContent=''; location.reload(); return; }
-    // fallback a form
-    const fd = new FormData(); fd.set('text', text); fd.set('hours', String(hours));
-    const r2 = await fetch(endpoint, { ...common, method:'POST', body: fd });
-    if(r2.ok){ err.textContent=''; location.reload(); return; }
-    show(null, r.status||r2.status, (await r.text().catch(()=>'')) || (await r2.text().catch(()=>'')));
-  }).catch(async e=>{
-    show(e, 0, (e&&e.message)||'falló la red');
-  });
-}
-
-</script>
