@@ -1,60 +1,64 @@
 #!/usr/bin/env bash
 set -euo pipefail
 BASE="${1:-https://paste12-rmsk.onrender.com}"
-OUT="${2:-/sdcard/Download}"
-
-# Salida segura
-dst="$OUT"
-mkdir -p "$dst" 2>/dev/null || true
-if ! (echo test > "$dst/.wtest" 2>/dev/null); then
-  echo "[warn] No puedo escribir en $dst, uso \$HOME/Download"
-  dst="$HOME/Download"
-  mkdir -p "$dst"
-fi
-rm -f "$dst/.wtest" 2>/dev/null || true
-
+OUTDIR="${2:-/sdcard/Download}"
 TS="$(date -u +%Y%m%d-%H%M%SZ)"
 
-# 1) health
-curl -fsS "$BASE/api/health" -o "$dst/health-$TS.json" || echo '{}' > "$dst/health-$TS.json"
+mkdir -p "$OUTDIR"
 
-# 2) OPTIONS /api/notes
-curl -fsSI -X OPTIONS "$BASE/api/notes" > "$dst/options-$TS.txt" || true
+H="$OUTDIR/health-$TS.json"
+IH="$OUTDIR/index-headers-$TS.txt"
+I="$OUTDIR/index-$TS.html"
+AH="$OUTDIR/api-notes-headers-$TS.txt"
+A="$OUTDIR/api-notes-$TS.json"
+SUM="$OUTDIR/unified-audit-$TS.txt"
 
-# 3) HEAD+GET /api/notes
-curl -fsSI "$BASE/api/notes" > "$dst/api-notes-headers-$TS.txt" || true
-curl -fsS "$BASE/api/notes" -o "$dst/api-notes-$TS.json" || true
+# 1) Health
+curl -fsSL "$BASE/api/health" -o "$H" || echo '{"ok":false}' > "$H"
 
-# 4) index (headers + body nocache)
-curl -fsSI "$BASE/" > "$dst/index-headers-$TS.txt" || true
-curl -fsS "$BASE/?debug=1&nosw=1&v=$(date +%s)" -o "$dst/index-$TS.html" || true
+# 2) Index (headers + body) con bust
+V=$RANDOM$RANDOM
+curl -i -sS "$BASE/?nosw=1&nukesw=1&v=$V" -o "$IH" || true
+curl -sS "$BASE/?nosw=1&nukesw=1&v=$V" -o "$I" || true
 
-# 5) Términos y Privacidad (solo si responden 200)
-for pg in terms privacy; do
-  curl -fsSI "$BASE/$pg" > "$dst/${pg}-headers-$TS.txt" || true
-  code=$(head -n1 "$dst/${pg}-headers-$TS.txt" 2>/dev/null | awk '{print $2}' || true)
-  if [[ "${code:-}" == "200" ]]; then
-    curl -fsS "$BASE/$pg" -o "$dst/${pg}-$TS.html" || true
-  fi
-done
+# 3) API notes (headers + body)
+curl -i -sS "$BASE/api/notes?limit=10" -o "$AH" || true
+curl -sS "$BASE/api/notes?limit=10" -o "$A" || echo "[]" > "$A"
 
-# Resumen
-R="$dst/unified-audit-$TS.txt"
+# 4) Chequeos rápidos sobre index
+HAS_META=$(grep -i -c 'google-adsense-account' "$I" || true)
+HAS_JS=$(grep -i -c 'pagead2.googlesyndication.com/pagead/js/adsbygoogle.js' "$I" || true)
+HAS_VIEWS=$(grep -i -c 'class="views"' "$I" || true)
+HAS_LIKE=$(grep -c '/api/notes/\${id}/like' "$I" || true)  # buscamos la forma correcta con /
+HAS_REPORT=$(grep -c '/api/notes/\${id}/report' "$I" || true)
+
+# 5) Resumen
 {
-  echo "== Unified audit =="
+  echo "== Unified audit v2 =="
   echo "base: $BASE"
   echo "ts  : $TS"
-  echo "-- health --"; cat "$dst/health-$TS.json" 2>/dev/null || true
-  echo "-- OPTIONS /api/notes --"; head -n20 "$dst/options-$TS.txt" 2>/dev/null || true
-  echo "-- GET /api/notes (headers) --"; head -n20 "$dst/api-notes-headers-$TS.txt" 2>/dev/null || true
-  echo "-- GET /api/notes (body first line) --"; head -n1 "$dst/api-notes-$TS.json" 2>/dev/null || true
-  echo "-- index (headers) --"; head -n20 "$dst/index-headers-$TS.txt" 2>/dev/null || true
-  echo "-- index checks --"
-  if grep -qi '<meta[^>]*name=["'\'']google-adsense-account' "$dst/index-$TS.html" 2>/dev/null; then echo "OK - AdSense meta"; else echo "FAIL - AdSense meta"; fi
-  if grep -q '<span[^>]*class=["'\''][^"'\''>]*\bviews\b' "$dst/index-$TS.html" 2>/dev/null; then echo "OK - span.views"; else echo "FAIL - span.views"; fi
+  echo
+  echo "-- health --"
+  head -c 200 "$H" 2>/dev/null; echo
+  echo
+  echo "-- index quick checks --"
+  code="$(head -n1 "$IH" 2>/dev/null | awk '{print $2" "$3}' || true)"
+  echo "index code: ${code:-N/A}"
+  [[ "$HAS_META" -gt 0 ]] && echo "OK  - AdSense meta" || echo "FAIL - AdSense meta"
+  [[ "$HAS_JS" -gt 0 ]]   && echo "OK  - AdSense js"   || echo "FAIL - AdSense js"
+  [[ "$HAS_VIEWS" -gt 0 ]]&& echo "OK  - span.views"   || echo "FAIL - span.views"
+  [[ "$HAS_LIKE" -gt 0 ]] && echo "OK  - like endpoint"|| echo "FAIL - like endpoint"
+  [[ "$HAS_REPORT" -gt 0 ]]&&echo "OK  - report endpoint"|| echo "FAIL - report endpoint"
+  echo
+  echo "-- api/notes headers --"
+  head -n 20 "$AH" 2>/dev/null
   echo
   echo "Archivos:"
-  ls -1 "$dst" | grep "$TS" | sed "s|^|  $dst/|"
-  echo "== END =="
-} > "$R"
-echo "Guardado: $R"
+  echo "  $H"
+  echo "  $IH"
+  echo "  $I"
+  echo "  $AH"
+  echo "  $A"
+} > "$SUM"
+
+echo "Guardado: $SUM"
