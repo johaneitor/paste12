@@ -1,27 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
+MSG="${1:-ops: backend api_unavailable + FE reconcile + unified audit (v2)}"
 
-MSG="${1:-ops: corefix — front routes + api fallback + no-store}"
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "ERROR: no es repo git"; exit 2; }
 
-# 0) Sanity Python
-echo "== py_compile =="
-python -m py_compile backend/__init__.py || { echo "py_compile FAIL"; exit 3; }
+# Stage
+git add -f backend/__init__.py 2>/dev/null || true
+git add -f tools/fix_backend_api_unavailable_v3.sh tools/frontend_reconcile_v5.sh tools/unified_audit_max6_v2.sh 2>/dev/null || true
 
-# 1) Stage archivos relevantes
-git add -f backend/__init__.py tools/fix_backend_fallback_and_front_v1.sh 2>/dev/null || true
-
-# 2) Commit si hay cambios
+# Commit si hay cambios
 if [[ -n "$(git status --porcelain)" ]]; then
   git commit -m "$MSG"
 else
   echo "ℹ️  Nada para commitear"
 fi
 
-# 3) Push
-echo "== PUSH =="
-git push -u origin main
+echo "== prepush =="
+python3 - <<'PY'
+import py_compile, sys
+py_compile.compile("backend/__init__.py", doraise=True); print("✓ py_compile backend/__init__.py")
+PY
 
-# 4) Info
-echo "== HEAD =="
-git rev-parse HEAD
+git push -u origin main || {
+  echo "⚠️  Push falló (¿sin conectividad o credenciales?)."
+  exit 0
+}
+
+echo "== HEADs =="
+echo "Local : $(git rev-parse HEAD)"
+U="$(git rev-parse @{u} 2>/dev/null || true)"
+[[ -n "$U" ]] && echo "Remote: $U" || echo "Remote: (upstream recién creado)"

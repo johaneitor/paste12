@@ -1,114 +1,76 @@
 #!/usr/bin/env bash
-# Uso: tools/frontend_reconcile_v4.sh <ADSENSE_CLIENT_ID>
-# Ej.: tools/frontend_reconcile_v4.sh ca-pub-9479870293204581
 set -euo pipefail
-
-ADS_CLIENT="${1:-}"
 HTML="frontend/index.html"
-[[ -n "$ADS_CLIENT" ]] || { echo "ERROR: falta client AdSense"; exit 2; }
-[[ -f "$HTML" ]] || { echo "ERROR: falta $HTML"; exit 3; }
+CID="${1:-ca-pub-9479870293204581}"
+
+[[ -f "$HTML" ]] || { echo "ERROR: falta $HTML"; exit 1; }
 
 TS="$(date -u +%Y%m%d-%H%M%SZ)"
-BAK="$HTML.$TS.reconcile.bak"
-cp -f "$HTML" "$BAK"
-echo "[reconcile] Backup: $BAK"
+cp -f "$HTML" "$HTML.$TS.reconcile.bak"
+echo "[reconcile] Backup: $HTML.$TS.reconcile.bak"
 
 python - <<PY
-import io, re, sys, os
-p = "$HTML"
-s = io.open(p, "r", encoding="utf-8").read()
-orig = s
+import io, re, sys
+cid = sys.argv[1]
+p="frontend/index.html"
+s=io.open(p,"r",encoding="utf-8").read()
+orig=s
 
-def ensure_in_head(snippet: str):
-    global s
-    head_close = re.search(r"</head\s*>", s, flags=re.I)
-    if head_close and snippet not in s:
-        s = s[:head_close.start()] + snippet + "\n" + s[head_close.start():]
+lower = s.lower()
 
-def ensure_meta(name, content):
-    global s
-    rx = re.compile(rf'<meta\s+name=[\'"]{re.escape(name)}[\'"]\s+content=[\'"][^\'"]+[\'"]\s*/?>', re.I)
-    if not rx.search(s):
-        ensure_in_head(f'<meta name="{name}" content="{content}">')
+# 1) <meta name="google-adsense-account" content="ca-pub-...">
+meta_rx = re.compile(r'<meta\s+name=["\']google-adsense-account["\']\s+content=["\']([^"\']+)["\']\s*/?>', re.I)
+def upsert_meta(html):
+    if meta_rx.search(html):
+        return meta_rx.sub(f'<meta name="google-adsense-account" content="{cid}">', html)
+    # insertar dentro de <head>
+    return re.sub(r'(?i)<head([^>]*)>', r'<head\1>\n  <meta name="google-adsense-account" content="'+cid+'">', html, count=1)
 
-def ensure_tag(rx, snippet):
-    global s
-    if not re.search(rx, s, re.I|re.S):
-        ensure_in_head(snippet)
+s = upsert_meta(s)
 
-# 1) Quitar registros de Service Worker (evitar caches viejas)
-s = re.sub(r'(?is).*?navigator\.serviceWorker.*?\n', '', s)
-s = re.sub(r'(?is).*?serviceWorker\.register.*?\n', '', s)
+# 2) Script de AdSense (único)
+ads_rx = re.compile(r'<script[^>]+pagead/js/adsbygoogle\.js[^>]*>\s*</script>', re.I)
+s = ads_rx.sub('', s)  # limpiar duplicados
+s = re.sub(r'(?i)</head>',
+           f'  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={cid}" crossorigin="anonymous"></script>\n</head>',
+           s, count=1)
 
-# 2) Asegurar meta & script de AdSense
-ensure_meta("google-adsense-account", "${ADS_CLIENT}")
-ensure_tag(r'pagead2\.googlesyndication\.com/pagead/js/adsbygoogle\.js\?client=',
-          f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS_CLIENT}" crossorigin="anonymous"></script>')
+# 3) Quitar duplicado de <h1>: dejar el primero, bajar el resto a <h2 class="subtitle">
+def dedup_h1(html):
+    h1_rx = re.compile(r'(?is)<h1\b[^>]*>.*?</h1>')
+    all_h1 = list(h1_rx.finditer(html))
+    if len(all_h1) <= 1:
+        return html
+    first_end = all_h1[0].end()
+    tail = html[first_end:]
+    tail = h1_rx.sub(lambda m: re.sub(r'(?is)^<h1', '<h2 class="subtitle"', re.sub(r'(?is)</h1>', '</h2>', m.group(0), count=1), count=1), tail)
+    return html[:first_end] + tail
 
-# 3) Canonical + robots (SEO mínimos)
-ensure_meta("robots", "index,follow")
-if not re.search(r'<link\s+rel=["\']canonical["\']', s, re.I):
-    ensure_in_head('<link rel="canonical" href="/">')
+s = dedup_h1(s)
 
-# 4) Deduplicar H1 (dejar solo el primero; si no hay, crear uno simple)
-h1_iter = list(re.finditer(r'(?is)<h1[^>]*>.*?</h1>', s))
-if not h1_iter:
-    # Insertar h1 después de <body>
-    s = re.sub(r'(?is)<body([^>]*)>', r'<body\1>\n<h1>Paste12</h1>', s, count=1)
-else:
-    first_h1 = h1_iter[0].group(0)
-    # borrar TODOS los h1
-    s = re.sub(r'(?is)\s*<h1[^>]*>.*?</h1>', '', s)
-    # re-insertar el primero después de <body>
-    if re.search(r'(?is)<body[^>]*>', s):
-        s = re.sub(r'(?is)<body([^>]*)>', lambda m: m.group(0) + "\n" + first_h1, s, count=1)
-    else:
-        s = first_h1 + "\n" + s
+# 4) Asegurar <span class="views"> en la tarjeta principal
+if 'class="views"' not in s.lower():
+    s = re.sub(r'(?is)(<h1\b[^>]*>.*?</h1>)', r'\1\n<p class="meta">Vistas: <span class="views">0</span></p>', s, count=1)
 
-# 5) Bloque de métricas (views/likes/reports)
-need_views = not re.search(r'class=["\']views["\']', s, re.I)
-need_stats = not re.search(r'id=["\']p12-stats["\']', s, re.I)
-if need_views or need_stats:
-    stats = """
-<section id="p12-stats" style="margin:.75rem 0; font-size:.9rem; opacity:.9">
-  <span class="views" title="Vistas">👁️ <b>0</b></span> ·
-  <span class="likes" title="Me gusta">❤️ <b>0</b></span> ·
-  <span class="reports" title="Reportes">🚩 <b>0</b></span>
-</section>
-""".strip()
-    # Insertarlo después del H1
-    s = re.sub(r'(?is)(<h1[^>]*>.*?</h1>)', r'\1\n' + stats, s, count=1)
+# 5) Footer legal con /terms /privacy si faltan
+need_terms = re.search(r'href=["\']/terms["\']', s, re.I) is None
+need_priv  = re.search(r'href=["\']/privacy["\']', s, re.I) is None
+if need_terms or need_priv:
+    footer = '<footer style="margin-top:2rem;opacity:.85">'
+    if need_terms: footer += ' <a href="/terms">Términos y Condiciones</a>'
+    if need_priv:  footer += ' · <a href="/privacy">Política de Privacidad</a>'
+    footer += '</footer>'
+    s = re.sub(r'(?i)</body>', footer + '\n</body>', s, count=1)
 
-# 6) Footer legal (terms/privacy) si faltan
-has_terms  = re.search(r'href=["\']/terms["\']', s, re.I) is not None
-has_priv   = re.search(r'href=["\']/privacy["\']', s, re.I) is not None
-if not (has_terms and has_priv):
-    if re.search(r'</footer\s*>', s, re.I):
-        def ensure_link(ss, text, href):
-            if re.search(re.escape(href), ss, re.I): return ss
-            return re.sub(r'(?is)</footer\s*>', f'  <a href="{href}">{text}</a>\n</footer>', ss, count=1)
-        s = ensure_link(s, "Términos y Condiciones", "/terms")
-        s = ensure_link(s, "Política de Privacidad", "/privacy")
-    else:
-        s = re.sub(r'(?is)</body\s*>',
-                   '\n<footer style="margin-top:2rem;opacity:.85">'
-                   '<a href="/terms">Términos y Condiciones</a> · '
-                   '<a href="/privacy">Política de Privacidad</a>'
-                   '</footer>\n</body>', s, count=1)
-
-# 7) Marcar versión para verificación visual
-stamp = f"hotfix v5 {os.environ.get('TZ','UTC')}"
-if "hotfix v5" not in s:
-    s = s.replace("</body>", f"\n<!-- {stamp} -->\n</body>")
-
-# Limpieza de espacios
-s = re.sub(r'\n{3,}', '\n\n', s)
+# 6) Eliminar SW antiguo que ensucia caché
+s = re.sub(r'(?i)<script[^>]*>\s*if\s*\(\s*[\'"]serviceWorker[\'"]\s*in\s*navigator\)\s*\{.*?\}\s*</script>', '', s, flags=re.S)
+s = re.sub(r'(?i)navigator\.serviceWorker\.register\([^)]*\)\s*;?', '', s)
 
 if s != orig:
-    io.open(p, "w", encoding="utf-8").write(s)
-    print("mod: index.html actualizado")
+    io.open(p,"w",encoding="utf-8").write(s)
+    print("mod: index.html reconciliado")
 else:
-    print("INFO: index.html ya estaba OK")
-PY
+    print("info: index.html ya estaba OK")
+PY "$CID"
 
-echo "[reconcile] Hecho."
+echo "OK: Frontend reconciliado."

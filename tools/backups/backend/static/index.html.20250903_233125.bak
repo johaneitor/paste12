@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Notas</title>
+<style>
+  :root{
+    --bg:#fffdfc; --fg:#24323f; --muted:#6b7a86;
+    --teal:#8fd3d0;   /* turquesa pastel */
+    --peach:#ffb38a;  /* naranja pastel */
+    --pink:#f9a3c7;   /* rosa pastel */
+    --card:#ffffff; --ring: rgba(36,50,63,.15);
+  }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+        background:linear-gradient(180deg,var(--bg),#fff); color:var(--fg);}
+  header{ position:sticky; top:0; z-index:10;
+          background:linear-gradient(90deg,var(--teal),var(--peach),var(--pink));
+          color:#17323a; padding:16px 20px; box-shadow:0 2px 12px var(--ring); }
+  h1{margin:0; font-size:clamp(20px,3.2vw,28px)}
+  .container{max-width:860px; margin:20px auto; padding:0 16px}
+  .card{ background:var(--card); border:1px solid #eee; border-radius:16px; padding:14px; box-shadow:0 4px 20px var(--ring);}
+  textarea,input[type="text"]{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid #e6eef2; outline:none; font-size:16px; background:#fff; color:var(--fg);}
+  textarea:focus,input:focus{ border-color:#b5dfe0; box-shadow:0 0 0 4px rgba(143,211,208,.25) }
+  .row{display:flex; gap:10px; margin-top:10px}
+  .btn{ appearance:none; border:0; border-radius:12px; padding:12px 16px; font-weight:600; cursor:pointer;
+        background:linear-gradient(90deg,var(--teal),var(--peach)); color:#14333a; box-shadow:0 6px 18px var(--ring);}
+  .btn:active{transform:translateY(1px)}
+  .list{margin-top:18px; display:grid; gap:12px}
+  .note{ background:#fff; border:1px solid #eef2f5; border-radius:14px; padding:12px 14px; }
+  .meta{ color:var(--muted); font-size:13px; margin-top:6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .meta .act{ border:0; background:transparent; color:inherit; cursor:pointer; padding:0 6px; border-radius:8px; }
+  .meta .act:hover{ background:rgba(0,0,0,.05) }
+  .menu{ margin-top:8px; display:flex; gap:8px; }
+  .hidden{ display:none }
+  .error{ color:#9a2b2b; margin-top:8px }
+  .ok{ color:#0a6f57; margin-top:8px }
+  footer{ margin:40px 0 28px; color:var(--muted); text-align:center; font-size:14px; }
+  footer a{ color:#0b7c8a; text-decoration:underline }
+</style>
+</head>
+<body>
+  <header><h1>Notas</h1></header>
+  <main class="container">
+    <section class="card">
+      <label for="text" style="font-weight:600;">Escribe tu nota…</label>
+      <textarea id="text" rows="3" placeholder="Escribe tu nota…"></textarea>
+      <div class="row">
+        <input id="ttl" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Horas (12 por defecto)">
+        <button id="send" class="btn">Publicar</button>
+      </div>
+      <div id="msg" class="hidden"></div>
+    </section>
+
+    <section class="list" id="list"></section>
+
+    <footer>
+      <span>Usamos cookies/localStorage (p. ej., para contar vistas).</span><br/>
+      <a href="/terms">Términos y Condiciones</a> · <a href="/privacy">Política de Privacidad</a>
+    </footer>
+  </main>
+
+<script>
+const $ = (s)=>document.querySelector(s);
+const api = (p)=> (p.startsWith('/')?p:'/api/'+p);
+
+function fmtDate(iso){ try{ return new Date(iso).toLocaleString(); }catch(_){ return iso } }
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function renderItem(it){
+  const text = it.text || it.content || it.summary || '';
+  return `
+    <article class="note" data-id="${it.id}">
+      <div>${text ? esc(text) : '(sin texto)'}</div>
+      <div class="meta">
+        <span>#${it.id ?? '-'} · ${fmtDate(it.timestamp)}</span>
+        <button class="act like">❤ <span class="like-count">${it.likes ?? 0}</span></button>
+        <span class="views">👁️ <span class="view-count">${it.views ?? 0}</span></span>
+        <button class="act more">⋯</button>
+      </div>
+      <div class="menu hidden">
+        <button class="share">Compartir</button>
+        <button class="report">Reportar 🚩</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderList(items){
+  $('#list').innerHTML = (items||[]).map(renderItem).join('') || '<div class="note">No hay notas aún.</div>';
+}
+
+async function load(){
+  try{
+    const r = await fetch(api('notes'), {headers:{'Accept':'application/json'}});
+    const j = await r.json();
+    renderList(Array.isArray(j)?j : (j.items || []));
+  }catch(e){
+    $('#list').innerHTML = '<div class="note">Error cargando notas.</div>';
+  }
+}
+
+async function publish(){
+  const text = $('#text').value.trim();
+  const ttlh = parseInt($('#ttl').value.trim()||'');
+  if(!text){ flash('Escribí algo antes de publicar', false); return }
+  try{
+    const body = { text };
+    if(Number.isFinite(ttlh) && ttlh>0) body.ttl_hours = ttlh;
+    const r = await fetch(api('notes'), {
+      method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const j = await r.json();
+    if(!r.ok || !j.ok){ throw new Error(j.error || 'error') }
+    $('#text').value=''; $('#ttl').value='';
+    flash('Publicado ✅', true);
+    const it = j.item || null;
+    if(it){
+      $('#list').insertAdjacentHTML('afterbegin', renderItem(it));
+    }else{
+      load();
+    }
+  }catch(e){ console.error(e); flash('No se pudo publicar', false); }
+}
+
+function flash(msg, ok){
+  const el = $('#msg');
+  el.className = ok ? 'ok' : 'error';
+  el.textContent = msg;
+  setTimeout(()=>{ el.className='hidden'; el.textContent=''; }, 2000);
+}
+
+$('#send').addEventListener('click', publish);
+$('#text').addEventListener('keydown', (e)=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ publish(); }});
+
+// Delegación de eventos para like / ⋯ / compartir / reportar
+document.addEventListener('click', async (e)=>{
+  const likeBtn = e.target.closest('button.like');
+  const moreBtn = e.target.closest('button.more');
+  const shareBtn = e.target.closest('.menu .share');
+  const reportBtn = e.target.closest('.menu .report');
+  const art = e.target.closest('article.note');
+  const id = art?.dataset.id;
+  if(!art || !id) return;
+
+  try{
+    if(likeBtn){
+      const r = await fetch(api(`notes/${id}/like`), {method:'POST'});
+      const j = await r.json();
+      if(j.ok){
+        art.querySelector('.like-count').textContent = j.likes;
+      }
+    }else if(moreBtn){
+      art.querySelector('.menu')?.classList.toggle('hidden');
+    }else if(shareBtn){
+      const url = `${location.origin}/?id=${id}`;
+      if(navigator.share){ await navigator.share({title:'Nota', url}); }
+      else { await navigator.clipboard.writeText(url); flash('Link copiado', true); }
+      art.querySelector('.menu')?.classList.add('hidden');
+    }else if(reportBtn){
+      const r = await fetch(api(`notes/${id}/report`), {method:'POST'});
+      const j = await r.json();
+      if(j.ok){
+        if(j.removed){ art.remove(); flash('Nota eliminada por reportes', true); }
+        else { flash('Reporte enviado', true); }
+      }else{
+        flash('No se pudo reportar', false);
+      }
+      art.querySelector('.menu')?.classList.add('hidden');
+    }
+  }catch(err){
+    console.error(err);
+    flash('Acción fallida', false);
+  }
+});
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  const u = new URL(location.href);
+  const pre = u.searchParams.get('text'); if(pre){ $('#text').value = pre; }
+  load();
+});
+</script>
+</body>
+</html>
