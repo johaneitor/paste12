@@ -13,7 +13,7 @@ def health():
     return jsonify(ok=True, api=True, ver="api-routes-v1")
 
 
-@api_bp.options("/api/notes")
+@api_bp.route("/api/notes", methods=["OPTIONS"])
 def options_notes():
     # flask-cors se encarga de los headers; devolvemos 204 vacío
     return ("", 204)
