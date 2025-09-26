@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+TS="$(date -u +%Y%m%d-%H%M%SZ)"
+P="backend/__init__.py"
+[[ -f "$P" ]] && cp -f "$P" "${P}.${TS}.bak" || true
+cat > "$P" <<'PY'
 from __future__ import annotations
 
 import os, logging, re
@@ -129,3 +135,7 @@ def create_app() -> Flask:
 
 # Para gunicorn: wsgi:application
 application = create_app()
+PY
+
+python -m py_compile "$P" && echo "py_compile OK: $P"
+echo "[hard-reset] Listo. Sugerido: redeploy con Start Command de gunicorn estándar."
