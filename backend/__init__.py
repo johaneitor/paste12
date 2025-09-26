@@ -1,131 +1,72 @@
 from __future__ import annotations
 
-import os, logging, re
-from typing import Any, Dict
-from flask import Flask, jsonify, request, send_from_directory
+import os
+import logging
+from typing import Optional, Dict, Any
+
+from flask import Flask, jsonify
 from flask_cors import CORS
-from werkzeug.exceptions import HTTPException
 from flask_sqlalchemy import SQLAlchemy
 
-# --- DB base (dejar global para modelos) ---
 db = SQLAlchemy()
 
-def _normalize_db_url(u: str | None) -> str | None:
-    if not u: 
-        return None
-    return re.sub(r'^postgres://', 'postgresql://', u)
 
-def _config_app(app: Flask) -> None:
-    uri = _normalize_db_url(os.getenv("DATABASE_URL") or app.config.get("SQLALCHEMY_DATABASE_URI"))
-    if uri:
-        app.config["SQLALCHEMY_DATABASE_URI"] = uri
-    # Pool conservative y seguro
-    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-        "pool_size": 5,
-        "max_overflow": 5,
-    })
-    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+def _normalize_db_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+    # Fuerza SSL (Render PG suele requerirlo); evita duplicar si ya viene
+    if "sslmode=" not in url:
+        url += ("&" if "?" in url else "?") + "sslmode=require"
+    return url
 
-def _make_fallback_api_bp(err: Exception):
-    from flask import Blueprint
-    bp = Blueprint("api_fallback", __name__)
 
-    @bp.get("/health")
-    def health():
-        return jsonify(ok=True, api=False, ver="factory-v6", diag=str(err))
+def create_app(config_override: Optional[Dict[str, Any]] = None) -> Flask:
+    app = Flask(__name__, static_folder=None)
 
-    @bp.get("/notes")
-    def notes_fallback():
-        # Importante: devolver 404 real, NO 500
-        return jsonify(error="not_found", detail="API routes not loaded"), 404
+    # --- Config DB obligatoria ---
+    db_url = (config_override or {}).get("SQLALCHEMY_DATABASE_URI") or os.getenv("DATABASE_URL", "")
+    if not db_url:
+        # Evita que Gunicorn “arranque” sin DB y dé 500s opacos
+        raise RuntimeError("DATABASE_URL no está definido (requerido).")
 
-    return bp
+    app.config.update(
+        SQLALCHEMY_DATABASE_URI=_normalize_db_url(db_url),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        JSON_SORT_KEYS=False,
+        # Motor: defensivo frente a cortes/SSL
+        SQLALCHEMY_ENGINE_OPTIONS=dict(
+            pool_pre_ping=True,
+            pool_recycle=int(os.getenv("SQL_POOL_RECYCLE", "180")),
+            pool_size=int(os.getenv("SQL_POOL_SIZE", "5")),
+            max_overflow=int(os.getenv("SQL_MAX_OVERFLOW", "5")),
+            pool_timeout=int(os.getenv("SQL_POOL_TIMEOUT", "30")),
+        ),
+    )
 
-def _register_front_bp(app: Flask) -> None:
-    """
-    Sirve el index/legales si existe front_bp; si no, sirve archivos de ./frontend
-    """
-    try:
-        from .front_serve import front_bp  # opcional
-        app.register_blueprint(front_bp)
-        app.logger.info("[front] front_bp registrado")
-    except Exception as e:
-        app.logger.warning("[front] front_bp no disponible: %s. Sirviendo ./frontend", e)
-        # Servido plano desde ./frontend si existe
-        FRONT_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
-        FRONT_DIR = os.path.abspath(FRONT_DIR)
+    # Extensiones
+    db.init_app(app)
+    CORS(app)  # CORS sencillo para /api/*
 
-        @app.get("/")
-        def _root():
-            idx = os.path.join(FRONT_DIR, "index.html")
-            if os.path.exists(idx):
-                return send_from_directory(FRONT_DIR, "index.html")
-            return "<h1>Paste12</h1><p>Frontend no encontrado.</p>", 200
-
-        @app.get("/terms")
-        def _terms():
-            f = os.path.join(FRONT_DIR, "terms.html")
-            if os.path.exists(f):
-                return send_from_directory(FRONT_DIR, "terms.html")
-            return "<h1>Términos</h1>", 200
-
-        @app.get("/privacy")
-        def _privacy():
-            f = os.path.join(FRONT_DIR, "privacy.html")
-            if os.path.exists(f):
-                return send_from_directory(FRONT_DIR, "privacy.html")
-            return "<h1>Privacidad</h1>", 200
-
-def create_app() -> Flask:
-    app = Flask(__name__, static_url_path=None)
-    CORS(app)
-    _config_app(app)
-    # Inicializar DB si hay URI
-    if app.config.get("SQLALCHEMY_DATABASE_URI"):
-        db.init_app(app)
-
-    # === API ===
-    api_ok = False
-    try:
-        # Preferimos blueprint externo
-        from .routes import api_bp  # debe definir /api/notes, /api/health, etc.
-        app.register_blueprint(api_bp, url_prefix="/api")
-        api_ok = True
-        app.logger.info("[api] api_bp registrado")
-    except Exception as e:
-        app.logger.exception("[api] fallo registrando api_bp, cargando fallback")
-        app.register_blueprint(_make_fallback_api_bp(e), url_prefix="/api")
-
-    # Health siempre disponible y ver incluye si API está OK
+    # Health básico del factory (si fallan rutas, esto sigue vivo)
     @app.get("/api/health")
     def _health():
-        # detecta si /api/notes existe
-        routes = {r.rule for r in app.url_map.iter_rules()}
-        has_notes = "/api/notes" in routes
-        return jsonify(ok=True, api=has_notes, ver="factory-v6")
+        return jsonify(ok=True, api=False, ver="factory-v6")
 
-    # === FRONT ===
-    _register_front_bp(app)
-
-    # === Handlers: respetar HTTPException (404, 405) ===
-    @app.errorhandler(Exception)
-    def _on_error(e: Exception):
-        if isinstance(e, HTTPException):
-            # Respetar el código original (ej: 404)
-            return jsonify(error=e.name, detail=e.description), e.code
-        app.logger.exception("Unhandled error")
-        return jsonify(error="internal_error"), 500
-
-    # Log de rutas para diagnóstico
+    # Registro de rutas API real, con fallback limpio
     try:
-        for r in sorted(app.url_map.iter_rules(), key=lambda x: x.rule):
-            app.logger.info("[route] %s %s", ",".join(r.methods), r.rule)
-    except Exception:
-        pass
+        from .routes import api_bp  # type: ignore
+        app.register_blueprint(api_bp)
+        # Re-declare /api/health indicando que estamos con API real:
+        @app.get("/api/health")
+        def _health_api():
+            return jsonify(ok=True, api=True, ver="api-routes-v1")
+    except Exception as e:
+        logging.exception("[api] fallo registrando api_bp; habilitando fallback")
+        err_text = str(e)
 
+        @app.get("/api/notes")
+        def _api_unavailable_notes():
+            return jsonify(error="API routes not available", detail=err_text), 500
+
+    # Raíz: no tocamos '/', lo sirve tu frontend/blueprint/estático actual
     return app
-
-# Para gunicorn: wsgi:application
-application = create_app()

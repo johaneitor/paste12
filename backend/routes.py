@@ -1,89 +1,56 @@
 from __future__ import annotations
-from flask import Blueprint, request, jsonify, current_app, Response
-from sqlalchemy import desc
-from typing import List
-from . import db
-from .models import Note
 
-bp = Blueprint("api", __name__, url_prefix="/api")
+from flask import Blueprint, current_app, jsonify, request, make_response
+from sqlalchemy import text
+from urllib.parse import urlencode
 
-def _as_json(obj, status=200, headers: dict | None = None):
-    from flask import json
-    r = current_app.response_class(
-        response=json.dumps(obj, ensure_ascii=False),
-        status=status,
-        mimetype="application/json",
-    )
-    if headers:
-        for k,v in headers.items():
-            r.headers[k] = v
-    # CORS headers consistentes
-    r.headers.setdefault("Access-Control-Allow-Origin", "*")
-    r.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS")
-    r.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
-    r.headers.setdefault("Access-Control-Max-Age", "86400")
-    return r
+api_bp = Blueprint("api", __name__)
 
-@bp.route("/notes", methods=["OPTIONS"])
-def notes_options():
-    return _as_json("", status=204)
 
-@bp.route("/notes", methods=["GET"])
-def list_notes():
-    # Paginación por before_id y limit (como venías testeando)
-    try:
-        limit = max(1, min(int(request.args.get("limit", "10")), 50))
-    except Exception:
-        limit = 10
-    before_id = request.args.get("before_id")
-    q = Note.query
-    if before_id and before_id.isdigit():
-        q = q.filter(Note.id < int(before_id))
-    q = q.order_by(desc(Note.timestamp)).limit(limit)
-    rows: List[Note] = q.all()
-    body = [n.to_dict() for n in rows]
+@api_bp.get("/api/health")
+def health():
+    # Si este handler existe, significa que el blueprint se registró OK
+    return jsonify(ok=True, api=True, ver="api-routes-v1")
 
-    # Link: next si hay más
-    next_link = None
-    if rows:
-        last_id = rows[-1].id
-        # ¿quedan más? comprobación rápida
-        more = Note.query.filter(Note.id < last_id).order_by(desc(Note.timestamp)).first()
-        if more:
-            base = request.url_root.rstrip("/")
-            next_link = f'<{base}/api/notes?limit={limit}&before_id={last_id}>; rel="next"'
 
-    headers = {}
-    if next_link:
-        headers["Link"] = next_link
+@api_bp.options("/api/notes")
+def options_notes():
+    # flask-cors se encarga de los headers; devolvemos 204 vacío
+    return ("", 204)
 
-    return _as_json(body, 200, headers)
 
-@bp.route("/notes", methods=["POST"])
-def create_note():
-    data = request.get_json(silent=True) or {}
-    text = (data.get("text") if isinstance(data, dict) else None) or request.form.get("text") or ""
-    text = text.strip()
-    if not text:
-        return _as_json({"error": "text requerido"}, 400)
-    n = Note(text=text, expires_at=Note.compute_expiry())
-    db.session.add(n)
-    db.session.commit()
-    return _as_json(n.to_dict(), 201)
+@api_bp.get("/api/notes")
+def get_notes():
+    limit = request.args.get("limit", default=10, type=int)
+    before_id = request.args.get("before_id", type=int)
 
-def _act_on_note(note_id: int, field: str) -> Response:
-    n = Note.query.get(note_id)
-    if not n:
-        return _as_json({"error": "not found"}, 404)
-    setattr(n, field, int(getattr(n, field) or 0) + 1)
-    db.session.commit()
-    return _as_json({"ok": True, "id": n.id, field: getattr(n, field)})
+    sql = "SELECT id, text, timestamp, expires_at, likes, views, reports, author_fp FROM notes"
+    params = {}
+    if before_id is not None:
+        sql += " WHERE id < :before_id"
+        params["before_id"] = before_id
+    sql += " ORDER BY timestamp DESC LIMIT :limit"
+    params["limit"] = max(1, min(limit, 50))
 
-@bp.route("/notes/<int:note_id>/like", methods=["POST"])
-def like_note(note_id: int): return _act_on_note(note_id, "likes")
+    dbi = current_app.extensions["sqlalchemy"].db
+    rows = dbi.session.execute(text(sql), params).mappings().all()
+    data = [dict(r) for r in rows]
 
-@bp.route("/notes/<int:note_id>/view", methods=["POST"])
-def view_note(note_id: int): return _act_on_note(note_id, "views")
+    resp = make_response(jsonify(data))
+    if data:
+        last_id = data[-1]["id"]
+        resp.headers["Link"] = f"<{request.base_url}?{urlencode({'limit': params['limit'], 'before_id': last_id})}>; rel=\"next\""
+    return resp
 
-@bp.route("/notes/<int:note_id>/report", methods=["POST"])
-def report_note(note_id: int): return _act_on_note(note_id, "reports")
+
+@api_bp.post("/api/notes/<int:note_id>/like")
+def like_note(note_id: int):
+    dbi = current_app.extensions["sqlalchemy"].db
+    row = dbi.session.execute(
+        text("UPDATE notes SET likes=COALESCE(likes,0)+1 WHERE id=:id RETURNING id, likes"),
+        {"id": note_id},
+    ).first()
+    dbi.session.commit()
+    if not row:
+        return jsonify(error="not found"), 404
+    return jsonify(ok=True, id=row.id, likes=row.likes)
