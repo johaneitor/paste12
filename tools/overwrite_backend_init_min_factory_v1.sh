@@ -1,3 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INI="backend/__init__.py"
+TS="$(date -u +%Y%m%d-%H%M%SZ)"
+mkdir -p backend
+[[ -f "$INI" ]] && cp -f "$INI" "$INI.$TS.bak" && echo "[backup] $INI.$TS.bak"
+
+cat > "$INI" <<'PY'
 from __future__ import annotations
 
 import os
@@ -76,3 +85,10 @@ def create_app() -> Flask:
         raise e
 
     return app
+PY
+
+python -m py_compile "$INI"
+echo "[ok] __init__.py escrito y compilado"
+
+echo "Sugerido:"
+echo "  tools/smoke_api_notes_v7.sh \"https://paste12-rmsk.onrender.com\" \"/sdcard/Download\""
