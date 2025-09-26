@@ -1,3 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+backup() {
+  local f="$1"
+  [[ -f "$f" ]] || return 0
+  local ts="$(date -u +%Y%m%d-%H%M%SZ)"
+  cp -f "$f" "$f.$ts.bak"
+  echo "[backup] $f.$ts.bak"
+}
+
+# 1) backend/__init__.py (factory segura)
+backup backend/__init__.py
+cat > backend/__init__.py <<'PY'
 from __future__ import annotations
 
 import os
@@ -48,3 +62,18 @@ def create_app() -> Flask:
             return jsonify(error="API routes not loaded", detail=str(exc)), 500
 
     return app
+PY
+
+# 2) wsgi.py (exporta 'application' y alias 'app')
+backup wsgi.py
+cat > wsgi.py <<'PY'
+from backend import create_app  # type: ignore
+application = create_app()
+# alias por compatibilidad con algunas plataformas
+app = application
+PY
+
+python -m py_compile backend/__init__.py wsgi.py && echo "[lock] py_compile OK"
+
+echo "Listo. Usa este Start Command en Render:"
+echo "  gunicorn wsgi:application --chdir /opt/render/project/src -w \${WEB_CONCURRENCY:-2} -k gthread --threads \${THREADS:-4} --timeout \${TIMEOUT:-120} -b 0.0.0.0:\$PORT"
