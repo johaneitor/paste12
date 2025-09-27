@@ -11,23 +11,13 @@ N="$OUTDIR/03-api-notes-$TS.txt"
 F="$OUTDIR/04-frontend-$TS.txt"
 S="$OUTDIR/05-summary-$TS.txt"
 
-# 01 BACKEND (health + headers)
-{
-  echo "== 01 BACKEND =="
-  echo "BASE: $BASE"
-  echo "-- health headers --"
-  curl -si "$BASE/api/health" | sed -n '1,20p'
-  echo
-  echo "-- health body (primera línea) --"
-  curl -s "$BASE/api/health" | head -n1
-  echo
+{ echo "== 01 BACKEND =="; echo "BASE: $BASE";
+  echo "-- health headers --"; curl -si "$BASE/api/health" | sed -n '1,20p';
+  echo; echo "-- health body (primera línea) --"; curl -s "$BASE/api/health" | head -n1; echo;
 } > "$B" || true
 
-# 02 PREFLIGHT (OPTIONS /api/notes)
-{
-  echo "== 02 PREFLIGHT (OPTIONS /api/notes) =="
-  curl -si -X OPTIONS "$BASE/api/notes" | sed -n '1,40p'
-  echo
+{ echo "== 02 PREFLIGHT (OPTIONS /api/notes) ==";
+  curl -si -X OPTIONS "$BASE/api/notes" | sed -n '1,40p'; echo;
   cat <<'EXP'
 -- expected headers --
 Access-Control-Allow-Origin: *
@@ -37,43 +27,29 @@ Access-Control-Max-Age: 86400
 EXP
 } > "$P" || true
 
-# 03 API NOTES (headers + body)
-{
-  echo "== 03 API NOTES (GET) =="
-  echo "-- headers --"
-  curl -si "$BASE/api/notes?limit=10" | sed -n '1,60p'
-  echo
-  echo "-- body (first 200 chars) --"
-  curl -s  "$BASE/api/notes?limit=10" | head -c 200; echo
+{ echo "== 03 API NOTES (GET) ==";
+  echo "-- headers --"; curl -si "$BASE/api/notes?limit=10" | sed -n '1,60p'; echo;
+  echo "-- body (first 200 chars) --"; curl -s "$BASE/api/notes?limit=10" | head -c 200; echo;
 } > "$N" || true
 
-# 04 FRONTEND (index + checks rápidos)
-{
-  echo "== 04 FRONTEND (index) =="
-  curl -si "$BASE/" | sed -n '1,20p'
-  echo
-  curl -s "$BASE/" | tee "$OUTDIR/index-$TS.html" >/dev/null
-  echo "-- checks --"
+{ echo "== 04 FRONTEND (index) ==";
+  curl -si "$BASE/" | sed -n '1,20p'; echo;
+  curl -s "$BASE/" | tee "$OUTDIR/index-$TS.html" >/dev/null;
+  echo "-- checks --";
   MET=$(grep -c 'name="google-adsense-account"' "$OUTDIR/index-$TS.html" || true)
   TAG=$(grep -c 'adsbygoogle' "$OUTDIR/index-$TS.html" || true)
   H1s=$(grep -ci '<h1' "$OUTDIR/index-$TS.html" || true)
   VWS=$(grep -c 'class="views"' "$OUTDIR/index-$TS.html" || true)
-  echo "ads-meta:$MET ads-script:$TAG h1:$H1s views-span:$VWS"
+  echo "ads-meta:$MET ads-script:$TAG h1:$H1s views-span:$VWS";
 } > "$F" || true
 
-# 05 SUMMARY
-{
-  echo "== 05 SUMMARY =="
-  echo "BACKEND:   $B"
-  echo "PREFLIGHT: $P"
-  echo "API-NOTES: $N"
-  echo "FRONTEND:  $F"
-  echo
-  echo "Interpretación rápida:"
-  echo "- health.ok debe ser true y api true."
-  echo "- OPTIONS debe devolver 204 con ACAO:* y métodos/headers esperados."
-  echo "- GET /api/notes debe ser 200 (o un JSON válido)."
-  echo "- index debe tener meta AdSense, script ads y un solo <h1>, y span.views."
+{ echo "== 05 SUMMARY ==";
+  echo "BACKEND:   $B"; echo "PREFLIGHT: $P"; echo "API-NOTES: $N"; echo "FRONTEND:  $F"; echo;
+  echo "Interpretación rápida:";
+  echo "- health.ok debe ser true y api true.";
+  echo "- OPTIONS: 204 con ACAO:* y métodos/headers esperados.";
+  echo "- GET /api/notes: 200 con JSON válido (al menos items:[]).";
+  echo "- index: meta/script AdSense, un solo <h1>, span.views.";
 } > "$S" || true
 
 echo "Archivos:"
