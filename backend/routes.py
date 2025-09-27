@@ -1,97 +1,83 @@
-from __future__ import annotations
-
-from flask import make_response, Blueprint, jsonify, request, Response, current_app
-from typing import Any, Dict, List
-
-# Intentar importar modelos/DB si existen, pero no romper si fallan
-HAVE_MODELS = True
-try:
-    from .models import Note  # type: ignore
-    from . import db          # type: ignore
-except Exception as _e:
-    HAVE_MODELS = False
+from flask import Blueprint, request, jsonify, Response, current_app
+from sqlalchemy import text
+from . import db
 
 api_bp = Blueprint("api_bp", __name__)
 
-def _cors_headers() -> Dict[str, str]:
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, HEAD, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Max-Age": "86400",
-    }
+@api_bp.route("/health", methods=["GET"])
+def health():
+    return jsonify(ok=True, api=True, ver="factory-min-v1")
 
-@api_bp.get("/api/health")
-def api_health() -> Response:
-    # Señal clara de que el blueprint está cargado
-    return jsonify(ok=True, api=True, ver="routes-v1")
+@api_bp.route("/notes", methods=["OPTIONS"])
+def notes_options():
+    r = Response("", 204)
+    r.headers["Access-Control-Allow-Origin"]  = "*"
+    r.headers["Access-Control-Allow-Methods"] = "GET, POST, HEAD, OPTIONS"
+    r.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    r.headers["Access-Control-Max-Age"]       = "86400"
+    return r
 
-@api_bp.route("/api/notes", methods=["OPTIONS"])
-def notes_options() -> Response:
-    return Response(status=204, headers=_cors_headers())
-
-@api_bp.get("/api/notes")
-def list_notes() -> Response:
-    """Lista notas con paginación best-effort.
-    Siempre responde 200 con una lista (vacía si hay error de DB)."""
-    limit = 10
+@api_bp.route("/notes", methods=["GET"])
+def get_notes():
     try:
-        limit = max(1, min(50, int(request.args.get("limit", 10))))
+        limit = min(int(request.args.get("limit", 10)), 50)
     except Exception:
         limit = 10
+    before_id = request.args.get("before_id", type=int)
 
-    before_id = request.args.get("before_id", None)
-    items: List[Dict[str, Any]] = []
+    sql = """
+    SELECT id, text, timestamp, expires_at, likes, views, reports, author_fp
+    FROM notes
+    WHERE (:before_id IS NULL OR id < :before_id)
+    ORDER BY id DESC
+    LIMIT :limit
+    """
+    try:
+        with db.session.begin():
+            rows = db.session.execute(
+                text(sql),
+                {"before_id": before_id, "limit": limit},
+            ).mappings().all()
+        data = [dict(r) for r in rows]
+        # Link header para paginación simple
+        headers = {}
+        if len(data) == limit and data:
+            last_id = data[-1]["id"]
+            headers["Link"] = f'</api/notes?limit={limit}&before_id={last_id}>; rel="next"'
+        return jsonify(data), 200, headers
+    except Exception as e:
+        current_app.logger.exception("get_notes failed")
+        return jsonify(error="db_error", detail=str(e)), 500
 
-    if HAVE_MODELS:
-        try:
-            q = Note.query
-            if before_id:
-                q = q.filter(Note.id < int(before_id))
-            q = q.order_by(Note.id.desc()).limit(limit)
-            for n in q.all():
-                items.append({
-                    "id": n.id,
-                    "text": getattr(n, "text", ""),
-                    "timestamp": getattr(n, "timestamp", None),
-                    "expires_at": getattr(n, "expires_at", None),
-                    "likes": int(getattr(n, "likes", 0) or 0),
-                    "views": int(getattr(n, "views", 0) or 0),
-                    "reports": int(getattr(n, "reports", 0) or 0),
-                    "author_fp": getattr(n, "author_fp", None),
-                })
-        except Exception as e:
-            current_app.logger.exception("DB read failed, serving empty list: %r", e)
+def _bump(col, note_id: int):
+    sql = f"UPDATE notes SET {col} = COALESCE({col},0) + 1 WHERE id = :id RETURNING {col}"
+    with db.session.begin():
+        res = db.session.execute(text(sql), {"id": note_id}).first()
+        return int(res[0]) if res else None
 
-    resp = jsonify(items)
-    # Link header para siguiente página
-    if items:
-        next_before = min(x["id"] for x in items if isinstance(x.get("id"), int))
-        base = request.url_root.rstrip("/")
-        resp.headers["Link"] = f'<{base}/api/notes?limit={limit}&before_id={next_before}>; rel="next"'
-    # CORS
-    for k, v in _cors_headers().items():
-        resp.headers[k] = v
-    return resp
+@api_bp.route("/notes/<int:note_id>/like", methods=["POST"])
+def like_note(note_id: int):
+    try:
+        val = _bump("likes", note_id)
+        return jsonify(ok=True, id=note_id, likes=val), 200
+    except Exception as e:
+        current_app.logger.exception("like failed")
+        return jsonify(error="db_error", detail=str(e)), 500
 
+@api_bp.route("/notes/<int:note_id>/view", methods=["POST"])
+def view_note(note_id: int):
+    try:
+        val = _bump("views", note_id)
+        return jsonify(ok=True, id=note_id, views=val), 200
+    except Exception as e:
+        current_app.logger.exception("view failed")
+        return jsonify(error="db_error", detail=str(e)), 500
 
-@api_bp.route("/api/notes", methods=["OPTIONS"])
-def _p12_notes_options():
-    resp = make_response("", 204)
-    h = resp.headers
-    h["Access-Control-Allow-Origin"] = "*"
-    h["Access-Control-Allow-Methods"] = "GET, POST, HEAD, OPTIONS"
-    h["Access-Control-Allow-Headers"] = "Content-Type"
-    h["Access-Control-Max-Age"] = "86400"
-    return resp
-
-
-@api_bp.route("/api/<path:_rest>", methods=["OPTIONS"])
-def _p12_any_options(_rest):
-    resp = make_response("", 204)
-    h = resp.headers
-    h["Access-Control-Allow-Origin"] = "*"
-    h["Access-Control-Allow-Methods"] = "GET, POST, HEAD, OPTIONS"
-    h["Access-Control-Allow-Headers"] = "Content-Type"
-    h["Access-Control-Max-Age"] = "86400"
-    return resp
+@api_bp.route("/notes/<int:note_id>/report", methods=["POST"])
+def report_note(note_id: int):
+    try:
+        val = _bump("reports", note_id)
+        return jsonify(ok=True, id=note_id, reports=val), 200
+    except Exception as e:
+        current_app.logger.exception("report failed")
+        return jsonify(error="db_error", detail=str(e)), 500
