@@ -1,3 +1,5 @@
+import json
+import sqlite3
 # --- P12 SAFE EXPORT (prepend) ---
 def _p12_try_entry_app():
     try:
@@ -496,3 +498,48 @@ try:
     from contract_shim import application as application, app as app
 except Exception:
     pass
+
+
+def _p12_bump_counter(conn, note_id:int, field:str):
+    assert field in ("likes","views","reports")
+    cur = conn.execute('SELECT id, likes, views, reports FROM notes WHERE id=?', (note_id,))
+    row = cur.fetchone()
+    if row is None:
+        return None
+    conn.execute(f'UPDATE notes SET {field}={field}+1 WHERE id=?', (note_id,))
+    cur = conn.execute('SELECT id, likes, views, reports FROM notes WHERE id=?', (note_id,))
+    row = cur.fetchone()
+    return {"id": row[0], "likes": row[1], "views": row[2], "reports": row[3]}
+
+def like(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "likes")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def view(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "views")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def report(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "reports")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
