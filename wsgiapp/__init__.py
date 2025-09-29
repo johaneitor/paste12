@@ -1,3 +1,4 @@
+import re
 import json
 import sqlite3
 # --- P12 SAFE EXPORT (prepend) ---
@@ -642,3 +643,30 @@ def report(note_id):
         from werkzeug.exceptions import NotFound
         raise NotFound()
     return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+
+# --- paste12: deploy-stamp endpoint ---
+def _p12_guess_commit():
+    # 1) env vars típicas de plataformas
+    for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA","GAE_GIT_COMMIT"):
+        v=os.environ.get(k)
+        if v and re.fullmatch(r"[0-9a-f]{7,40}", v):
+            return {"commit": v, "source":"env:"+k}
+    # 2) parsear index en disco (estático)
+    for idx in ("backend/static/index.html","static/index.html","public/index.html","index.html"):
+        try:
+            with open(idx,"r",encoding="utf-8") as f:
+                m=re.search(r'name="p12-commit" content="([0-9a-f]{7,40})"', f.read(), re.I)
+                if m: return {"commit": m.group(1), "source":"index:"+idx}
+        except Exception:
+            pass
+    return None
+
+def deploy_stamp():
+    info=_p12_guess_commit()
+    if not info:
+        # mantener semántica 404 si no podemos determinar el commit
+        body=json.dumps({"error":"not_found"})
+        return (body, 404, {"Content-Type":"application/json"})
+    body=json.dumps(info)
+    return (body, 200, {"Content-Type":"application/json"})
