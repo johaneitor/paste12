@@ -7,10 +7,9 @@ p=Path("wsgiapp/__init__.py"); s=p.read_text(encoding="utf-8")
 TS=time.strftime("%Y%m%d-%H%M%SZ")
 def add_import(s,mod):
     return ("import "+mod+"\n"+s) if re.search(rf'^\s*import\s+{mod}\b',s,re.M) is None else s
+for m in ("os","re","json"): s=add_import(s,m)
 if 'def deploy_stamp' not in s or '/api/deploy-stamp' not in s:
-    for m in ("os","re","json"): s=add_import(s,m)
-    s += r"""
-
+    s += '''
 # --- paste12: /api/deploy-stamp ---
 def _p12_guess_commit():
     for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA","GAE_GIT_COMMIT"):
@@ -29,7 +28,7 @@ def deploy_stamp():
     if not info:
         return (json.dumps({"error":"not_found"}), 404, {"Content-Type":"application/json"})
     return (json.dumps(info), 200, {"Content-Type":"application/json"})
-"""
+'''
     bak=p.with_name(f"__init__.py.bak-deploystamp-{TS}")
     shutil.copy2(p,bak)
     p.write_text(s,encoding="utf-8")
@@ -39,4 +38,4 @@ else:
     print("ALREADY_PRESENT")
 PY
 git add wsgiapp/__init__.py wsgiapp/__init__.py.bak-* || true
-git commit -m "api: add /api/deploy-stamp (commit autodetect env/index) [p12]" || true
+git commit -m "api: /api/deploy-stamp (commit autodetect env/index) [p12]" || true
