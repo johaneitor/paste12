@@ -670,14 +670,3 @@ def deploy_stamp():
         return (body, 404, {"Content-Type":"application/json"})
     body=json.dumps(info)
     return (body, 200, {"Content-Type":"application/json"})
-
-
-def like(note_id):
-    return _p12_bump_counter(note_id, "likes")
-
-def view(note_id):
-    return _p12_bump_counter(note_id, "views")
-
-def report(note_id):
-    return _p12_bump_counter(note_id, "reports")
-
