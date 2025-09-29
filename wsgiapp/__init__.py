@@ -609,3 +609,36 @@ def report(note_id):
         from werkzeug.exceptions import NotFound
         raise NotFound()
     return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def like(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "likes")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def view(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "views")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def report(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "reports")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
