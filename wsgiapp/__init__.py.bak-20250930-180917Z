@@ -681,13 +681,3 @@ def view(note_id):
 def report(note_id):
     return _p12_bump_counter(note_id, "reports")
 
-
-def like(note_id):
-    return _p12_bump_counter(note_id, "likes")
-
-def view(note_id):
-    return _p12_bump_counter(note_id, "views")
-
-def report(note_id):
-    return _p12_bump_counter(note_id, "reports")
-
