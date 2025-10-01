@@ -1,3 +1,5 @@
+import datetime
+import time
 from flask import request, jsonify
 import re
 import json
@@ -764,3 +766,156 @@ def _p12_notes_create():
         return jsonify(error="insert_failed"), 500
 
     return jsonify(id=row_id, ok=True), 201
+
+
+# ---- paste12: maintenance (TTL + capacity) ----
+def _p12_delete_expired_and_enforce_capacity():
+    _db = globals().get("db")
+    if _db is None:
+        try:
+            from wsgiapp import db as _db
+        except Exception:
+            _db = None
+    if _db is None:
+        return {"ok": False, "error": "db_unavailable"}
+
+    # 1) TTL: borrar expiradas (soporta SQLite y Postgres)
+    expired_deleted = 0
+    ok = False
+    # SQLite estilo strftime
+    try:
+        sql = """
+        DELETE FROM notes
+        WHERE ttl_hours IS NOT NULL AND ttl_hours > 0
+          AND (strftime('%s','now') - strftime('%s', COALESCE(created_at, CURRENT_TIMESTAMP))) >= (ttl_hours*3600)
+        """
+        res = _db.session.execute(sql_text(sql))
+        _db.session.commit()
+        try:
+            expired_deleted = res.rowcount or 0
+        except Exception:
+            expired_deleted = 0
+        ok = True
+    except Exception:
+        _db.session.rollback()
+    # Postgres estilo interval
+    if not ok:
+        try:
+            sql = """
+            DELETE FROM notes
+            WHERE ttl_hours IS NOT NULL AND ttl_hours > 0
+              AND (now() - COALESCE(created_at, now())) >= (ttl_hours * interval '1 hour')
+            """
+            res = _db.session.execute(sql_text(sql))
+            _db.session.commit()
+            try:
+                expired_deleted = res.rowcount or 0
+            except Exception:
+                expired_deleted = 0
+            ok = True
+        except Exception:
+            _db.session.rollback()
+
+    # 2) Capacidad: mantener hasta P12_MAX_NOTES (def 100)
+    max_notes = 100
+    try:
+        max_notes = int(os.environ.get("P12_MAX_NOTES","100"))
+    except Exception:
+        max_notes = 100
+
+    total = 0
+    try:
+        total = int((_db.session.execute(sql_text("SELECT COUNT(*) FROM notes")).scalar() or 0))
+    except Exception:
+        total = 0
+
+    capacity_deleted = 0
+    if total > max_notes:
+        to_del = total - max_notes
+        # Orden: expiradas primero, luego menor relevancia (likes, views), luego más viejas
+        sel = """
+        SELECT id FROM notes
+        ORDER BY 
+          CASE WHEN ttl_hours IS NOT NULL AND ttl_hours>0 THEN 1 ELSE 0 END DESC,
+          COALESCE(likes,0) ASC,
+          COALESCE(views,0) ASC,
+          COALESCE(created_at, CURRENT_TIMESTAMP) ASC
+        LIMIT :n
+        """
+        ids = []
+        try:
+            rows = _db.session.execute(sql_text(sel), {"n": to_del}).fetchall()
+            ids = [int(r[0]) for r in rows if r and r[0] is not None]
+        except Exception:
+            ids = []
+        if ids:
+            # Detectar dialecto
+            dialect = ""
+            try:
+                dialect = getattr(_db.engine, "name", "")
+            except Exception:
+                dialect = ""
+            try:
+                if dialect.startswith("postgres"):
+                    _db.session.execute(sql_text("DELETE FROM notes WHERE id = ANY(:ids)"), {"ids": ids})
+                else:
+                    placeholders = ",".join(str(i) for i in ids)
+                    _db.session.execute(sql_text(f"DELETE FROM notes WHERE id IN ({placeholders})"))
+                _db.session.commit()
+                capacity_deleted = len(ids)
+            except Exception:
+                _db.session.rollback()
+                # Fallback uno por uno
+                for i in ids:
+                    try:
+                        _db.session.execute(sql_text("DELETE FROM notes WHERE id = :i"), {"i": i})
+                        _db.session.commit()
+                        capacity_deleted += 1
+                    except Exception:
+                        _db.session.rollback()
+    return {"ok": True, "expired_deleted": int(expired_deleted), "capacity_deleted": int(capacity_deleted)}
+
+# Endpoint para forzar mantenimiento (protegido por token si existe)
+@app.route("/api/admin/maintenance", methods=["POST","GET","OPTIONS"])
+def _p12_admin_maintenance():
+    token_env = os.environ.get("P12_ADMIN_TOKEN","")
+    token_req = request.args.get("token","")
+    if token_env and token_req != token_env:
+        return jsonify(error="forbidden"), 403
+    res = _p12_delete_expired_and_enforce_capacity()
+    return jsonify(res), 200
+
+# Scheduler (cada N minutos; def 5)
+def _p12_boot_scheduler():
+    if os.environ.get("P12_JANITOR","1") != "1":
+        return
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+    except Exception:
+        return
+    g = globals()
+    if g.get("_p12_sched_started"):
+        return
+    mins = 5
+    try:
+        mins = max(1, int(os.environ.get("P12_JANITOR_EVERY_MIN","5")))
+    except Exception:
+        mins = 5
+    try:
+        sched = BackgroundScheduler(daemon=True)
+        def _job():
+            try:
+                _p12_delete_expired_and_enforce_capacity()
+            except Exception:
+                pass
+        sched.add_job(_job, "interval", minutes=mins, id="p12_janitor", replace_existing=True)
+        sched.start()
+        g["_p12_sched_started"] = True
+    except Exception:
+        pass
+
+# Boot al importar el módulo
+try:
+    _p12_boot_scheduler()
+except Exception:
+    pass
