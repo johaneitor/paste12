@@ -957,3 +957,116 @@ def _p12_rest_bump(note_id: int, field: str):
     if bump is None:
         return jsonify(error="not_found"), 404
     return bump(note_id, field)
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+
+# p12: '/' fallback robusto para evitar 500 si falla middleware
+@app.route("/", methods=["GET"])
+def _p12_index_fallback():
+    commit = None
+    try:
+        import os
+        for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA"):
+            v = os.environ.get(k)
+            if v:
+                commit = v; break
+    except Exception:
+        pass
+    try_paths = ("backend/static/index.html","static/index.html","public/index.html")
+    for f in try_paths:
+        try:
+            with open(f,"r",encoding="utf-8") as fh:
+                html = fh.read()
+                if commit and 'name="p12-commit"' in html:
+                    html = re.sub(r'(name="p12-commit" content=")[0-9a-f]{7,40}(")', r"\\1"+commit+r"\\2", html)
+                if "p12-safe-shim" not in html:
+                    html = (html.replace("</head>", '  <meta name="p12-safe-shim" content="1">\\n</head>')
+                            if "</head>" in html else html)
+                if re.search(r'<body[^>]*data-single=', html, re.I) is None:
+                    html = html.replace("<body", '<body data-single="1"')
+                return (html, 200, {"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-cache"})
+        except Exception:
+            continue
+    # fallback mínimo
+    c = commit or "unknown"
+    html = "<!doctype html><meta name='p12-commit' content='"+c+"'><body data-single='1'>paste12</body>"
+    return (html, 200, {"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-cache"})
