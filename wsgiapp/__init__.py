@@ -919,3 +919,41 @@ try:
     _p12_boot_scheduler()
 except Exception:
     pass
+
+
+# --- p12: guard 404 para /api/notes/<id>/(like|report) ---
+@app.before_request
+def _p12_guard_rest_404():
+    try:
+        path = request.path or ""
+    except Exception:
+        return
+    m = re.match(r"^/api/notes/([0-9]+)/(?:(?:like)|(?:report))$", path)
+    if not m:
+        return
+    note_id = int(m.group(1))
+    try:
+        from sqlalchemy import text as sql_text
+        db = globals().get("db")
+        if db is None:
+            from wsgiapp import db as _db
+            db = _db
+        row = db.session.execute(sql_text("SELECT 1 FROM notes WHERE id=:id LIMIT 1"), {"id": note_id}).first()
+        if row is None:
+            return jsonify(error="not_found"), 404
+    except Exception:
+        # Si no podemos chequear, no interferimos
+        return
+
+
+# --- p12: utilitario para REST like/report delegando en helper unificado ---
+def _p12_rest_bump(note_id: int, field: str):
+    bump = globals().get("_p12_bump_counter")
+    if bump is None:
+        try:
+            from wsgiapp import _p12_bump_counter as bump  # type: ignore
+        except Exception:
+            bump = None
+    if bump is None:
+        return jsonify(error="not_found"), 404
+    return bump(note_id, field)
