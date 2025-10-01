@@ -1,3 +1,4 @@
+from flask import request, jsonify
 import re
 import json
 import sqlite3
@@ -691,3 +692,75 @@ def view(note_id):
 def report(note_id):
     return _p12_bump_counter(note_id, "reports")
 
+
+
+# ---- paste12: create note endpoint (POST /api/notes) ----
+@app.route("/api/notes", methods=["POST","OPTIONS"])
+def _p12_notes_create():
+    from flask import request, jsonify
+    # lee entrada (JSON o form)
+    if request.is_json:
+        j = (request.get_json(silent=True) or {})
+        text = (j.get("text") or "").strip()
+        ttl = j.get("ttl_hours", 12)
+    else:
+        text = (request.form.get("text") or "").strip()
+        ttl = request.form.get("ttl_hours", 12)
+    try:
+        ttl = float(ttl)
+    except Exception:
+        ttl = 12.0
+    if not text:
+        return jsonify(error="text_required"), 400
+
+    # Inserción con SQLAlchemy Core + RETURNING id (PG) y fallbacks
+    try:
+        from sqlalchemy import text as sql_text
+    except Exception:
+        return jsonify(error="sqlalchemy_missing"), 500
+
+    # localizar 'db' (SQLAlchemy) expuesto por la app
+    _db = globals().get("db")
+    if _db is None:
+        try:
+            from wsgiapp import db as _db  # común en este proyecto
+        except Exception:
+            _db = None
+    if _db is None:
+        return jsonify(error="server_db_unavailable"), 500
+
+    row_id = None
+    # intentos con RETURNING
+    for sql in [
+        "INSERT INTO notes (text, ttl_hours) VALUES (:text, :ttl) RETURNING id",
+        "INSERT INTO notes (text) VALUES (:text) RETURNING id",
+    ]:
+        try:
+            res = _db.session.execute(sql_text(sql), {"text": text[:8192], "ttl": ttl})
+            try:
+                row = res.fetchone()
+                row_id = int(row[0]) if row and row[0] is not None else None
+            except Exception:
+                row_id = None
+            _db.session.commit()
+            if row_id:
+                break
+        except Exception:
+            _db.session.rollback()
+            continue
+
+    # fallback sin RETURNING (SQLite antiguo, etc.)
+    if not row_id:
+        try:
+            _db.session.execute(sql_text("INSERT INTO notes (text) VALUES (:text)"), {"text": text[:8192]})
+            _db.session.commit()
+            res = _db.session.execute(sql_text("SELECT id FROM notes ORDER BY id DESC LIMIT 1"))
+            row = res.fetchone()
+            row_id = int(row[0]) if row and row[0] is not None else None
+        except Exception:
+            _db.session.rollback()
+
+    if not row_id:
+        return jsonify(error="insert_failed"), 500
+
+    return jsonify(id=row_id, ok=True), 201
