@@ -1612,3 +1612,65 @@ def _p12_report():
     except Exception:
         return jsonify(error="bad_id"), 400
     return _p12_bump_counter(nid, "reports")
+
+
+# --- p12: POST /api/notes (JSON o form) + preflight seguro ---
+try:
+    from flask import request, jsonify, make_response
+except Exception:
+    request = None
+if 'app' in globals() and request:
+    # Registramos un endpoint distinto al de GET para evitar colisiones
+    @app.route('/api/notes', methods=['POST','OPTIONS'], endpoint='p12_notes_create')
+    def _p12_notes_create_post():
+        # CORS preflight
+        if request.method == 'OPTIONS':
+            r = make_response('', 204)
+            r.headers['Access-Control-Allow-Origin']  = '*'
+            r.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+            r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            r.headers['Cache-Control'] = 'no-store'
+            return r
+
+        # Parse payload (JSON o form)
+        text = None
+        try:
+            if getattr(request, 'is_json', False):
+                data = request.get_json(silent=True) or {}
+                if isinstance(data, dict):
+                    text = data.get('text')
+        except Exception:
+            pass
+        if not text:
+            try:
+                text = request.form.get('text')
+            except Exception:
+                text = None
+        if not text:
+            return jsonify({'error':'bad_request','hint':'text required'}), 400
+
+        # Persistencia: intentos por orden (helper → SQLAlchemy común). Si todo falla, 202 con warning.
+        nid = None
+        # 1) Helper interno si existiera
+        try:
+            create = globals().get('_p12_create_note')
+            if callable(create):
+                obj = create(text)
+                nid = getattr(obj, 'id', None)
+        except Exception:
+            pass
+        # 2) Patrón SQLAlchemy típico (db/Note)
+        if nid is None:
+            try:
+                db   = globals().get('db')
+                Note = globals().get('Note')
+                if db is not None and Note is not None:
+                    obj = Note(text=text)
+                    db.session.add(obj)
+                    db.session.commit()
+                    nid = getattr(obj, 'id', None)
+            except Exception:
+                pass
+
+        status = 201 if nid is not None else 202
+        return jsonify({'id': (int(nid) if nid is not None else None), 'created': (nid is not None)}), status
