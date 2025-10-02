@@ -1,6 +1,6 @@
 import datetime
 import time
-from flask import request, jsonify
+from flask import make_response, jsonify, request, request, jsonify
 import re
 import json
 import sqlite3
@@ -699,7 +699,7 @@ def report(note_id):
 # ---- paste12: create note endpoint (POST /api/notes) ----
 @app.route("/api/notes", methods=["POST","OPTIONS"])
 def _p12_notes_create():
-    from flask import request, jsonify
+    from flask import make_response, jsonify, request, request, jsonify
     # lee entrada (JSON o form)
     if request.is_json:
         j = (request.get_json(silent=True) or {})
@@ -1616,7 +1616,7 @@ def _p12_report():
 
 # --- p12: POST /api/notes (JSON o form) + preflight seguro ---
 try:
-    from flask import request, jsonify, make_response
+    from flask import make_response, jsonify, request, request, jsonify, make_response
 except Exception:
     request = None
 if 'app' in globals() and request:
