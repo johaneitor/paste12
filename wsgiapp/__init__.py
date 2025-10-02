@@ -1532,3 +1532,83 @@ def _p12_report():
     except Exception:
         return jsonify(error="bad_id"), 400
     return _p12_bump_counter(nid, "reports")
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
