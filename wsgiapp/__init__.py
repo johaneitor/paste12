@@ -1674,3 +1674,53 @@ if 'app' in globals() and request:
 
         status = 201 if nid is not None else 202
         return jsonify({'id': (int(nid) if nid is not None else None), 'created': (nid is not None)}), status
+
+# --- p12: POST/OPTIONS para /api/notes (no toca GET existente) ---
+if 'app' in globals():
+    @app.route('/api/notes', methods=['POST','OPTIONS'])
+    def _p12_notes_post():
+        # CORS preflight
+        if request.method == 'OPTIONS':
+            r = make_response('', 204)
+            r.headers['Access-Control-Allow-Origin']  = '*'
+            r.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+            r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            r.headers['Cache-Control'] = 'no-store'
+            return r
+        # POST real
+        text = None
+        if getattr(request, 'is_json', False):
+            data = request.get_json(silent=True) or {}
+            if isinstance(data, dict):
+                text = data.get('text')
+        if not text:
+            try:
+                text = request.form.get('text')
+            except Exception:
+                text = None
+        if not text:
+            return jsonify({'error':'bad_request','hint':'text required'}), 400
+
+        nid = None
+        # 1) si existe helper de creación, usarlo
+        try:
+            create = globals().get('_p12_create_note')
+            if callable(create):
+                obj = create(text)
+                nid = getattr(obj, 'id', None)
+        except Exception:
+            pass
+        # 2) fallback ORM directo si existe Note/db
+        if nid is None:
+            try:
+                db   = globals().get('db')
+                Note = globals().get('Note')
+                if db is not None and Note is not None:
+                    obj = Note(text=text)
+                    db.session.add(obj)
+                    db.session.commit()
+                    nid = getattr(obj, 'id', None)
+            except Exception:
+                pass
+        status = 201 if nid is not None else 202
+        return jsonify({'id': (int(nid) if nid is not None else None), 'created': bool(nid)}), status
