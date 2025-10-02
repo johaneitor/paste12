@@ -1390,3 +1390,65 @@ def _p12_report():
     except Exception:
         return jsonify(error="bad_id"), 400
     return _p12_bump_counter(nid, "reports")
+
+# p12: headers no-store para HTML + inyección del safe-shim con p12FetchJson si falta
+@app.after_request
+def _p12_html_no_store_and_shim(resp):
+    try:
+        ct = (resp.headers.get('Content-Type') or '').lower()
+    except Exception:
+        return resp
+    is_html = 'text/html' in ct
+    if is_html:
+        # forzar no-store para pasar auditoría de cache
+        resp.headers['Cache-Control'] = 'no-store, max-age=0'
+        try:
+            body = resp.get_data(as_text=True)
+            need_shim = ('p12FetchJson' not in body)
+            if need_shim:
+                shim = (
+                    '\n  <meta name="p12-safe-shim" content="1">\n'
+                    '  <script>\n'
+                    '  /*! p12-safe-shim */\n'
+                    '  (function(){\n'
+                    '    window.p12FetchJson = async function(url,opts){\n'
+                    '      const ac = new AbortController(); const t=setTimeout(()=>ac.abort(),8000);\n'
+                    '      try{\n'
+                    '        const r = await fetch(url, Object.assign({headers:{\'Accept\':\'application/json\'}},opts||{}, {signal:ac.signal}));\n'
+                    '        const ct = (r.headers.get(\'content-type\')||\'\').toLowerCase();\n'
+                    '        const isJson = ct.includes(\'application/json\');\n'
+                    '        return { ok:r.ok, status:r.status, json: isJson? await r.json().catch(()=>null) : null };\n'
+                    '      } finally { clearTimeout(t); }\n'
+                    '    };\n'
+                    '    try{\n'
+                    '      var u=new URL(location.href);\n'
+                    '      if(u.searchParams.get(\'id\')){\n'
+                    '        (document.body||document.documentElement).setAttribute(\'data-single\',\'1\');\n'
+                    '      }\n'
+                    '    }catch(_){}\n'
+                    '  })();\n'
+                    '  </script>\n'
+                )
+                if '</head>' in body:
+                    body = body.replace('</head>', shim + '\n</head>')
+                else:
+                    body = '<head>'+shim+'</head>'+body
+                resp.set_data(body)
+        except Exception:
+            pass
+    return resp
+
+# p12: '/' fallback robusto (por si el middleware de index no corre)
+@app.route('/', methods=['GET'])
+def _p12_index_fallback_v2():
+    try:
+        import os
+        commit = None
+        for k in ('RENDER_GIT_COMMIT','GIT_COMMIT','SOURCE_COMMIT','COMMIT_SHA'):
+            v = os.environ.get(k)
+            if v:
+                commit = v; break
+    except Exception:
+        commit = None
+    html = "<!doctype html><head><meta name='p12-commit' content='" + (commit or 'unknown') + "'></head><body data-single='1'>paste12</body>"
+    return (html, 200, {'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store, max-age=0'})
