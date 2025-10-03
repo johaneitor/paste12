@@ -1,3 +1,4 @@
+from urllib.parse import parse_qs
 from textwrap import dedent
 import re
 import os
@@ -79,3 +80,95 @@ def _p12_index_override_mw(app):
     return _app
 
 application = _p12_index_override_mw(application)
+
+# --- p12: API override (POST/OPTIONS /api/notes + REST 404 guard) ---
+def _p12_read_body(environ):
+    try: ln = int(environ.get('CONTENT_LENGTH') or '0')
+    except Exception: ln = 0
+    if ln>0 and environ.get('wsgi.input'): return environ['wsgi.input'].read(ln)
+    return b''
+
+def _p12_api_override_mw(app):
+    def _app(environ, start_response):
+        path   = environ.get('PATH_INFO','/')
+        method = (environ.get('REQUEST_METHOD') or 'GET').upper()
+
+        # CORS preflight
+        if path == '/api/notes' and method == 'OPTIONS':
+            headers=[('Access-Control-Allow-Origin','*'),
+                     ('Access-Control-Allow-Methods','GET, POST, OPTIONS'),
+                     ('Access-Control-Allow-Headers','Content-Type'),
+                     ('Cache-Control','no-store'),
+                     ('Content-Length','0')]
+            start_response('204 No Content', headers); return [b'']
+
+        # POST /api/notes
+        if path == '/api/notes' and method == 'POST':
+            ctype = (environ.get('CONTENT_TYPE') or '').lower()
+            raw   = _p12_read_body(environ)
+            text  = None
+            if 'application/json' in ctype:
+                try:
+                    j=json.loads(raw.decode('utf-8') or '{}')
+                    if isinstance(j,dict): text=j.get('text')
+                except Exception: text=None
+            elif 'application/x-www-form-urlencoded' in ctype:
+                try:
+                    q=parse_qs(raw.decode('utf-8'), keep_blank_values=True)
+                    vs=q.get('text') or []; text=vs[0] if vs else None
+                except Exception: text=None
+            if not text:
+                data=b'{"error":"bad_request","hint":"text required"}'
+                headers=[('Content-Type','application/json'),
+                         ('Access-Control-Allow-Origin','*'),
+                         ('Cache-Control','no-store'),
+                         ('Content-Length',str(len(data)))]
+                start_response('400 Bad Request', headers); return [data]
+
+            nid=None
+            try:
+                # Usa el app real para DB/Model
+                from wsgiapp import db, Note
+                fl = app
+                if hasattr(fl,'app_context'):
+                    with fl.app_context():
+                        obj=Note(text=text); db.session.add(obj); db.session.commit()
+                        nid=getattr(obj,'id',None)
+            except Exception:
+                nid=None
+
+            try: nid_json=int(nid) if isinstance(nid,(int,)) or (isinstance(nid,str) and nid.isdigit()) else nid
+            except Exception: nid_json=nid
+            payload=json.dumps({'id':nid_json,'created':bool(nid)}).encode('utf-8')
+            headers=[('Content-Type','application/json'),
+                     ('Access-Control-Allow-Origin','*'),
+                     ('Cache-Control','no-store'),
+                     ('Content-Length',str(len(payload)))]
+            start_response('201 Created' if nid is not None else '202 Accepted', headers)
+            return [payload]
+
+        # REST 404 guard para inexistentes
+        m=re.match(r'^/api/notes/(\d+)/(like|view|report)$', path)
+        if m and method in ('GET','POST'):
+            exists=False
+            try:
+                from wsgiapp import db, Note
+                fl = app
+                if hasattr(fl,'app_context'):
+                    with fl.app_context():
+                        row=db.session.get(Note, int(m.group(1)))
+                        exists = (row is not None)
+            except Exception:
+                exists=False
+            if not exists:
+                data=b'{"error":"not_found"}'
+                headers=[('Content-Type','application/json'),
+                         ('Access-Control-Allow-Origin','*'),
+                         ('Cache-Control','no-store'),
+                         ('Content-Length',str(len(data)))]
+                start_response('404 Not Found', headers); return [data]
+
+        return app(environ, start_response)
+    return _app
+
+application = _p12_api_override_mw(application)
