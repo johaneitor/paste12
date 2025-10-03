@@ -31,6 +31,9 @@ def application(environ, start_response):
     return a(environ, start_response)
 
 app = application
+# p12: aplicar parche POST/OPTIONS y guard 404
+from wsgiapp import p12_patch as _p12_patch
+_p12_patch.apply(app)
 # --- END P12 SAFE EXPORT ---
 # --- P12 SAFE EXPORT (prepend) ---
 def _p12_try_entry_app():
