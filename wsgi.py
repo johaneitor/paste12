@@ -172,3 +172,140 @@ def _p12_api_override_mw(app):
     return _app
 
 application = _p12_api_override_mw(application)
+
+
+  # --- p12: MW index safe (sin 're') + /api/deploy-stamp + fallbacks ---
+  import json
+
+  def _p12_guess_commit():
+      for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA"):
+          v=os.environ.get(k)
+          if v and all(c in "0123456789abcdef" for c in v.lower()) and 7 <= len(v) <= 40:
+              return v
+      return "unknown"
+
+  def _read_first_existing(cands):
+      for f in cands:
+          try:
+              with open(f,"r",encoding="utf-8") as fh:
+                  return fh.read()
+          except Exception:
+              continue
+      return None
+
+  def _p12_load_index_text():
+      html = _read_first_existing((
+          "backend/static/index.html","static/index.html","public/index.html",
+          "index.html","wsgiapp/templates/index.html"
+      ))
+      if html is None:
+          # mínimo de cortesía
+          return "<!doctype html><meta charset='utf-8'><meta name='p12-commit' content='{}'><body data-single='1'>paste12</body>".format(_p12_guess_commit())
+      return html
+
+  def _insert_before_close_head(html, snippet):
+      hl = html.lower()
+      i = hl.rfind("</head>")
+      if i >= 0:
+          return html[:i] + snippet + html[i:]
+      return "<head>" + snippet + "</head>" + html
+
+  def _ensure_meta_commit(html):
+      commit = _p12_guess_commit()
+      l = html.lower()
+      needle = 'name="p12-commit"'
+      if needle in l:
+          # reescribir el content="..."
+          i = l.find(needle)
+          # buscar content=" tras ese punto
+          j = l.find('content="', i)
+          if j >= 0:
+              j2 = html.find('"', j+9)
+              if j2 >= 0:
+                  return html[:j+9] + commit + html[j2:]
+      # si no existe, insertar
+      snippet = '\n  <meta name="p12-commit" content="%s">\n' % commit
+      return _insert_before_close_head(html, snippet)
+
+  def _ensure_safe_shim_and_single(html):
+      l = html.lower()
+      # meta + shim
+      if "p12-safe-shim" not in l:
+          shim = """\n  <meta name="p12-safe-shim" content="1">\n  <script>
+/*! p12-safe-shim (no regex) */
+(function(){
+  window.p12FetchJson = async function(url,opts){
+    const ac = new AbortController(); const t=setTimeout(()=>ac.abort(),8000);
+    try{
+      const r = await fetch(url, Object.assign({headers:{'Accept':'application/json'}},opts||{}, {signal:ac.signal}));
+      const ct = (r.headers.get('content-type')||'').toLowerCase();
+      const isJson = ct.includes('application/json');
+      return { ok:r.ok, status:r.status, json: isJson? await r.json().catch(()=>null) : null };
+    } finally { clearTimeout(t); }
+  };
+  try{
+    var u=new URL(location.href);
+    if(u.searchParams.get('id')){
+      (document.body||document.documentElement).setAttribute('data-single','1');
+    }
+  }catch(_){}
+})();
+</script>\n"""  # noqa
+          html = _insert_before_close_head(html, shim)
+      # data-single en <body>
+      l = html.lower()
+      bi = l.find("<body")
+      if bi >= 0:
+          bj = l.find(">", bi)
+          if bj > bi:
+              body_tag = html[bi:bj]
+              if "data-single" not in body_tag.lower():
+                  html = html[:bi] + body_tag + ' data-single="1"' + html[bj:]
+      else:
+          html = "<body data-single='1'></body>" + html
+      return html
+
+  def _p12_make_html():
+      html = _p12_load_index_text()
+      html = _ensure_meta_commit(html)
+      html = _ensure_safe_shim_and_single(html)
+      return html
+
+  def _p12_index_override_mw2(app):
+      def _app(env, start_response):
+          path = env.get("PATH_INFO","/")
+          if path in ("/", "/index.html"):
+              body = _p12_make_html().encode("utf-8")
+              headers=[("Content-Type","text/html; charset=utf-8"),
+                       ("Cache-Control","no-store"),
+                       ("Content-Length", str(len(body)))]
+              start_response("200 OK", headers)
+              return [body]
+          if path == "/api/deploy-stamp":
+              payload = json.dumps({"commit": _p12_guess_commit(), "source":"env"}).encode("utf-8")
+              start_response("200 OK",[("Content-Type","application/json"),
+                                       ("Cache-Control","no-store"),
+                                       ("Content-Length", str(len(payload)))])
+              return [payload]
+          # fallbacks simples para términos/privacidad si el framework no los sirve
+          if path in ("/terms","/privacy"):
+              files = {"terms":"terms.html","/terms":"terms.html",
+                       "privacy":"privacy.html","/privacy":"privacy.html"}
+              fname = files.get(path)
+              if fname:
+                  txt = _read_first_existing((f"backend/static/{fname}",
+                                              f"static/{fname}",
+                                              f"public/{fname}", fname))
+                  if txt:
+                      b = txt.encode("utf-8")
+                      start_response("200 OK",[("Content-Type","text/html; charset=utf-8"),
+                                               ("Cache-Control","no-store"),
+                                               ("Content-Length", str(len(b)))])
+                      return [b]
+          return app(env, start_response)
+      return _app
+
+
+application = _p12_index_override_mw2(globals().get('application') or application)
+
+application = _p12_index_override_mw2(globals().get('application') or application)
