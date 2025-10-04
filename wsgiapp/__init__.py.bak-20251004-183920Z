@@ -1,5 +1,5 @@
-TTL_HOURS = 576
-CAP_LIMIT = 800
+TTL_HOURS = 144
+CAP_LIMIT = 200
 from flask import Flask
 from flask import request, jsonify, make_response
 import datetime

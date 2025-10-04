@@ -1,7 +1,4 @@
-TTL_HOURS = 576
-CAP_LIMIT = 800
-from flask import Flask
-from flask import request, jsonify, make_response
+TTL_HOURS = 144\nCAP_LIMIT = 200\nfrom flask import request, jsonify, make_response
 import datetime
 import time
 from flask import make_response, jsonify, request, request, jsonify
@@ -1812,9 +1809,10 @@ def _p12_report():
         return jsonify(error="bad_id"), 400
     return _p12_bump_counter(nid, "reports")
 
+# paste12: DB helper (psycopg2) – opcional
 def _p12_db_conn():
     try:
-        import os, psycopg2
+        import psycopg2
         url = os.getenv("DATABASE_URL") or os.getenv("DATABASE_INTERNAL_URL")
         if not url:
             return None
@@ -1825,23 +1823,29 @@ def _p12_db_conn():
 def _p12_create_note(text, ttl_hours=None, importance=None):
     cx = _p12_db_conn()
     if cx is None:
-        return None
+        return None  # sin DB → devolvemos None (el caller decide respuesta)
     try:
         cur = cx.cursor()
         cur.execute(
-            "INSERT INTO notes (text, created_at, ttl_hours, importance) VALUES (%s, NOW(), %s, %s) RETURNING id",
+            "INSERT INTO notes (text, created_at, ttl_hours, importance) "
+            "VALUES (%s, NOW(), %s, %s) RETURNING id",
             (text, ttl_hours, importance)
         )
         nid = cur.fetchone()[0]
-        cx.commit(); cur.close(); cx.close()
+        cx.commit()
+        cur.close()
+        cx.close()
         return int(nid)
     except Exception:
-        try: cx.rollback()
-        except Exception: pass
+        try:
+            cx.rollback()
+        except Exception:
+            pass
         return None
 
-@app.route("/api/rest/like", methods=["GET","POST"], endpoint="p12_rest_like")
+@app.route("/api/rest/like", methods=["GET","POST"], endpoint="rest_like")
 def _p12_rest_like():
+    # id desde query (GET) o json/form (POST)
     id_val = None
     if request.method == "GET":
         id_val = request.args.get("id")
@@ -1849,23 +1853,29 @@ def _p12_rest_like():
         if request.is_json:
             id_val = (request.get_json(silent=True) or {}).get("id")
         else:
-            try: id_val = request.form.get("id")
-            except Exception: id_val = None
+            try:
+                id_val = request.form.get("id")
+            except Exception:
+                id_val = None
     try:
         note_id = int(id_val)
     except Exception:
         raise NotFound()
-    # si existe helper _p12_bump_counter, úsalo; si no hay fila → None → 404
-    try:
-        res = globals().get("_p12_bump_counter", lambda *_: None)("likes", note_id)
-    except Exception:
-        res = None
-    if res is None:
-        raise NotFound()
-    return jsonify(ok=True, id=note_id, updated=res), 200
 
-@app.route("/api/rest/report", methods=["GET","POST"], endpoint="p12_rest_report")
+    # si existe helper, lo usamos; si no, 404 controlado
+    result = None
+    try:
+        if "_p12_bump_counter" in globals():
+            result = _p12_bump_counter("likes", note_id)
+    except Exception:
+        result = None
+    if result is None:
+        raise NotFound()
+    return jsonify(ok=True, id=note_id, updated=result), 200
+
+@app.route("/api/rest/report", methods=["GET","POST"], endpoint="rest_report")
 def _p12_rest_report():
+    # id desde query (GET) o json/form (POST)
     id_val = None
     if request.method == "GET":
         id_val = request.args.get("id")
@@ -1873,17 +1883,22 @@ def _p12_rest_report():
         if request.is_json:
             id_val = (request.get_json(silent=True) or {}).get("id")
         else:
-            try: id_val = request.form.get("id")
-            except Exception: id_val = None
+            try:
+                id_val = request.form.get("id")
+            except Exception:
+                id_val = None
     try:
         note_id = int(id_val)
     except Exception:
         raise NotFound()
-    # si existe helper _p12_bump_counter, úsalo; si no hay fila → None → 404
+
+    # si existe helper, lo usamos; si no, 404 controlado
+    result = None
     try:
-        res = globals().get("_p12_bump_counter", lambda *_: None)("reports", note_id)
+        if "_p12_bump_counter" in globals():
+            result = _p12_bump_counter("reports", note_id)
     except Exception:
-        res = None
-    if res is None:
+        result = None
+    if result is None:
         raise NotFound()
-    return jsonify(ok=True, id=note_id, updated=res), 200
+    return jsonify(ok=True, id=note_id, updated=result), 200

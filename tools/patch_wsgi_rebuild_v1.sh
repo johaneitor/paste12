@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PY="wsgi.py"
+cp -f "$PY" "${PY}.bak-$(date -u +%Y%m%d-%H%M%SZ)" 2>/dev/null || true
+
+cat > "$PY" <<'PYFILE'
 # -*- coding: utf-8 -*-
 import os, json
 
@@ -121,3 +127,7 @@ except Exception:
 
 # Export final
 application = _index_override(base_app)
+PYFILE
+
+python -m py_compile "$PY"
+echo "PATCH_OK $PY"
