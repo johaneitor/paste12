@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+p="wsgi.py"
+cp -f "$p" "${p}.bak-$(date -u +%Y%m%d-%H%M%SZ)" 2>/dev/null || true
+
+cat > "$p" <<'PY'
 # -*- coding: utf-8 -*-
 import os, json
 
@@ -126,3 +132,7 @@ def _app(env, start_response):
 
 # Export
 application = _app
+PY
+
+python -m py_compile wsgi.py
+echo "PATCH_OK wsgi.py"
