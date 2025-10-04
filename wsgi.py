@@ -311,3 +311,5 @@ application = _p12_index_override_mw2(globals().get('application') or applicatio
 application = _p12_index_override_mw2(globals().get('application') or application)
 
 application = _p12_index_override_mw2(globals().get('application') or application)
+
+application = _p12_index_override_mw2(globals().get('application') or application)
