@@ -1,128 +1,61 @@
-# -*- coding: utf-8 -*-
-import os, json
+# wsgi.py — WSGI mínimo y seguro (sin regex)
+import os, json, time
 
-# Cargamos la app base de forma segura (sin romper si algo falla)
 try:
+    # Importa la app base (Flask) desde wsgiapp
     from wsgiapp import application as _base_app
 except Exception as e:
-    def _base_app(env, start_response):
-        body = b'{"error":"boot_failure"}'
-        start_response("500 Internal Server Error", [("Content-Type","application/json"),("Content-Length", str(len(body)))])
+    # Fallback a app vacía si algo falla (evita crash del proceso)
+    def _base_app(environ, start_response):
+        body = b'{"ok":false,"error":"base_app_import"}'
+        start_response("500 Internal Server Error",
+                       [("Content-Type","application/json"),
+                        ("Content-Length", str(len(body)))])
         return [body]
 
-def _guess_commit():
-    for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA"):
-        v = os.environ.get(k)
-        if v and all(c in "0123456789abcdef" for c in v.lower()):
-            return v
-    return "unknown"
+def _deploy_stamp(environ, start_response):
+    commit = (os.environ.get("RENDER_GIT_COMMIT")
+              or os.environ.get("SOURCE_COMMIT")
+              or os.environ.get("GIT_COMMIT")
+              or os.environ.get("COMMIT_SHA")
+              or "unknown")
+    body = json.dumps({
+        "commit": commit,
+        "date": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    }).encode("utf-8")
+    start_response("200 OK", [
+        ("Content-Type","application/json"),
+        ("Cache-Control","no-store"),
+        ("Content-Length", str(len(body)))
+    ])
+    return [body]
 
-def _read_text(path):
-    try:
-        with open(path, "rb") as f:
-            return f.read()
-    except Exception:
-        return None
-
-def _ensure_flags(html_bytes):
-    # Sin regex: trabajamos sobre bytes simples
-    html = html_bytes.decode("utf-8", "replace")
-    commit = _guess_commit()
-
-    # Inyectar <meta name="p12-commit">
-    if 'name="p12-commit"' not in html and "name='p12-commit'" not in html:
-        head_ix = html.lower().find("</head>")
-        meta = f'<meta name="p12-commit" content="{commit}">'
-        if head_ix >= 0:
-            html = html[:head_ix] + meta + "\n" + html[head_ix:]
-        else:
-            html = "<head>"+meta+"</head>"+html
-    else:
-        # Reemplazo simple del contenido si ya existe (sin regex)
-        for q in ('"', "'"):
-            needle = f'name={q}p12-commit{q}'
-            if needle in html:
-                # buscar content="..."; si no existe, añadirlo
-                cont = 'content="'
-                n = html.find(needle)
-                cix = html.find(cont, n)
-                if cix >= 0:
-                    end = html.find('"', cix+len(cont))
-                    if end > cix:
-                        html = html[:cix+len(cont)] + commit + html[end:]
+def _index(environ, start_response):
+    # Sirve un index estático si existe; si no, uno mínimo
+    paths = ("index.html","static/index.html","public/index.html")
+    data = None
+    for p in paths:
+        try:
+            with open(p, "rb") as f:
+                data = f.read()
                 break
+        except Exception:
+            pass
+    if not data:
+        data = b"<!doctype html><meta name='p12-commit' content='unknown'><body data-single='1'>paste12</body>"
+    # Cache bust para evitar SW/Cloudflare viejos
+    start_response("200 OK", [
+        ("Content-Type","text/html; charset=utf-8"),
+        ("Cache-Control","no-store, max-age=0"),
+        ("Content-Length", str(len(data)))
+    ])
+    return [data]
 
-    # Inyectar marcador de shim si falta
-    if "p12-safe-shim" not in html:
-        shim = (
-          '<meta name="p12-safe-shim" content="1">\n'
-          '<script>\n'
-          '/*! p12-safe-shim */\n'
-          '(function(){\n'
-          '  window.p12FetchJson = async function(u,opts){\n'
-          '    const ac=new AbortController();const t=setTimeout(()=>ac.abort(),8000);\n'
-          '    try{const r=await fetch(u,Object.assign({headers:{Accept:"application/json"}},opts||{}, {signal:ac.signal}));\n'
-          '      const ct=(r.headers.get("content-type")||"").toLowerCase();\n'
-          '      const isJson=ct.indexOf("application/json")>=0;return {ok:r.ok,status:r.status,json:isJson?await r.json().catch(()=>null):null};\n'
-          '    }finally{clearTimeout(t);} };\n'
-          '  try{var u=new URL(location.href); if(u.searchParams.get("id")){(document.body||document.documentElement).setAttribute("data-single","1");}}\n'
-          '  catch(_){}}\n'
-          ')();\n'
-          '</script>\n'
-        )
-        head_ix = html.lower().find("</head>")
-        if head_ix >= 0:
-            html = html[:head_ix] + shim + html[head_ix:]
-        else:
-            html = "<head>"+shim+"</head>"+html
-
-    # Asegurar data-single="1" en <body>
-    low = html.lower()
-    b_ix = low.find("<body")
-    if b_ix >= 0:
-        close = html.find(">", b_ix)
-        if close > b_ix:
-            frag = html[b_ix:close]
-            if "data-single" not in frag.lower():
-                html = html[:close] + ' data-single="1"' + html[close:]
-    else:
-        html = html + '<body data-single="1"></body>'
-
-    return html.encode("utf-8")
-
-def _serve_html(body_b, start_response, status="200 OK"):
-    headers = [("Content-Type","text/html; charset=utf-8"),
-               ("Cache-Control","no-store"),
-               ("Content-Length", str(len(body_b)))]
-    start_response(status, headers)
-    return [body_b]
-
-def _app(env, start_response):
-    path = env.get("PATH_INFO","/")
-
-    # /api/deploy-stamp (sin depender del BE)
+# Dispatcher final
+def application(environ, start_response):
+    path = environ.get("PATH_INFO","/") or "/"
     if path == "/api/deploy-stamp":
-        body = json.dumps({"commit": _guess_commit(), "source":"env"}).encode("utf-8")
-        start_response("200 OK", [("Content-Type","application/json"),
-                                  ("Cache-Control","no-cache"),
-                                  ("Content-Length", str(len(body)))])
-        return [body]
-
-    # index + fallbacks
-    if path in ("/","/index.html"):
-        for cand in ("backend/static/index.html","static/index.html","public/index.html","index.html"):
-            data = _read_text(cand)
-            if data: return _serve_html(_ensure_flags(data), start_response)
-        # mínimo si no hay archivos
-        mini = f"<!doctype html><meta name='p12-commit' content='{_guess_commit()}'><meta name='p12-safe-shim' content='1'><body data-single='1'>paste12</body>"
-        return _serve_html(mini.encode("utf-8"), start_response)
-
-    if path in ("/terms","/privacy"):
-        data = _read_text(f"backend/static{path}.html") or _read_text(f"static{path}.html")
-        if data: return _serve_html(data, start_response)
-
-    # Por defecto: delegar al BE
-    return _base_app(env, start_response)
-
-# Export
-application = _app
+        return _deploy_stamp(environ, start_response)
+    if path in ("/", "/index.html"):
+        return _index(environ, start_response)
+    return _base_app(environ, start_response)
