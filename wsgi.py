@@ -1,61 +1,76 @@
-# wsgi.py — WSGI mínimo y seguro (sin regex)
-import os, json, time
-
+import os, json
+# p12: minimal WSGI bootstrap with safe index and /api/deploy-stamp; no regex; conservative headers
 try:
-    # Importa la app base (Flask) desde wsgiapp
-    from wsgiapp import application as _base_app
-except Exception as e:
-    # Fallback a app vacía si algo falla (evita crash del proceso)
+    from wsgiapp import application as _base_app  # underlying Flask app
+except Exception:
     def _base_app(environ, start_response):
-        body = b'{"ok":false,"error":"base_app_import"}'
-        start_response("500 Internal Server Error",
-                       [("Content-Type","application/json"),
-                        ("Content-Length", str(len(body)))])
-        return [body]
+        start_response("404 Not Found", [("Content-Type","text/plain; charset=utf-8"),("Content-Length","9")])
+        return [b"not found"]
 
-def _deploy_stamp(environ, start_response):
-    commit = (os.environ.get("RENDER_GIT_COMMIT")
-              or os.environ.get("SOURCE_COMMIT")
-              or os.environ.get("GIT_COMMIT")
-              or os.environ.get("COMMIT_SHA")
-              or "unknown")
-    body = json.dumps({
-        "commit": commit,
-        "date": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    }).encode("utf-8")
-    start_response("200 OK", [
-        ("Content-Type","application/json"),
-        ("Cache-Control","no-store"),
-        ("Content-Length", str(len(body)))
-    ])
-    return [body]
+def _commit():
+    for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA"):
+        v=os.environ.get(k)
+        if v and all(c in "0123456789abcdef" for c in v.lower()):
+            return v
+    return None
 
-def _index(environ, start_response):
-    # Sirve un index estático si existe; si no, uno mínimo
-    paths = ("index.html","static/index.html","public/index.html")
-    data = None
-    for p in paths:
+def _load_index():
+    for f in ("backend/static/index.html","static/index.html","public/index.html","index.html"):
         try:
-            with open(p, "rb") as f:
-                data = f.read()
-                break
+            with open(f,"rb") as fh:
+                return fh.read()
         except Exception:
             pass
-    if not data:
-        data = b"<!doctype html><meta name='p12-commit' content='unknown'><body data-single='1'>paste12</body>"
-    # Cache bust para evitar SW/Cloudflare viejos
-    start_response("200 OK", [
-        ("Content-Type","text/html; charset=utf-8"),
-        ("Cache-Control","no-store, max-age=0"),
-        ("Content-Length", str(len(data)))
-    ])
-    return [data]
+    c = _commit() or "unknown"
+    body = ("<!doctype html><head>"
+            '<meta name="p12-commit" content="%s">'
+            '<meta name="p12-safe-shim" content="1"></head>'
+            '<body data-single="1">paste12</body>' % c)
+    return body.encode("utf-8")
 
-# Dispatcher final
-def application(environ, start_response):
-    path = environ.get("PATH_INFO","/") or "/"
-    if path == "/api/deploy-stamp":
-        return _deploy_stamp(environ, start_response)
-    if path in ("/", "/index.html"):
-        return _index(environ, start_response)
-    return _base_app(environ, start_response)
+def _ensure_flags(html_bytes):
+    s = html_bytes.decode("utf-8", "replace")
+    if "p12-commit" not in s:
+        s = s.replace("</head>", '<meta name="p12-commit" content="%s"></head>' % (_commit() or "unknown"))
+    if "p12-safe-shim" not in s:
+        s = s.replace("</head>", '<meta name="p12-safe-shim" content="1"></head>')
+    if "data-single" not in s:
+        s = s.replace("<body", '<body data-single="1"', 1)
+    return s.encode("utf-8")
+
+def _wrap(app):
+    def _app(environ, start_response):
+        path = environ.get("PATH_INFO","/")
+        if path in ("/", "/index.html"):
+            b = _ensure_flags(_load_index())
+            start_response("200 OK", [("Content-Type","text/html; charset=utf-8"),
+                                      ("Cache-Control","no-store"),
+                                      ("Content-Length",str(len(b)))])
+            return [b]
+        if path == "/api/deploy-stamp":
+            c = _commit()
+            if not c:
+                b = json.dumps({"error":"not_found"}).encode("utf-8")
+                start_response("404 Not Found", [("Content-Type","application/json"),
+                                                 ("Cache-Control","no-store"),
+                                                 ("Content-Length",str(len(b)))])
+                return [b]
+            b = json.dumps({"commit":c,"source":"env"}).encode("utf-8")
+            start_response("200 OK", [("Content-Type","application/json"),
+                                      ("Cache-Control","no-store"),
+                                      ("Content-Length",str(len(b)))])
+            return [b]
+        if path in ("/terms","/privacy"):
+            try:
+                content = open("backend/static%s.html" % path, "rb").read()
+            except Exception:
+                title = path.strip("/")
+                content = ("<!doctype html><title>%s</title>%s" % (title, title)).encode("utf-8")
+            start_response("200 OK", [("Content-Type","text/html; charset=utf-8"),
+                                      ("Cache-Control","no-store"),
+                                      ("Content-Length",str(len(content)))])
+            return [content]
+        return app(environ, start_response)
+    return _app
+
+application = _wrap(_base_app)
