@@ -1,32 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE="${1:?Uso: $0 BASE_URL [OUTDIR] }"
-OUTDIR="${2:-/sdcard/Download}"
-
-echo "== WSGI seguro =="
-tools/wsgi_min_safe_v3.sh
-
-echo "== Enable POST /api/notes =="
-tools/enable_post_notes_inplace_v1.sh
-
-echo "== Commit & push =="
-python -m py_compile wsgiapp/__init__.py && echo "py_compile OK"
-git add wsgi.py wsgiapp/__init__.py || true
-git commit -m "p12: WSGI seguro (sin regex) + habilitar POST /api/notes (decorador) [runbook]" || true
-git push -u origin main
-
-echo "== Redeploy (hook o API) =="
-tools/deploy_via_hook_or_api_v2.sh || true
-
-echo "== Watch remoto==HEAD =="
-tools/deploy_watch_until_v7.sh "$BASE" 900
-
-echo "== Auditoría integral (≤10 archivos) =="
-# crea si no existe
-if [[ ! -x tools/audit_integral_pack10_v1.sh ]]; then
-  cat > tools/audit_integral_pack10_v1.sh <<'EOP'
-#!/usr/bin/env bash
-set -euo pipefail
 BASE="${1:?Uso: $0 BASE_URL [OUTDIR]}"
 OUT="${2:-/sdcard/Download}"
 TS="$(date -u +%Y%m%d-%H%M%SZ)"
@@ -60,8 +33,3 @@ cp -f "$DIR"/integration-*Z.txt              "$pack/09-integration-sync.txt" 2>/
   sed -n '1,120p' "$pack/04-runtime-negative.txt" 2>/dev/null || true
 } > "$pack/10-SUMMARY.txt"
 echo "OK: pack en $pack"
-EOP
-  chmod +x tools/audit_integral_pack10_v1.sh
-fi
-tools/audit_integral_pack10_v1.sh "$BASE" "$OUTDIR"
-echo "Listo."

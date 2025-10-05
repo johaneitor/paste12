@@ -1,0 +1,1889 @@
+TTL_HOURS = 576
+CAP_LIMIT = 800
+from flask import Flask
+from flask import request, jsonify, make_response
+import datetime
+import time
+from flask import make_response, jsonify, request, request, jsonify
+import re
+import json
+import sqlite3
+# --- P12 SAFE EXPORT (prepend) ---
+def _p12_try_entry_app():
+    try:
+        from entry_main import app as _a
+        return _a if callable(_a) else None
+    except Exception:
+        return None
+
+def _p12_try_legacy_resolver():
+    try:
+        ra = globals().get("_resolve_app")
+        if callable(ra):
+            a = ra()
+            return a if a else None
+    except Exception:
+        return None
+    return None
+
+def application(environ, start_response):
+    a = _p12_try_entry_app() or _p12_try_legacy_resolver()
+    if a is None:
+        start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
+        return [b"wsgiapp: no pude resolver la WSGI app (entry_main o _resolve_app)"]
+    return a(environ, start_response)
+
+app = application
+# p12: aplicar parche POST/OPTIONS y guard 404
+from wsgiapp import p12_patch as _p12_patch
+_p12_patch.apply(app)
+# --- END P12 SAFE EXPORT ---
+# --- P12 SAFE EXPORT (prepend) ---
+def _p12_try_entry_app():
+    try:
+        from entry_main import app as _a
+        return _a if callable(_a) else None
+    except Exception:
+        return None
+
+def _p12_try_legacy_resolver():
+    try:
+        # Si _resolve_app existe más abajo, lo tomamos cuando el módulo termine de cargar
+        ra = globals().get("_resolve_app")
+        if callable(ra):
+            a = ra()
+            return a if a else None
+    except Exception:
+        return None
+
+def app(environ, start_response):
+    a = _p12_try_entry_app() or _p12_try_legacy_resolver()
+    if a is None:
+        start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
+        return [b"wsgiapp: no pude resolver la WSGI app (entry_main o _resolve_app)"]
+    return a(environ, start_response)
+
+application = app
+# --- END P12 SAFE EXPORT ---
+
+from sqlalchemy import text as _text
+
+def _json(code, payload):
+    """(status, headers, body) JSON estándar, no-store, idempotente"""
+    body = _json_mod.dumps(payload, default=str).encode("utf-8")
+    status = f"{code} OK"
+    headers = [
+        ("Content-Type", "application/json; charset=utf-8"),
+        ("Content-Length", str(len(body))),
+        ("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"),
+        ("X-WSGI-Bridge", "1"),
+    ]
+    return status, headers, body
+
+T = _text
+import os, sys, json, mimetypes, hashlib
+from importlib import import_module
+from typing import Callable, Tuple
+from datetime import datetime, timedelta, timezone
+
+def _inject_single_meta(body_bytes):
+    try:
+        b = body_bytes if isinstance(body_bytes, (bytes, bytearray)) else (body_bytes or b"")
+        if not b:
+            return body_bytes
+        if (b.find(b'data-single="1"') != -1) and (b.find(b'name="p12-single"') == -1):
+            return b.replace(b"<head", b"<head><meta name=\"p12-single\" content=\"1\">", 1)
+    except Exception:
+        pass
+    return body_bytes
+
+_THIS = os.path.abspath(__file__)
+_REPO_DIR = os.path.dirname(os.path.dirname(_THIS))
+if _REPO_DIR not in sys.path:
+    sys.path.insert(0, _REPO_DIR)
+
+CANDIDATES = ["app:app", "run:app", "render_entry:app", "entry_main:app"]
+
+def _resolve_app():
+    last_err = None
+    for spec in CANDIDATES:
+        try:
+            os.environ["APP_MODULE"] = spec
+            sys.modules.pop("patched_app", None)
+            pa = import_module("patched_app")
+            return getattr(pa, "app")
+        except Exception as e:
+            last_err = e
+    print(f"[wsgiapp] WARNING: no pude resolver APP_MODULE (probados {CANDIDATES}). Último error: {last_err!r}")
+    return None
+
+def _bootstrap_db():
+    from sqlalchemy import create_engine, text
+    url = os.environ.get("DATABASE_URL", "") or os.environ.get("SQLALCHEMY_DATABASE_URI","")
+    if not url:
+        return
+    eng = create_engine(url, pool_pre_ping=True)
+    with eng.begin() as cx:
+        cx.execute(text("""
+            CREATE TABLE IF NOT EXISTS note(
+                id SERIAL PRIMARY KEY,
+                title TEXT, url TEXT, summary TEXT, content TEXT,
+                text TEXT,
+                timestamp TIMESTAMPTZ DEFAULT NOW(),
+                expires_at TIMESTAMPTZ,
+                likes INT DEFAULT 0,
+                views INT DEFAULT 0,
+                reports INT DEFAULT 0,
+                author_fp VARCHAR(64)
+            )
+        """))
+        cx.execute(text("""
+            CREATE TABLE IF NOT EXISTS report_log(
+                id SERIAL PRIMARY KEY,
+                note_id INT NOT NULL,
+                fingerprint VARCHAR(128) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """))
+        cx.execute(text("""
+            CREATE TABLE IF NOT EXISTS like_log(
+                id SERIAL PRIMARY KEY,
+                note_id INT NOT NULL,
+                fingerprint VARCHAR(128) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """))
+        # índices (pueden ya existir)
+        try: cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_report_note_fp ON report_log (note_id, fingerprint)"))
+        except Exception: pass
+        try: cx.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_like_note_fp ON like_log (note_id, fingerprint)"))
+        except Exception: pass
+_bootstrap_db()
+
+def _json(status: int, data: dict) -> Tuple[str, list, bytes]:
+    body = json.dumps(data, default=str).encode("utf-8")
+    status_line = f"{status} " + ("OK" if status == 200 else "ERROR")
+    headers = [("Content-Type", "application/json; charset=utf-8"),
+               ("Content-Length", str(len(body)))]
+    return status_line, headers, body
+
+def _html(status: int, body_html: str, ctype="text/html; charset=utf-8"):
+    body = body_html.encode("utf-8")
+    status_line = f"{status} " + ("OK" if status == 200 else "ERROR")
+    headers = [("Content-Type", ctype), ("Content-Length", str(len(body)))]
+    return status_line, headers, body
+# P12 RETURNING GUARD HELPER (idempotent)
+def _bump_note_counter(db, note_id, col):
+    # col validada por whitelist para evitar SQL injection
+    if col not in ("likes","views","reports"):
+        return None
+    try:
+        cur = db.cursor()
+        sql = f"UPDATE note SET {col}=COALESCE({col},0)+1 WHERE id=%s RETURNING COALESCE(likes,0), COALESCE(views,0), COALESCE(reports,0)"
+        cur.execute(sql, (note_id,))
+        row = cur.fetchone()
+        cur.close()
+        if not row:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            return None
+        try:
+            db.commit()
+        except Exception:
+            pass
+        return {"likes": row[0], "views": row[1], "reports": row[2]}
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        return None
+
+def _finish(start_response, status, headers, body, method, extra_headers=None):
+    try:
+        # Normaliza body a bytes
+        if isinstance(body, (bytes, bytearray)):
+            body_bytes = bytes(body)
+        elif body is None:
+            body_bytes = b""
+        elif isinstance(body, list):
+            body_bytes = b"".join(x if isinstance(x,(bytes,bytearray)) else str(x).encode("utf-8") for x in body)
+        elif isinstance(body, str):
+            body_bytes = body.encode("utf-8")
+        else:
+            try:
+                body_bytes = bytes(body)
+            except Exception:
+                body_bytes = str(body).encode("utf-8")
+
+        # Inyecta meta p12-single si detecta body data-single
+        try:
+            body_bytes = _inject_single_meta(body_bytes)
+        except Exception:
+            pass
+
+        # Unifica headers + extra y asegura Content-Length
+        hdrs = list(headers or [])
+        if extra_headers:
+            hdrs.extend(list(extra_headers))
+        if not any((k.lower() == "content-length") for k,_ in hdrs):
+            hdrs.append(("Content-Length", str(len(body_bytes))))
+        has_ct = None
+        for k,v in hdrs:
+            if k.lower() == "content-type":
+                has_ct = v; break
+        if has_ct is None and (body_bytes.startswith(b"<!doctype html") or b"<html" in body_bytes[:200]):
+            hdrs.append(("Content-Type","text/html; charset=utf-8"))
+
+        start_response(status, hdrs)
+        return [body_bytes]
+    except Exception:
+        try:
+            start_response("500 Internal Server Error", [("Content-Type","text/plain; charset=utf-8")])
+        except Exception:
+            pass
+        return [b"internal error"]
+
+
+
+
+
+
+
+# BEGIN:p12_bump_helper
+def _bump_counter(db, note_id: int, field: str):
+    if field not in ("likes", "views", "reports"):
+        return False, {"ok": False, "error": "bad_field"}
+    try:
+        cur = db.cursor()
+        sql = (
+            "UPDATE note "
+            f"SET {field}=COALESCE({field},0)+1 "
+            "WHERE id=%s "
+            "RETURNING id, COALESCE(likes,0), COALESCE(views,0), COALESCE(reports,0)"
+        )
+        cur.execute(sql, (note_id,))
+        row = cur.fetchone()
+        cur.close()
+        if not row:
+            try: db.rollback()
+            except Exception: pass
+            return False, {"ok": False, "error": "not_found"}
+        try: db.commit()
+        except Exception: pass
+        return True, {"ok": True, "id": row[0], "likes": row[1], "views": row[2], "reports": row[3], "deduped": False}
+    except Exception:
+        try: db.rollback()
+        except Exception: pass
+        return False, {"ok": False, "error": "db_error"}
+# END:p12_bump_helper
+
+# === P12_DIAG_MW_V1: diag/import + deploy-stamp middleware (append-only, idempotente) ===
+try:
+    import os, json, datetime, re
+    _inner_app = application  # conserva tu app original
+
+    def _mask_db_url(u):
+        try:
+            return re.sub(r'://[^@]*@', '://****:****@', u or "")
+        except Exception:
+            return u or ""
+
+    def _json_bytes(obj):
+        return json.dumps(obj, ensure_ascii=False, indent=2).encode("utf-8")
+
+    def _diag_app(environ, start_response):
+        path = (environ.get("PATH_INFO") or "/")
+        method = (environ.get("REQUEST_METHOD") or "GET").upper()
+
+        # /api/deploy-stamp — pequeño JSON con commit y fecha de deploy
+        if path == "/api/deploy-stamp":
+            stamp = {
+                "ok": True,
+                "deploy": {
+                    "commit": os.getenv("RENDER_GIT_COMMIT") or os.getenv("COMMIT_SHA") or os.getenv("SOURCE_VERSION") or "",
+                    "date": os.getenv("RENDER_GIT_COMMIT_TIMESTAMP") or datetime.datetime.utcnow().isoformat()+"Z",
+                }
+            }
+            body = _json_bytes(stamp)
+            start_response("200 OK", [("Content-Type","application/json; charset=utf-8"),
+                                      ("Cache-Control","no-store"), ("Content-Length", str(len(body)))])
+            return [body]
+
+        # /diag/import — snapshot JSON (habilitado por P12_DIAG=1; por defecto ON)
+        if path == "/diag/import":
+            allow = (os.getenv("P12_DIAG","1").lower() in ("1","true","yes","on"))
+            if method == "OPTIONS":
+                start_response("204 No Content", [("Content-Length","0"), ("Access-Control-Max-Age","86400")])
+                return [b""]
+            if not allow:
+                # responde limpio, pero sin cuerpo (cierre explícito)
+                start_response("204 No Content", [("Content-Length","0"), ("Cache-Control","no-store")])
+                return [b""]
+
+            keys = [
+                "RENDER","RENDER_SERVICE_ID","RENDER_INSTANCE_ID","RENDER_EXTERNAL_URL",
+                "RENDER_GIT_COMMIT","RENDER_GIT_COMMIT_TIMESTAMP",
+                "PYTHON_VERSION","DATABASE_URL","SOURCE_VERSION","GIT_COMMIT","TZ"
+            ]
+            env = {}
+            for k in keys:
+                v = os.getenv(k, "")
+                if k == "DATABASE_URL" and v:
+                    v = _mask_db_url(v)
+                env[k] = v
+
+            payload = {
+                "ok": True,
+                "deploy": {
+                    "commit": env.get("RENDER_GIT_COMMIT") or env.get("SOURCE_VERSION") or env.get("GIT_COMMIT") or "",
+                    "date": env.get("RENDER_GIT_COMMIT_TIMESTAMP",""),
+                },
+                "env": env
+            }
+            body = _json_bytes(payload)
+            start_response("200 OK", [("Content-Type","application/json; charset=utf-8"),
+                                      ("Cache-Control","no-store"), ("Content-Length", str(len(body)))])
+            return [body]
+
+        # resto: pasa a tu app original
+        return _inner_app(environ, start_response)
+
+    application = _diag_app
+except Exception:
+    # En caso de error, no rompemos la app
+    pass
+# === /P12_DIAG_MW_V1 ===
+
+# --- P12: exportar 'app' de forma robusta para entornos que arrancan con 'wsgiapp:app' ---
+# Intenta backend.* y luego cae a la factoría local si existe.
+try:
+    app  # si ya existe, no hacemos nada
+except NameError:
+    from importlib import import_module
+    import inspect
+
+    def _p12_is_wsgi_function(obj):
+        if not callable(obj) or inspect.isclass(obj):
+            return False
+        try:
+            sig = inspect.signature(obj)
+            names = [p.name.lower() for p in sig.parameters.values()
+                     if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+        except (ValueError, TypeError):
+            return False
+        return len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response"
+
+    def _p12_is_wsgi_object(obj):
+        if inspect.isclass(obj):
+            return False
+        call = getattr(obj, "__call__", None)
+        if call and callable(call):
+            try:
+                sig = inspect.signature(call)
+                names = [p.name.lower() for p in sig.parameters.values()
+                         if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+                return len(names) >= 2 and names[0] in ("environ","env") and names[1] == "start_response"
+            except (ValueError, TypeError):
+                return False
+        # frameworks como Flask suelen tener .wsgi_app y ser invocables
+        return hasattr(obj, "wsgi_app") and callable(obj)
+
+    def _p12_try_candidates():
+        candidates = [
+            ("backend.app", "app"),
+            ("backend.main", "app"),
+            ("backend.wsgi", "app"),
+            ("app", "app"),
+            ("run", "app"),
+        ]
+        for modname, attr in candidates:
+            try:
+                mod = import_module(modname)
+                obj = getattr(mod, attr, None)
+                if obj and (_p12_is_wsgi_function(obj) or _p12_is_wsgi_object(obj)):
+                    return obj
+            except Exception:
+                pass
+        return None
+
+    _p12_target = _p12_try_candidates()
+
+    if _p12_target is None:
+        # último recurso: si este módulo define _resolve_app(), úsalo una sola vez
+        try:
+            _p12_factory = globals().get("_resolve_app")
+            if callable(_p12_factory):
+                maybe = _p12_factory()
+                if maybe and (_p12_is_wsgi_function(maybe) or _p12_is_wsgi_object(maybe)):
+                    _p12_target = maybe
+        except Exception:
+            _p12_target = None
+
+    if _p12_target is None:
+        raise RuntimeError("wsgiapp: no pude exportar 'app' (backend.* y factoría fallaron)")
+
+    def app(environ, start_response):
+        return _p12_target(environ, start_response)
+# --- fin P12 ---
+
+# --- P12 alias: exportar app desde entry_main para tolerar 'wsgiapp:app' ---
+try:
+    from entry_main import app as app
+except Exception as e:
+    raise RuntimeError(f"wsgiapp alias → entry_main:app falló: {e}")
+# --- fin alias P12 ---
+
+# --- P12 alias: exportar app desde entry_main para tolerar 'wsgiapp:app' ---
+try:
+    from entry_main import app as app
+except Exception as e:
+    raise RuntimeError(f"wsgiapp alias → entry_main:app falló: {e}")
+# --- fin alias P12 ---
+
+# --- P12: export robusto de WSGI app (tolerante a start antiguo o blueprint) ---
+# Objetivo: garantizar que 'wsgiapp:app' y 'wsgiapp:application' EXISTAN y sean WSGI callables.
+# 1) Si entry_main:app existe, úsalo.  2) Si no, probá con _resolve_app() legacy.  3) Si nada, 500 claro.
+
+def _p12_resolve_wsgi_app():
+    # Intento 1: entry_main:app (si está presente)
+    try:
+        from entry_main import app as entry_app
+        if callable(entry_app):
+            return entry_app
+    except Exception:
+        pass
+    # Intento 2: resolver interno legacy (si existe)
+    try:
+        if '_resolve_app' in globals() and callable(_resolve_app):
+            candidate = _resolve_app()
+            if candidate:
+                return candidate
+    except Exception:
+        pass
+    return None
+
+def app(environ, start_response):
+    target = _p12_resolve_wsgi_app()
+    if target is None:
+        start_response('500 Internal Server Error', [('Content-Type','text/plain; charset=utf-8')])
+        return [b'wsgiapp: no pude resolver la WSGI app (entry_main o _resolve_app)']
+    return target(environ, start_response)
+
+# Alias gunicorn convencional
+application = app
+# --- fin P12 export robusto ---
+
+
+# === P12 CONTRACT SHIM EXPORT ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass
+
+
+# === CONTRACT_SHIM_EXPORT ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass
+
+
+# === CONTRACT SHIM EXPORT v6 ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass
+
+
+# === P12 CONTRACT SHIM EXPORT v6 ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass
+
+# === P12 CONTRACT SHIM EXPORT v7 ===
+try:
+    from contract_shim import application as application, app as app
+except Exception:
+    pass
+
+
+def _p12_bump_counter(conn, note_id:int, field:str):
+    assert field in ("likes","views","reports")
+    cur = conn.execute('SELECT id, likes, views, reports FROM notes WHERE id=?', (note_id,))
+    row = cur.fetchone()
+    if row is None:
+        return None
+    conn.execute(f'UPDATE notes SET {field}={field}+1 WHERE id=?', (note_id,))
+    cur = conn.execute('SELECT id, likes, views, reports FROM notes WHERE id=?', (note_id,))
+    row = cur.fetchone()
+    return {"id": row[0], "likes": row[1], "views": row[2], "reports": row[3]}
+
+def like(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "likes")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def view(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "views")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def report(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "reports")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def like(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "likes")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def view(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "views")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def report(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "reports")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def like(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "likes")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def view(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "views")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def report(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "reports")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def like(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "likes")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def view(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "views")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+def report(note_id):
+    conn = sqlite3.connect("data.sqlite3")
+    try:
+        row = _p12_bump_counter(conn, int(note_id), "reports")
+    finally:
+        conn.close()
+    if row is None:
+        from werkzeug.exceptions import NotFound
+        raise NotFound()
+    return (json.dumps(row), 200, {"Content-Type":"application/json"})
+
+
+# --- paste12: deploy-stamp endpoint ---
+def _p12_guess_commit():
+    # 1) env vars típicas de plataformas
+    for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA","GAE_GIT_COMMIT"):
+        v=os.environ.get(k)
+        if v and re.fullmatch(r"[0-9a-f]{7,40}", v):
+            return {"commit": v, "source":"env:"+k}
+    # 2) parsear index en disco (estático)
+    for idx in ("backend/static/index.html","static/index.html","public/index.html","index.html"):
+        try:
+            with open(idx,"r",encoding="utf-8") as f:
+                m=re.search(r'name="p12-commit" content="([0-9a-f]{7,40})"', f.read(), re.I)
+                if m: return {"commit": m.group(1), "source":"index:"+idx}
+        except Exception:
+            pass
+    return None
+
+def deploy_stamp():
+    info=_p12_guess_commit()
+    if not info:
+        # mantener semántica 404 si no podemos determinar el commit
+        body=json.dumps({"error":"not_found"})
+        return (body, 404, {"Content-Type":"application/json"})
+    body=json.dumps(info)
+    return (body, 200, {"Content-Type":"application/json"})
+
+
+def like(note_id):
+    return _p12_bump_counter(note_id, "likes")
+
+def view(note_id):
+    return _p12_bump_counter(note_id, "views")
+
+def report(note_id):
+    return _p12_bump_counter(note_id, "reports")
+
+
+def like(note_id):
+    return _p12_bump_counter(note_id, "likes")
+
+def view(note_id):
+    return _p12_bump_counter(note_id, "views")
+
+def report(note_id):
+    return _p12_bump_counter(note_id, "reports")
+
+
+
+# ---- paste12: create note endpoint (POST /api/notes) ----
+@app.route("/api/notes", methods=["POST","OPTIONS"])
+def _p12_notes_create():
+    from flask import make_response, jsonify, request, request, jsonify
+    # lee entrada (JSON o form)
+    if request.is_json:
+        j = (request.get_json(silent=True) or {})
+        text = (j.get("text") or "").strip()
+        ttl = j.get("ttl_hours", 12)
+    else:
+        text = (request.form.get("text") or "").strip()
+        ttl = request.form.get("ttl_hours", 12)
+    try:
+        ttl = float(ttl)
+    except Exception:
+        ttl = 12.0
+    if not text:
+        return jsonify(error="text_required"), 400
+
+    # Inserción con SQLAlchemy Core + RETURNING id (PG) y fallbacks
+    try:
+        from sqlalchemy import text as sql_text
+    except Exception:
+        return jsonify(error="sqlalchemy_missing"), 500
+
+    # localizar 'db' (SQLAlchemy) expuesto por la app
+    _db = globals().get("db")
+    if _db is None:
+        try:
+            from wsgiapp import db as _db  # común en este proyecto
+        except Exception:
+            _db = None
+    if _db is None:
+        return jsonify(error="server_db_unavailable"), 500
+
+    row_id = None
+    # intentos con RETURNING
+    for sql in [
+        "INSERT INTO notes (text, ttl_hours) VALUES (:text, :ttl) RETURNING id",
+        "INSERT INTO notes (text) VALUES (:text) RETURNING id",
+    ]:
+        try:
+            res = _db.session.execute(sql_text(sql), {"text": text[:8192], "ttl": ttl})
+            try:
+                row = res.fetchone()
+                row_id = int(row[0]) if row and row[0] is not None else None
+            except Exception:
+                row_id = None
+            _db.session.commit()
+            if row_id:
+                break
+        except Exception:
+            _db.session.rollback()
+            continue
+
+    # fallback sin RETURNING (SQLite antiguo, etc.)
+    if not row_id:
+        try:
+            _db.session.execute(sql_text("INSERT INTO notes (text) VALUES (:text)"), {"text": text[:8192]})
+            _db.session.commit()
+            res = _db.session.execute(sql_text("SELECT id FROM notes ORDER BY id DESC LIMIT 1"))
+            row = res.fetchone()
+            row_id = int(row[0]) if row and row[0] is not None else None
+        except Exception:
+            _db.session.rollback()
+
+    if not row_id:
+        return jsonify(error="insert_failed"), 500
+
+    return jsonify(id=row_id, ok=True), 201
+
+
+# ---- paste12: maintenance (TTL + capacity) ----
+def _p12_delete_expired_and_enforce_capacity():
+    _db = globals().get("db")
+    if _db is None:
+        try:
+            from wsgiapp import db as _db
+        except Exception:
+            _db = None
+    if _db is None:
+        return {"ok": False, "error": "db_unavailable"}
+
+    # 1) TTL: borrar expiradas (soporta SQLite y Postgres)
+    expired_deleted = 0
+    ok = False
+    # SQLite estilo strftime
+    try:
+        sql = """
+        DELETE FROM notes
+        WHERE ttl_hours IS NOT NULL AND ttl_hours > 0
+          AND (strftime('%s','now') - strftime('%s', COALESCE(created_at, CURRENT_TIMESTAMP))) >= (ttl_hours*3600)
+        """
+        res = _db.session.execute(sql_text(sql))
+        _db.session.commit()
+        try:
+            expired_deleted = res.rowcount or 0
+        except Exception:
+            expired_deleted = 0
+        ok = True
+    except Exception:
+        _db.session.rollback()
+    # Postgres estilo interval
+    if not ok:
+        try:
+            sql = """
+            DELETE FROM notes
+            WHERE ttl_hours IS NOT NULL AND ttl_hours > 0
+              AND (now() - COALESCE(created_at, now())) >= (ttl_hours * interval '1 hour')
+            """
+            res = _db.session.execute(sql_text(sql))
+            _db.session.commit()
+            try:
+                expired_deleted = res.rowcount or 0
+            except Exception:
+                expired_deleted = 0
+            ok = True
+        except Exception:
+            _db.session.rollback()
+
+    # 2) Capacidad: mantener hasta P12_MAX_NOTES (def 100)
+    max_notes = 100
+    try:
+        max_notes = int(os.environ.get("P12_MAX_NOTES","100"))
+    except Exception:
+        max_notes = 100
+
+    total = 0
+    try:
+        total = int((_db.session.execute(sql_text("SELECT COUNT(*) FROM notes")).scalar() or 0))
+    except Exception:
+        total = 0
+
+    capacity_deleted = 0
+    if total > max_notes:
+        to_del = total - max_notes
+        # Orden: expiradas primero, luego menor relevancia (likes, views), luego más viejas
+        sel = """
+        SELECT id FROM notes
+        ORDER BY 
+          CASE WHEN ttl_hours IS NOT NULL AND ttl_hours>0 THEN 1 ELSE 0 END DESC,
+          COALESCE(likes,0) ASC,
+          COALESCE(views,0) ASC,
+          COALESCE(created_at, CURRENT_TIMESTAMP) ASC
+        LIMIT :n
+        """
+        ids = []
+        try:
+            rows = _db.session.execute(sql_text(sel), {"n": to_del}).fetchall()
+            ids = [int(r[0]) for r in rows if r and r[0] is not None]
+        except Exception:
+            ids = []
+        if ids:
+            # Detectar dialecto
+            dialect = ""
+            try:
+                dialect = getattr(_db.engine, "name", "")
+            except Exception:
+                dialect = ""
+            try:
+                if dialect.startswith("postgres"):
+                    _db.session.execute(sql_text("DELETE FROM notes WHERE id = ANY(:ids)"), {"ids": ids})
+                else:
+                    placeholders = ",".join(str(i) for i in ids)
+                    _db.session.execute(sql_text(f"DELETE FROM notes WHERE id IN ({placeholders})"))
+                _db.session.commit()
+                capacity_deleted = len(ids)
+            except Exception:
+                _db.session.rollback()
+                # Fallback uno por uno
+                for i in ids:
+                    try:
+                        _db.session.execute(sql_text("DELETE FROM notes WHERE id = :i"), {"i": i})
+                        _db.session.commit()
+                        capacity_deleted += 1
+                    except Exception:
+                        _db.session.rollback()
+    return {"ok": True, "expired_deleted": int(expired_deleted), "capacity_deleted": int(capacity_deleted)}
+
+# Endpoint para forzar mantenimiento (protegido por token si existe)
+@app.route("/api/admin/maintenance", methods=["POST","GET","OPTIONS"])
+def _p12_admin_maintenance():
+    token_env = os.environ.get("P12_ADMIN_TOKEN","")
+    token_req = request.args.get("token","")
+    if token_env and token_req != token_env:
+        return jsonify(error="forbidden"), 403
+    res = _p12_delete_expired_and_enforce_capacity()
+    return jsonify(res), 200
+
+# Scheduler (cada N minutos; def 5)
+def _p12_boot_scheduler():
+    if os.environ.get("P12_JANITOR","1") != "1":
+        return
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+    except Exception:
+        return
+    g = globals()
+    if g.get("_p12_sched_started"):
+        return
+    mins = 5
+    try:
+        mins = max(1, int(os.environ.get("P12_JANITOR_EVERY_MIN","5")))
+    except Exception:
+        mins = 5
+    try:
+        sched = BackgroundScheduler(daemon=True)
+        def _job():
+            try:
+                _p12_delete_expired_and_enforce_capacity()
+            except Exception:
+                pass
+        sched.add_job(_job, "interval", minutes=mins, id="p12_janitor", replace_existing=True)
+        sched.start()
+        g["_p12_sched_started"] = True
+    except Exception:
+        pass
+
+# Boot al importar el módulo
+try:
+    _p12_boot_scheduler()
+except Exception:
+    pass
+
+
+# --- p12: guard 404 para /api/notes/<id>/(like|report) ---
+@app.before_request
+def _p12_guard_rest_404():
+    try:
+        path = request.path or ""
+    except Exception:
+        return
+    m = re.match(r"^/api/notes/([0-9]+)/(?:(?:like)|(?:report))$", path)
+    if not m:
+        return
+    note_id = int(m.group(1))
+    try:
+        from sqlalchemy import text as sql_text
+        db = globals().get("db")
+        if db is None:
+            from wsgiapp import db as _db
+            db = _db
+        row = db.session.execute(sql_text("SELECT 1 FROM notes WHERE id=:id LIMIT 1"), {"id": note_id}).first()
+        if row is None:
+            return jsonify(error="not_found"), 404
+    except Exception:
+        # Si no podemos chequear, no interferimos
+        return
+
+
+# --- p12: utilitario para REST like/report delegando en helper unificado ---
+def _p12_rest_bump(note_id: int, field: str):
+    bump = globals().get("_p12_bump_counter")
+    if bump is None:
+        try:
+            from wsgiapp import _p12_bump_counter as bump  # type: ignore
+        except Exception:
+            bump = None
+    if bump is None:
+        return jsonify(error="not_found"), 404
+    return bump(note_id, field)
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+
+# p12: '/' fallback robusto para evitar 500 si falla middleware
+@app.route("/", methods=["GET"])
+def _p12_index_fallback():
+    commit = None
+    try:
+        import os
+        for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA"):
+            v = os.environ.get(k)
+            if v:
+                commit = v; break
+    except Exception:
+        pass
+    try_paths = ("backend/static/index.html","static/index.html","public/index.html")
+    for f in try_paths:
+        try:
+            with open(f,"r",encoding="utf-8") as fh:
+                html = fh.read()
+                if commit and 'name="p12-commit"' in html:
+                    html = re.sub(r'(name="p12-commit" content=")[0-9a-f]{7,40}(")', r"\\1"+commit+r"\\2", html)
+                if "p12-safe-shim" not in html:
+                    html = (html.replace("</head>", '  <meta name="p12-safe-shim" content="1">\\n</head>')
+                            if "</head>" in html else html)
+                if re.search(r'<body[^>]*data-single=', html, re.I) is None:
+                    html = html.replace("<body", '<body data-single="1"')
+                return (html, 200, {"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-cache"})
+        except Exception:
+            continue
+    # fallback mínimo
+    c = commit or "unknown"
+    html = "<!doctype html><meta name='p12-commit' content='"+c+"'><body data-single='1'>paste12</body>"
+    return (html, 200, {"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-cache"})
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+# p12: headers no-store para HTML + inyección del safe-shim con p12FetchJson si falta
+@app.after_request
+def _p12_html_no_store_and_shim(resp):
+    try:
+        ct = (resp.headers.get('Content-Type') or '').lower()
+    except Exception:
+        return resp
+    is_html = 'text/html' in ct
+    if is_html:
+        # forzar no-store para pasar auditoría de cache
+        resp.headers['Cache-Control'] = 'no-store, max-age=0'
+        try:
+            body = resp.get_data(as_text=True)
+            need_shim = ('p12FetchJson' not in body)
+            if need_shim:
+                shim = (
+                    '\n  <meta name="p12-safe-shim" content="1">\n'
+                    '  <script>\n'
+                    '  /*! p12-safe-shim */\n'
+                    '  (function(){\n'
+                    '    window.p12FetchJson = async function(url,opts){\n'
+                    '      const ac = new AbortController(); const t=setTimeout(()=>ac.abort(),8000);\n'
+                    '      try{\n'
+                    '        const r = await fetch(url, Object.assign({headers:{\'Accept\':\'application/json\'}},opts||{}, {signal:ac.signal}));\n'
+                    '        const ct = (r.headers.get(\'content-type\')||\'\').toLowerCase();\n'
+                    '        const isJson = ct.includes(\'application/json\');\n'
+                    '        return { ok:r.ok, status:r.status, json: isJson? await r.json().catch(()=>null) : null };\n'
+                    '      } finally { clearTimeout(t); }\n'
+                    '    };\n'
+                    '    try{\n'
+                    '      var u=new URL(location.href);\n'
+                    '      if(u.searchParams.get(\'id\')){\n'
+                    '        (document.body||document.documentElement).setAttribute(\'data-single\',\'1\');\n'
+                    '      }\n'
+                    '    }catch(_){}\n'
+                    '  })();\n'
+                    '  </script>\n'
+                )
+                if '</head>' in body:
+                    body = body.replace('</head>', shim + '\n</head>')
+                else:
+                    body = '<head>'+shim+'</head>'+body
+                resp.set_data(body)
+        except Exception:
+            pass
+    return resp
+
+# p12: '/' fallback robusto (por si el middleware de index no corre)
+@app.route('/', methods=['GET'])
+def _p12_index_fallback_v2():
+    try:
+        import os
+        commit = None
+        for k in ('RENDER_GIT_COMMIT','GIT_COMMIT','SOURCE_COMMIT','COMMIT_SHA'):
+            v = os.environ.get(k)
+            if v:
+                commit = v; break
+    except Exception:
+        commit = None
+    html = "<!doctype html><head><meta name='p12-commit' content='" + (commit or 'unknown') + "'></head><body data-single='1'>paste12</body>"
+    return (html, 200, {'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store, max-age=0'})
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+
+# --- p12: POST /api/notes (JSON o form) + preflight seguro ---
+try:
+    from flask import make_response, jsonify, request, request, jsonify, make_response
+except Exception:
+    request = None
+if 'app' in globals() and request:
+    # Registramos un endpoint distinto al de GET para evitar colisiones
+    @app.route('/api/notes', methods=['POST','OPTIONS'], endpoint='p12_notes_create')
+    def _p12_notes_create_post():
+        # CORS preflight
+        if request.method == 'OPTIONS':
+            r = make_response('', 204)
+            r.headers['Access-Control-Allow-Origin']  = '*'
+            r.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+            r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            r.headers['Cache-Control'] = 'no-store'
+            return r
+
+        # Parse payload (JSON o form)
+        text = None
+        try:
+            if getattr(request, 'is_json', False):
+                data = request.get_json(silent=True) or {}
+                if isinstance(data, dict):
+                    text = data.get('text')
+        except Exception:
+            pass
+        if not text:
+            try:
+                text = request.form.get('text')
+            except Exception:
+                text = None
+        if not text:
+            return jsonify({'error':'bad_request','hint':'text required'}), 400
+
+        # Persistencia: intentos por orden (helper → SQLAlchemy común). Si todo falla, 202 con warning.
+        nid = None
+        # 1) Helper interno si existiera
+        try:
+            create = globals().get('_p12_create_note')
+            if callable(create):
+                obj = create(text)
+                nid = getattr(obj, 'id', None)
+        except Exception:
+            pass
+        # 2) Patrón SQLAlchemy típico (db/Note)
+        if nid is None:
+            try:
+                db   = globals().get('db')
+                Note = globals().get('Note')
+                if db is not None and Note is not None:
+                    obj = Note(text=text)
+                    db.session.add(obj)
+                    db.session.commit()
+                    nid = getattr(obj, 'id', None)
+            except Exception:
+                pass
+
+        status = 201 if nid is not None else 202
+        return jsonify({'id': (int(nid) if nid is not None else None), 'created': (nid is not None)}), status
+
+# --- p12: POST/OPTIONS para /api/notes (no toca GET existente) ---
+if 'app' in globals():
+    @app.route('/api/notes', methods=['POST','OPTIONS'])
+    def _p12_notes_post():
+        # CORS preflight
+        if request.method == 'OPTIONS':
+            r = make_response('', 204)
+            r.headers['Access-Control-Allow-Origin']  = '*'
+            r.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+            r.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+            r.headers['Cache-Control'] = 'no-store'
+            return r
+        # POST real
+        text = None
+        if getattr(request, 'is_json', False):
+            data = request.get_json(silent=True) or {}
+            if isinstance(data, dict):
+                text = data.get('text')
+        if not text:
+            try:
+                text = request.form.get('text')
+            except Exception:
+                text = None
+        if not text:
+            return jsonify({'error':'bad_request','hint':'text required'}), 400
+
+        nid = None
+        # 1) si existe helper de creación, usarlo
+        try:
+            create = globals().get('_p12_create_note')
+            if callable(create):
+                obj = create(text)
+                nid = getattr(obj, 'id', None)
+        except Exception:
+            pass
+        # 2) fallback ORM directo si existe Note/db
+        if nid is None:
+            try:
+                db   = globals().get('db')
+                Note = globals().get('Note')
+                if db is not None and Note is not None:
+                    obj = Note(text=text)
+                    db.session.add(obj)
+                    db.session.commit()
+                    nid = getattr(obj, 'id', None)
+            except Exception:
+                pass
+        status = 201 if nid is not None else 202
+        return jsonify({'id': (int(nid) if nid is not None else None), 'created': bool(nid)}), status
+
+
+# p12: util para obtener 'db'
+def _p12_get_db():
+    db = globals().get("db")
+    if db is not None:
+        return db
+    try:
+        from wsgiapp import db as _db
+        return _db
+    except Exception:
+        return None
+
+
+# p12: helper único para like/view/report con UPDATE … RETURNING → 404 si no existe
+def _p12_bump_counter(note_id: int, field: str):
+    if field not in ("likes","views","reports"):
+        return jsonify(error="bad_field"), 400
+    db = _p12_get_db()
+    if db is None:
+        return jsonify(error="db_unavailable"), 500
+    try:
+        q = "UPDATE notes SET " + field + " = COALESCE(" + field + ",0)+1 WHERE id=:id RETURNING id"
+        row = db.session.execute(sql_text(q), {"id": int(note_id)}).first()
+        if row is None:
+            try: db.session.rollback()
+            except Exception: pass
+            return jsonify(error="not_found"), 404
+        db.session.commit()
+        return jsonify(ok=True, id=int(note_id), field=field), 200
+    except Exception:
+        try: db.session.rollback()
+        except Exception: pass
+        return jsonify(error="server_error"), 500
+
+
+# p12: REST /api/notes/<id>/(like|view|report) → delega en helper
+@app.route("/api/notes/<int:note_id>/like", methods=["POST","GET","OPTIONS"])
+def _p12_rest_like(note_id: int):
+    return _p12_bump_counter(note_id, "likes")
+
+@app.route("/api/notes/<int:note_id>/view", methods=["POST","GET","OPTIONS"])
+def _p12_rest_view(note_id: int):
+    return _p12_bump_counter(note_id, "views")
+
+@app.route("/api/notes/<int:note_id>/report", methods=["POST","GET","OPTIONS"])
+def _p12_rest_report(note_id: int):
+    return _p12_bump_counter(note_id, "reports")
+
+
+# p12: endpoints legacy /api/like|view|report?id=…
+@app.route("/api/like", methods=["GET","POST","OPTIONS"])
+def _p12_like():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "likes")
+
+@app.route("/api/view", methods=["GET","POST","OPTIONS"])
+def _p12_view():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "views")
+
+@app.route("/api/report", methods=["GET","POST","OPTIONS"])
+def _p12_report():
+    id_str = (request.args.get("id") if request.method=="GET"
+              else ((request.get_json(silent=True) or {}).get("id") if request.is_json else request.form.get("id")))
+    try:
+        nid = int(id_str)
+    except Exception:
+        return jsonify(error="bad_id"), 400
+    return _p12_bump_counter(nid, "reports")
+
+def _p12_db_conn():
+    try:
+        import os, psycopg2
+        url = os.getenv("DATABASE_URL") or os.getenv("DATABASE_INTERNAL_URL")
+        if not url:
+            return None
+        return psycopg2.connect(url, sslmode=os.getenv("PGSSLMODE","require"))
+    except Exception:
+        return None
+
+def _p12_create_note(text, ttl_hours=None, importance=None):
+    cx = _p12_db_conn()
+    if cx is None:
+        return None
+    try:
+        cur = cx.cursor()
+        cur.execute(
+            "INSERT INTO notes (text, created_at, ttl_hours, importance) VALUES (%s, NOW(), %s, %s) RETURNING id",
+            (text, ttl_hours, importance)
+        )
+        nid = cur.fetchone()[0]
+        cx.commit(); cur.close(); cx.close()
+        return int(nid)
+    except Exception:
+        try: cx.rollback()
+        except Exception: pass
+        return None
+
+@app.route("/api/rest/like", methods=["GET","POST"], endpoint="p12_rest_like")
+def _p12_rest_like():
+    id_val = None
+    if request.method == "GET":
+        id_val = request.args.get("id")
+    else:
+        if request.is_json:
+            id_val = (request.get_json(silent=True) or {}).get("id")
+        else:
+            try: id_val = request.form.get("id")
+            except Exception: id_val = None
+    try:
+        note_id = int(id_val)
+    except Exception:
+        raise NotFound()
+    # si existe helper _p12_bump_counter, úsalo; si no hay fila → None → 404
+    try:
+        res = globals().get("_p12_bump_counter", lambda *_: None)("likes", note_id)
+    except Exception:
+        res = None
+    if res is None:
+        raise NotFound()
+    return jsonify(ok=True, id=note_id, updated=res), 200
+
+@app.route("/api/rest/report", methods=["GET","POST"], endpoint="p12_rest_report")
+def _p12_rest_report():
+    id_val = None
+    if request.method == "GET":
+        id_val = request.args.get("id")
+    else:
+        if request.is_json:
+            id_val = (request.get_json(silent=True) or {}).get("id")
+        else:
+            try: id_val = request.form.get("id")
+            except Exception: id_val = None
+    try:
+        note_id = int(id_val)
+    except Exception:
+        raise NotFound()
+    # si existe helper _p12_bump_counter, úsalo; si no hay fila → None → 404
+    try:
+        res = globals().get("_p12_bump_counter", lambda *_: None)("reports", note_id)
+    except Exception:
+        res = None
+    if res is None:
+        raise NotFound()
+    return jsonify(ok=True, id=note_id, updated=res), 200

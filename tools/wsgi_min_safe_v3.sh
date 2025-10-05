@@ -1,5 +1,8 @@
-from urllib.parse import parse_qs
-import json
+#!/usr/bin/env bash
+set -euo pipefail
+PY="wsgi.py"
+cp -a "$PY" "${PY}.bak-$(date -u +%Y%m%d-%H%M%SZ)" 2>/dev/null || true
+cat > "$PY" <<'PYEOF'
 import os, json
 # p12: minimal WSGI bootstrap with safe index and /api/deploy-stamp; no regex; conservative headers
 try:
@@ -76,23 +79,6 @@ def _wrap(app):
     return _app
 
 application = _wrap(_base_app)
-
-
-# --- paste12: middleware para forzar 404 en GET /api/view ---
-def _p12_fix_view_get_mw(app):
-    def _app(env, start_response):
-        path = env.get("PATH_INFO","")
-        method = env.get("REQUEST_METHOD","GET").upper()
-        if path == "/api/view" and method == "GET":
-            # Siempre devolver 404 JSON para GET (negativo exige 404; POST se maneja en app)
-            body = json.dumps({"error":"not_found"}).encode("utf-8")
-            start_response("404 Not Found", [
-                ("Content-Type","application/json"),
-                ("Cache-Control","no-cache"),
-                ("Content-Length", str(len(body)))
-            ])
-            return [body]
-        return app(env, start_response)
-    return _app
-
-application = _p12_fix_view_get_mw(application)
+PYEOF
+python -m py_compile "$PY"
+echo "PATCH_OK $PY"
