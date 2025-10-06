@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat > wsgi.py <<'PY'
 # -*- coding: utf-8 -*-
 import os, json
 from datetime import datetime
@@ -189,3 +193,7 @@ def _overlay(environ, start_response):
 
 def application(environ, start_response):
     return _overlay(environ, start_response)
+PY
+
+python -m py_compile wsgi.py
+echo "PATCH_OK wsgi.py"
