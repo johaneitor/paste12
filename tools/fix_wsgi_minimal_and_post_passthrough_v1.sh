@@ -1,3 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PY="wsgi.py"
+cp -a "$PY" "${PY}.bak-$(date +%Y%m%d-%H%M%SZ)" || true
+cat > "$PY" <<'PYCODE'
 # -*- coding: utf-8 -*-
 # paste12: WSGI entrypoint minimal, sin regex ni bloques try rotos.
 def _fallback_app(environ, start_response):
@@ -61,3 +66,7 @@ def _post_notes_passthrough_mw(app):
     return _wsgi
 
 application = _post_notes_passthrough_mw(_application)
+PYCODE
+
+python -m py_compile "$PY"
+echo "PATCH_OK $PY"
