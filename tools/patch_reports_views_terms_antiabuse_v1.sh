@@ -1,3 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PY_INIT="wsgiapp/__init__.py"
+PATCH_MOD="wsgiapp/p12_patch.py"
+
+mkdir -p wsgiapp
+
+cat > "$PATCH_MOD" <<'PY'
 # -*- coding: utf-8 -*-
 import os, time, hashlib, json
 from flask import request, Response
@@ -190,3 +199,24 @@ def apply_p12_patch(app):
                 conn.close()
 
         return None  # continuar con la app base
+PY
+
+# Inyectar llamada apply_p12_patch(application) al final de __init__.py (idempotente)
+python - <<'PY'
+import io, re, py_compile, sys
+p="wsgiapp/__init__.py"
+s=io.open(p,"r",encoding="utf-8").read()
+if "apply_p12_patch(" not in s:
+    s += "\n# p12: parche drop-in (términos, vistas, reportes 3x, anti-abuso)\n"
+    s += "try:\n"
+    s += "    from .p12_patch import apply_p12_patch\n"
+    s += "    apply_p12_patch(application)\n"
+    s += "except Exception as _e:\n"
+    s += "    print('p12_patch skip:', _e)\n"
+    io.open(p,"w",encoding="utf-8").write(s)
+py_compile.compile(p, doraise=True)
+py_compile.compile("wsgiapp/p12_patch.py", doraise=True)
+print("PATCH_OK", p, "and", "wsgiapp/p12_patch.py")
+PY
+
+echo "OK: wsgiapp/__init__.py compilado"

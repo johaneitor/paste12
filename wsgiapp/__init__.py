@@ -235,3 +235,10 @@ try:
         _app.add_url_rule("/api/notes", "p12_notes_post", _p12_notes_post, methods=["POST","OPTIONS"])
 except Exception:
     pass
+
+# p12: parche drop-in (términos, vistas, reportes 3x, anti-abuso)
+try:
+    from .p12_patch import apply_p12_patch
+    apply_p12_patch(application)
+except Exception as _e:
+    print('p12_patch skip:', _e)
