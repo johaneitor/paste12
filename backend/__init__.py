@@ -1,5 +1,6 @@
 import os
 from flask import Flask, jsonify
+import os, time
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
@@ -48,8 +49,22 @@ def create_app():
             return "<!doctype html><title>Paste12</title><h1>Paste12</h1>", 200
 
     # --- Health mínimo (si ya existe en api_bp, este no molesta) ---
+    _start_ts = time.time()
     @app.get("/api/health")
     def api_health():
-        return jsonify(ok=True, api=True, ver="factory-min-v1")
+        # status 200 estable, incluye commit y uptime
+        commit = None
+        for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA"):
+            v = os.environ.get(k)
+            if v:
+                commit = v
+                break
+        # db status
+        try:
+            db.session.execute("SELECT 1")
+            db_status = "ok"
+        except Exception:
+            db_status = "degraded"
+        return jsonify(status="ok", commit=commit, db=db_status, uptime_seconds=int(time.time()-_start_ts))
 
     return app
