@@ -1,3 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Reemplaza wsgi.py por un loader + overlay WSGI sin regex ni indentación frágil.
+cat > wsgi.py <<'PY'
 # -*- coding: utf-8 -*-
 import os, json, time
 from datetime import datetime
@@ -186,3 +191,9 @@ def _overlay(environ, start_response):
 # Exporta application WSGI
 def application(environ, start_response):
     return _overlay(environ, start_response)
+PY
+
+# Compila por seguridad
+python -m py_compile wsgi.py
+
+echo "PATCH_OK wsgi.py"
