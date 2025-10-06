@@ -1,3 +1,7 @@
+TTL_HOURS = 72
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask import request, jsonify, make_response
 # wsgiapp/__init__.py — API de notas mínima y estable
 from flask import Flask, request, jsonify, make_response
 import time, threading
@@ -7,6 +11,8 @@ TTL_HOURS_DEFAULT = 12        # coincide con el placeholder de la UI
 CAP_LIMIT = 200               # capacidad duplicada (según pedido)
 
 app = Flask(__name__)
+
+limiter = Limiter(get_remote_address, app=app, default_limits=["200 per hour"])
 application = app  # export para gunicorn
 
 # --- Estado en memoria ---
@@ -79,8 +85,57 @@ def privacy():
     return make_response("Política de Privacidad — Paste12", 200)
 
 # --- Listado y creación de notas ---
-@app.route("/api/notes", methods=["GET","POST","OPTIONS"])
+@app.route("/api/notes", methods=["GET","POST","OPTIONS"] )
 def notes_list_create():
+    # p12: POST create
+    if request.method == 'OPTIONS':
+        return make_response('', 204)
+    if request.method == 'POST':
+        data = (request.get_json(silent=True) or request.form or {})
+        text = (data.get('text') or '').strip()
+        if not text:
+            return jsonify(error='text_required'), 400
+        try:
+            from wsgiapp import db
+            from wsgiapp.models import Note
+            nn = Note(text=text)
+            db.session.add(nn); db.session.commit()
+            _p12_housekeeping_limits()
+            return jsonify(id=nn.id), 201
+        except Exception:
+            return jsonify(error='create_failed'), 500
+    # clamp ?limit=
+    try:
+        lim = int(request.args.get('limit','10'))
+    except Exception:
+        lim = 10
+    if lim < 1: lim = 1
+    if lim > 25: lim = 25
+    # p12: CORS/preflight
+    if request.method == "OPTIONS":
+        return make_response("", 204)
+    # p12: creación por POST
+    if request.method == "POST":
+        data = (request.get_json(silent=True) or request.form or {})
+        text = (data.get("text") or "").strip()
+        if not text:
+            return jsonify(error="text_required"), 400
+        try:
+            from wsgiapp import db
+            from wsgiapp.models import Note
+            nn = Note(text=text)
+            db.session.add(nn); db.session.commit()
+            _p12_housekeeping_limits()
+            return jsonify(id=nn.id), 201
+        except Exception:
+            return jsonify(error="create_failed"), 500
+    # p12: clamp del GET ?limit=
+    try:
+        lim = int(request.args.get("limit","10"))
+    except Exception:
+        lim = 10
+    if lim < 1: lim = 1
+    if lim > 25: lim = 25
     if request.method == "OPTIONS":
         # Preflight CORS
         return _json({"ok":True}, 200, {
@@ -242,3 +297,32 @@ try:
     apply_p12_patch(application)
 except Exception as _e:
     print('p12_patch skip:', _e)
+
+def _p12_bump_counter(kind, note_id):
+    """Actualiza like/view/report y devuelve dict con id/counters; None si no existe."""
+    try:
+        from wsgiapp import db
+        from wsgiapp.models import Note
+    except Exception:
+        return None
+    col = {"like":"likes","view":"views","report":"reports"}.get(kind)
+    if not col: return None
+    try:
+        from sqlalchemy import update
+        stmt = update(Note).where(Note.id==note_id)\
+                .values(**{col: getattr(Note, col) + 1})\
+                .returning(Note.id, Note.likes, Note.views, Note.reports)
+        res = db.session.execute(stmt).first()
+        if not res: return None
+        db.session.commit()
+        return {"id": res[0], "likes": res[1], "views": res[2], "reports": res[3]}
+    except Exception:
+        # Fallback ORM
+        try:
+            item = Note.query.get(note_id)
+            if not item: return None
+            setattr(item, col, (getattr(item,col) or 0) + 1)
+            db.session.commit()
+            return {"id": item.id, "likes": item.likes, "views": item.views, "reports": item.reports}
+        except Exception:
+            return None

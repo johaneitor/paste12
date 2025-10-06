@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cat > wsgi.py <<'PY'
 # -*- coding: utf-8 -*-
 import os, re, json
 
@@ -107,3 +110,5 @@ except Exception:
     _base_app = (lambda e, sr: (sr("404 Not Found",[("Content-Length","0")]) or [b""]))
 
 application = _p12_index_override_mw(_base_app)
+PY
+python -m py_compile wsgi.py && echo "OK: wsgi.py compilado"

@@ -1,6 +1,30 @@
-# -*- coding: utf-8 -*-
-import os, re, json
+#!/usr/bin/env bash
+set -euo pipefail
+PY="wsgi.py"
+[[ -f "$PY" ]] || { echo "ERROR: falta $PY"; exit 1; }
 
+python - <<'PY'
+import io, os, re, py_compile, json
+
+p="wsgi.py"
+s=io.open(p,"r",encoding="utf-8").read()
+
+def upsert(mod):
+    # Asegura imports básicos
+    hdr=[]
+    if re.search(r'^\s*import\s+os\b', mod, re.M) is None: hdr.append('import os')
+    if re.search(r'^\s*import\s+re\b', mod, re.M) is None: hdr.append('import re')
+    if re.search(r'^\s*import\s+json\b', mod, re.M) is None: hdr.append('import json')
+    if hdr: mod = "\n".join(hdr) + "\n" + mod
+
+    # Elimina cualquier uso de .format(...) sobre plantillas HTML
+    mod = re.sub(r'\)\.format\s*\([^)]*\)', ')  # p12: .format() removido', mod)
+
+    # Middleware completo y autocontenido
+    if "_p12_index_override_mw" not in mod:
+        mod += r"""
+
+# --- paste12: WSGI middleware robusto (sin .format en HTML) ---
 def _p12_guess_commit():
     for k in ("RENDER_GIT_COMMIT","GIT_COMMIT","SOURCE_COMMIT","COMMIT_SHA"):
         v=os.environ.get(k)
@@ -17,6 +41,7 @@ def _load_file(cands):
     return None
 
 def _p12_load_index_text():
+    # candidatos comunes; si no hay, devolvemos un HTML mínimo
     txt = _load_file((
         "backend/static/index.html",
         "static/index.html",
@@ -27,48 +52,51 @@ def _p12_load_index_text():
     if txt: return txt
     return "<!doctype html><head></head><body>paste12</body>"
 
-def _inject_once(html, regex, insertion, where="head"):
-    if re.search(regex, html, re.I):
+def _inject_once(html, needle_regex, insert_html, where="head"):
+    if re.search(needle_regex, html, re.I): 
         return html
     if where=="head" and "</head>" in html:
-        return re.sub(r'</head>', insertion + "\n</head>", html, count=1, flags=re.I)
+        return re.sub(r'</head>', insert_html + "\n</head>", html, count=1, flags=re.I)
     if where=="body" and "<body" in html:
-        return re.sub(r'<body([^>]*)>', r'<body\1>' + insertion, html, count=1, flags=re.I)
-    return insertion + html
+        return re.sub(r'<body([^>]*)>', r'<body\1>' + insert_html, html, count=1, flags=re.I)
+    return insert_html + html
 
 def _ensure_flags(html):
     commit=_p12_guess_commit() or "unknown"
-    # meta commit
-    html=_inject_once(html, r'name=["\\\']p12-commit["\\\']',
-        '  <meta name="p12-commit" content="'+commit+'">', "head")
-    # p12-safe-shim
-    shim = (
-      "  <meta name=\"p12-safe-shim\" content=\"1\">\n"
-      "  <script>\n"
-      "  /*! p12-safe-shim */\n"
-      "  (function(){\n"
-      "    window.p12FetchJson = async function(url,opts){\n"
-      "      const ac = new AbortController(); const t=setTimeout(()=>ac.abort(),8000);\n"
-      "      try{\n"
-      "        const r = await fetch(url, Object.assign({headers:{'Accept':'application/json'}},opts||{}, {signal:ac.signal}));\n"
-      "        const ct = (r.headers.get('content-type')||'').toLowerCase();\n"
-      "        const isJson = ct.includes('application/json');\n"
-      "        return { ok:r.ok, status:r.status, json: isJson? await r.json().catch(()=>null) : null };\n"
-      "      } finally { clearTimeout(t); }\n"
-      "    };\n"
-      "    try{\n"
-      "      var u=new URL(location.href);\n"
-      "      if(u.searchParams.get('id')){ (document.body||document.documentElement).setAttribute('data-single','1'); }\n"
-      "    }catch(_){}\n"
-      "  })();\n"
-      "  </script>\n"
-    )
+    # meta p12-commit
+    html=_inject_once(html, r'name=["\']p12-commit["\']', 
+        f'  <meta name="p12-commit" content="{commit}">', "head")
+    # p12-safe-shim + data-single
+    shim = r"""
+  <meta name="p12-safe-shim" content="1">
+  <script>
+  /*! p12-safe-shim */
+  (function(){
+    window.p12FetchJson = async function(url,opts){
+      const ac = new AbortController(); const t=setTimeout(()=>ac.abort(),8000);
+      try{
+        const r = await fetch(url, Object.assign({headers:{'Accept':'application/json'}},opts||{}, {signal:ac.signal}));
+        const ct = (r.headers.get('content-type')||'').toLowerCase();
+        const isJson = ct.includes('application/json');
+        return { ok:r.ok, status:r.status, json: isJson? await r.json().catch(()=>null) : null };
+      } finally { clearTimeout(t); }
+    };
+    try{
+      var u=new URL(location.href);
+      if(u.searchParams.get('id')){
+        (document.body||document.documentElement).setAttribute('data-single','1');
+      }
+    }catch(_){}
+  })();
+  </script>
+"""
     html=_inject_once(html, r'p12-safe-shim', shim, "head")
-    # data-single
+    # data-single="1" en body
     if re.search(r'<body[^>]*data-single=', html, re.I):
-        html=re.sub(r'(<body[^>]*data-single=)["\\\'][^"\\\']*', r'\1"1', html, flags=re.I)
+        html=re.sub(r'(<body[^>]*data-single=)["\'][^"\']*', r'\1"1', html, flags=re.I)
     else:
         html=re.sub(r'<body', '<body data-single="1"', html, count=1, flags=re.I) if "<body" in html else ('<body data-single="1"></body>'+html)
+    # cache headers los damos en WSGI
     return html
 
 def _p12_index_override_mw(app):
@@ -99,11 +127,20 @@ def _p12_index_override_mw(app):
             return [b]
         return app(env, start_response)
     return _app
+"""
+    # Envolver 'application'
+    if re.search(r'^\s*application\s*=\s*', mod, re.M):
+        mod = mod + "\napplication = _p12_index_override_mw(application)\n"
+    else:
+        mod = mod + "\napplication = _p12_index_override_mw(globals().get('application') or (lambda e,sr: sr('404 Not Found',[]) or [b'']))\n"
 
-# Importa la app Flask y envuélvela
-try:
-    from wsgiapp import application as _base_app
-except Exception:
-    _base_app = (lambda e, sr: (sr("404 Not Found",[("Content-Length","0")]) or [b""]))
+    return mod
 
-application = _p12_index_override_mw(_base_app)
+s = upsert(s)
+io.open(p,"w",encoding="utf-8").write(s)
+# Compila wsgi.py para evitar sorpresas en deploy
+py_compile.compile("wsgi.py", doraise=True)
+print("PATCH_OK wsgi.py")
+PY
+
+echo "OK: parche aplicado."
