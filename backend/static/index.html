@@ -88,6 +88,122 @@
    }
  } catch(e) {}
 })();</script>
+  <script>
+  /* p12-fe-ext v1 */
+  (function(){
+    const seen = new Set();
+    const inflight = new Set();
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    async function postJson(u, body){
+      try {
+        const r = await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body: JSON.stringify(body||{})});
+        const ct=(r.headers.get("content-type")||"").toLowerCase();
+        const isJson = ct.includes("application/json");
+        return {ok:r.ok,status:r.status,json: isJson? await r.json().catch(()=>null):null};
+      } catch(e){ return {ok:false,status:0,json:null}; }
+    }
+    // VISTAS: una vez por sesión y por nota
+    window.p12MarkView = async function(id){
+      if(!id || seen.has(id)) return;
+      seen.add(id);
+      await postJson(`/api/notes/${id}/view`, {});
+    }
+    // REPORT: no eliminar hasta que el backend diga removed=true
+    window.p12Report = async function(id, onRemoved){
+      if(!id) return;
+      if(inflight.has("report:"+id)) return;
+      inflight.add("report:"+id);
+      try {
+        const r = await postJson(`/api/notes/${id}/report`, {});
+        if(r.json && r.json.removed){ onRemoved && onRemoved(); }
+        else { alert("Reporte enviado. Se requiere consenso para remover."); }
+      } finally { inflight.delete("report:"+id); }
+    }
+    // OBSERVER para marcar vistas al entrar al viewport
+    const io = ("IntersectionObserver" in window) ? new IntersectionObserver((ents)=>{
+      ents.forEach(e=>{ if(e.isIntersecting){ const id=e.target.getAttribute("data-note-id"); if(id){ window.p12MarkView(id); io.unobserve(e.target); }} });
+    }, {rootMargin:"0px", threshold:0.2}) : null;
+    window.p12ObserveNote = function(el){ if(io && el) io.observe(el); }
+  })();
+  </script>
+  <script>
+  /* p12-fe-ext v1 */
+  (function(){
+    const seen = new Set();
+    const inflight = new Set();
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    async function postJson(u, body){
+      try {
+        const r = await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body: JSON.stringify(body||{})});
+        const ct=(r.headers.get("content-type")||"").toLowerCase();
+        const isJson = ct.includes("application/json");
+        return {ok:r.ok,status:r.status,json: isJson? await r.json().catch(()=>null):null};
+      } catch(e){ return {ok:false,status:0,json:null}; }
+    }
+    // VISTAS: una vez por sesión y por nota (al entrar al viewport)
+    window.p12MarkView = async function(id){
+      if(!id || seen.has(id)) return;
+      seen.add(id);
+      await postJson(`/api/notes/${id}/view`, {});
+    }
+    // REPORT: no eliminar hasta que el backend diga removed=true
+    window.p12Report = async function(id, onRemoved){
+      if(!id) return;
+      const key = "report:"+id;
+      if(inflight.has(key)) return;
+      inflight.add(key);
+      try {
+        const r = await postJson(`/api/notes/${id}/report`, {});
+        if(r.json && r.json.removed){ onRemoved && onRemoved(); }
+        else { alert("Reporte enviado. Se requiere consenso (3) para remover."); }
+      } finally { inflight.delete(key); }
+    }
+    // OBSERVER para marcar vistas al entrar al viewport
+    const io = ("IntersectionObserver" in window) ? new IntersectionObserver((ents)=>{
+      ents.forEach(e=>{ if(e.isIntersecting){ const id=e.target.getAttribute("data-note-id"); if(id){ window.p12MarkView(id); io.unobserve(e.target); }} });
+    }, {rootMargin:"0px", threshold:0.2}) : null;
+    window.p12ObserveNote = function(el){ if(io && el) io.observe(el); }
+  })();
+  </script>
+  <script>
+  /* p12-fe-ext v1 */
+  (function(){
+    const seen = new Set();
+    const inflight = new Set();
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    async function postJson(u, body){
+      try {
+        const r = await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body: JSON.stringify(body||{})});
+        const ct=(r.headers.get("content-type")||"").toLowerCase();
+        const isJson = ct.includes("application/json");
+        return {ok:r.ok,status:r.status,json: isJson? await r.json().catch(()=>null):null};
+      } catch(e){ return {ok:false,status:0,json:null}; }
+    }
+    // VISTAS: una vez por sesión y por nota (al entrar al viewport)
+    window.p12MarkView = async function(id){
+      if(!id || seen.has(id)) return;
+      seen.add(id);
+      await postJson(`/api/notes/${id}/view`, {});
+    }
+    // REPORT: no eliminar hasta que el backend diga removed=true
+    window.p12Report = async function(id, onRemoved){
+      if(!id) return;
+      const key = "report:"+id;
+      if(inflight.has(key)) return;
+      inflight.add(key);
+      try {
+        const r = await postJson(`/api/notes/${id}/report`, {});
+        if(r.json && r.json.removed){ onRemoved && onRemoved(); }
+        else { alert("Reporte enviado. Se requiere consenso (3) para remover."); }
+      } finally { inflight.delete(key); }
+    }
+    // OBSERVER para marcar vistas al entrar al viewport
+    const io = ("IntersectionObserver" in window) ? new IntersectionObserver((ents)=>{
+      ents.forEach(e=>{ if(e.isIntersecting){ const id=e.target.getAttribute("data-note-id"); if(id){ window.p12MarkView(id); io.unobserve(e.target); }} });
+    }, {rootMargin:"0px", threshold:0.2}) : null;
+    window.p12ObserveNote = function(el){ if(io && el) io.observe(el); }
+  })();
+  </script>
 </head>
 <body data-single="1">
   <header>

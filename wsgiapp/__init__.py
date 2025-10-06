@@ -326,3 +326,131 @@ def _p12_bump_counter(kind, note_id):
             return {"id": item.id, "likes": item.likes, "views": item.views, "reports": item.reports}
         except Exception:
             return None
+
+# p12:BEGIN EXT REPORTS/VIEWS
+# (idempotente) rutas: POST /api/notes/<int:nid>/report  y  POST /api/notes/<int:nid>/view
+try:
+    import os, json, time, uuid, hashlib, hmac, base64
+    from flask import request, jsonify
+    from sqlalchemy import text
+except Exception as _e:
+    pass
+
+def _p12_uid():
+    try:
+        u = request.cookies.get("p12uid")
+        if not u:
+            u = request.headers.get("X-Client-Id") or (request.remote_addr or str(uuid.uuid4()))
+        return u
+    except Exception:
+        return str(uuid.uuid4())
+
+def _p12_bootstrap(app, db):
+    try:
+        with app.app_context():
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS note_reports (
+                  note_id   INTEGER NOT NULL,
+                  reporter  TEXT    NOT NULL,
+                  ts        TIMESTAMP DEFAULT now(),
+                  CONSTRAINT uq_note_report UNIQUE(note_id, reporter)
+                )
+            """))
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS note_views (
+                  note_id   INTEGER NOT NULL,
+                  viewer    TEXT    NOT NULL,
+                  last_seen TIMESTAMP DEFAULT now(),
+                  CONSTRAINT uq_note_view UNIQUE(note_id, viewer)
+                )
+            """))
+            db.session.commit()
+    except Exception as e:
+        try:
+            print("[p12] WARN bootstrap:", e, file=sys.stderr)
+        except Exception:
+            pass
+
+def _p12_has_rule(app, rule, method):
+    try:
+        for r in app.url_map.iter_rules():
+            if r.rule == rule and method in (r.methods or set()):
+                return True
+    except Exception:
+        return False
+    return False
+
+def _p12_register(app, db):
+    _p12_bootstrap(app, db)
+
+    if not _p12_has_rule(app, '/api/notes/<int:nid>/report', 'POST'):
+        @app.post('/api/notes/<int:nid>/report')
+        def p12_report(nid):
+            try:
+                uid = _p12_uid()
+                db.session.execute(text("""
+                    INSERT INTO note_reports(note_id, reporter)
+                    VALUES (:nid, :uid)
+                    ON CONFLICT (note_id, reporter) DO NOTHING
+                """), {"nid": int(nid), "uid": uid})
+                cnt = db.session.execute(text("SELECT COUNT(*) FROM note_reports WHERE note_id=:nid"), {"nid": int(nid)}).scalar()
+                # mantener columna reports si existe
+                try:
+                    db.session.execute(text("UPDATE notes SET reports=:c WHERE id=:nid"), {"c": cnt, "nid": int(nid)})
+                except Exception:
+                    pass
+                removed = (cnt >= 3)
+                if removed:
+                    try:
+                        db.session.execute(text("UPDATE notes SET removed=TRUE WHERE id=:nid"), {"nid": int(nid)})
+                    except Exception:
+                        pass
+                db.session.commit()
+                return jsonify(ok=True, removed=removed, reports=cnt)
+            except Exception as e:
+                db.session.rollback()
+                return jsonify(ok=False, error="server_error"), 500
+
+    if not _p12_has_rule(app, '/api/notes/<int:nid>/view', 'POST'):
+        @app.post('/api/notes/<int:nid>/view')
+        def p12_view(nid):
+            try:
+                uid = _p12_uid()
+                n = int(nid)
+                db.session.execute(text("""
+                    INSERT INTO note_views(note_id, viewer, last_seen)
+                    VALUES (:nid, :uid, now())
+                    ON CONFLICT (note_id, viewer) DO UPDATE
+                       SET last_seen = CASE WHEN EXTRACT(EPOCH FROM (now() - note_views.last_seen)) > 21600
+                                             THEN now() ELSE note_views.last_seen END
+                """), {"nid": n, "uid": uid})
+                # sumar view sólo si > 6h
+                delta = db.session.execute(text("""
+                    SELECT (EXTRACT(EPOCH FROM (now() - last_seen)) > 21600)::int
+                    FROM note_views WHERE note_id=:nid AND viewer=:uid
+                """), {"nid": n, "uid": uid}).scalar()
+                if delta == 1:
+                    try:
+                        db.session.execute(text("UPDATE notes SET views = COALESCE(views,0)+1 WHERE id=:nid"), {"nid": n})
+                    except Exception:
+                        pass
+                db.session.commit()
+                return jsonify(ok=True)
+            except Exception:
+                db.session.rollback()
+                return jsonify(ok=False), 500
+
+try:
+    # requiere que existan app y db globales en este módulo
+    if 'app' in globals() and 'db' in globals():
+        _p12_register(app, db)
+    else:
+        try:
+            print('[p12] WARN: no app/db; skip registers', file=sys.stderr)
+        except Exception:
+            pass
+except Exception:
+    pass
+# p12:END EXT REPORTS/VIEWS
+
+

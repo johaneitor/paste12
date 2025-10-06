@@ -1,0 +1,54 @@
+== GIT STATUS ==
+ M tools/verify_all_behaviors_v7.sh
+?? https:/
+?? tools/p12_pack10_now_v3.sh
+?? tools/p12_status_now_v4.sh
+
+== GIT BRANCH ==
+main
+origin/main
+
+== GIT DIFF (resumen) ==
+ tools/verify_all_behaviors_v7.sh | 160 +++++++++++++++++++++++++++------------
+ 1 file changed, 110 insertions(+), 50 deletions(-)
+
+== GIT STASH LIST ==
+stash@{0}: On main: pre-sync backup-20250905-163012Z-8faf2a4a74c5b61d4c33cb2812455e9d2eae1822
+stash@{1}: On main: pre-push-clean 2025-09-04T10:50:32Z
+stash@{2}: On main: pre-push-clean 2025-09-04T10:47:12Z
+stash@{3}: On main: pre-push-clean 2025-09-04T10:47:07Z
+stash@{4}: On main: pre-push-clean 2025-09-04T10:43:49Z
+stash@{5}: On main: pre-push-clean 2025-09-04T10:43:43Z
+stash@{6}: On main: pre-push-clean 2025-09-04T10:39:18Z
+stash@{7}: On main: pre-push backup-20250904-043723-f3706844c18141f791f6b57d83dd16f7a349ba4d
+stash@{8}: On main: pre-sync backup-20250904-011832-61d427186d0a5025f29976e45c9df0c0104283f2
+
+== CONFLICT MARKERS ==
+./tools/force_render_entry_takeover.sh:31:==============================================================
+./tools/force_render_entry_takeover.sh:47:==============================================================
+./tools/install_render_entry.sh:84:========================================
+./tools/install_render_entry.sh:101:========================================
+
+== PY COMPILE (wsgiapp/__init__.py) ==
+OK py_compile
+
+== FRONTEND INDEX ==
+index: backend/static/index.html
+p12-commit: <meta name="p12-commit" content="a441309800a4c9f39f40e18cf0b230188f80e5da">
+p12-safe-shim: <meta name="p12-safe-shim" content="1">
+single(meta): <script id="p12-single-detector">
+  const isSingle = !!document.querySelector("meta[name=\"p12-single\"]") || (document.body && document.body.getAttribute("data-single")==="1");
+  if(isSingle) document.documentElement.classList.add("p12-single");
+<script>(function(){/* p12-single runtime injector */
+   if (isSingle && !document.querySelector("meta[name=\"p12-single\"]")) {
+     m.name = "p12-single"; m.content = "1"; document.head.appendChild(m);
+single(body): <body data-single="1">
+
+== BACKEND HELPERS (una línea?) ==
+23:def _now(): return int(time.time())
+70:def _bad_request(msg="bad_request"):   return _json({"ok":False,"error":msg}, 400)
+71:def _not_found(msg="not_found"):       return _json({"ok":False,"error":msg}, 404)
+72:def _method_not_allowed():             return _json({"ok":False,"error":"method_not_allowed"}, 405)
+
+== ENDPOINTS like/view/report referencian helper? ==
+301:def _p12_bump_counter(kind, note_id):
