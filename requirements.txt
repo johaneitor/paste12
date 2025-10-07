@@ -6,3 +6,4 @@ psycopg2-binary>=2.9
 flask-limiter>=3.5
 limits>=3.12
 gunicorn>=21.2
+redis>=4
