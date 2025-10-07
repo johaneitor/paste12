@@ -20,6 +20,7 @@ def notes_options():
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, HEAD, OPTIONS"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type"
     r.headers["Access-Control-Max-Age"]       = "86400"
+    r.headers["Allow"] = "GET, POST, HEAD, OPTIONS"
     return r
 
 def _parse_next(cursor: str | None):
@@ -92,18 +93,18 @@ def get_notes():
 
 
 @api_bp.route("/notes", methods=["POST"])
-@limiter.limit("10 per minute")
+@limiter.limit("5 per minute")
 def create_note():
     try:
         # Soporta JSON o form
         data = request.get_json(silent=True) or request.form or {}
-        text_body = (data.get("text") or "").strip()
+        text_body = (data.get("text") or data.get("content") or "").strip()
         if not text_body:
             return jsonify(error="text required"), 400
 
         # ttlHours alias (spec) + hours fallback
         try:
-            hours = int(data.get("ttlHours", data.get("hours", 144)))
+            hours = int(data.get("ttlHours", data.get("ttl_hours", data.get("hours", 144))))
         except Exception:
             hours = 144
         hours = min(168, max(1, hours))
@@ -174,7 +175,7 @@ def _bump(note_id: int, column: str, delta: int = 1):
     return n, 200
 
 @api_bp.route("/notes/<int:note_id>/like", methods=["POST"])
-@limiter.limit("10 per minute")
+@limiter.limit("30 per minute")
 @limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
 def like_note(note_id: int):
     try:
@@ -204,7 +205,7 @@ def view_note(note_id: int):
         return jsonify(error="db_error", detail=str(e)), 500
 
 @api_bp.route("/notes/<int:note_id>/report", methods=["POST"])
-@limiter.limit("10 per minute")
+@limiter.limit("30 per minute")
 @limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
 def report_note(note_id: int):
     try:
