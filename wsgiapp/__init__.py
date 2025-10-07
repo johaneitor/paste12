@@ -73,6 +73,7 @@ def _method_not_allowed():             return _json({"ok":False,"error":"method_
 
 # --- Health / Terms / Privacy (fallbacks sencillos) ---
 @app.route("/api/health", methods=["GET"])
+@limiter.exempt
 def api_health():
     return _json({"ok":True,"time":_now()})
 
