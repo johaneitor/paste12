@@ -1,14 +1,17 @@
-from flask import Blueprint, request, jsonify, Response, current_app
+from flask import Blueprint, request, jsonify, Response, current_app, abort
 from sqlalchemy import text
 from datetime import datetime, timedelta
 from . import db
-from .models import Note
+from .models import Note, NoteReport
+from . import limiter
+import base64
+import json as _json
 
 api_bp = Blueprint("api_bp", __name__)
 
 @api_bp.route("/health", methods=["GET"])
 def health():
-    return jsonify(ok=True, api=True, ver="factory-min-v1")
+    return jsonify(ok=True, status="ok", api=True, ver="factory-min-v1")
 
 @api_bp.route("/notes", methods=["OPTIONS"])
 def notes_options():
@@ -19,6 +22,26 @@ def notes_options():
     r.headers["Access-Control-Max-Age"]       = "86400"
     return r
 
+def _parse_next(cursor: str | None):
+    if not cursor:
+        return None
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode()).decode()
+        data = _json.loads(raw)
+        return {
+            "before_id": int(data.get("before_id")) if data.get("before_id") else None,
+        }
+    except Exception:
+        return None
+
+
+def _make_next(last_id: int | None, limit: int):
+    if not last_id:
+        return None
+    payload = {"before_id": last_id, "limit": limit}
+    return base64.urlsafe_b64encode(_json.dumps(payload).encode()).decode()
+
+
 @api_bp.route("/notes", methods=["GET"])
 def get_notes():
     try:
@@ -26,11 +49,20 @@ def get_notes():
     except Exception:
         limit = 10
     before_id = request.args.get("before_id", type=int)
+    nxt = _parse_next(request.args.get("next"))
+    if nxt and nxt.get("before_id"):
+        before_id = nxt["before_id"]
 
     sql = """
     SELECT id, text, timestamp, expires_at, likes, views, reports, author_fp
     FROM notes
     WHERE (:before_id IS NULL OR id < :before_id)
+      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+      AND (
+        SELECT COUNT(DISTINCT reporter_hash)
+        FROM note_report nr
+        WHERE nr.note_id = notes.id
+      ) < 3
     ORDER BY id DESC
     LIMIT :limit
     """
@@ -45,7 +77,8 @@ def get_notes():
         headers = {}
         if len(data) == limit and data:
             last_id = data[-1]["id"]
-            headers["Link"] = f'</api/notes?limit={limit}&before_id={last_id}>; rel="next"'
+            opaque = _make_next(last_id, limit)
+            headers["Link"] = f'</api/notes?limit={limit}&next={opaque}>; rel="next"'
         return jsonify({"notes": data}), 200, headers
     except Exception as e:
         current_app.logger.exception("get_notes failed")
@@ -53,9 +86,11 @@ def get_notes():
 
 
 @api_bp.route("/notes", methods=["POST"])
+@limiter.limit("10 per minute")
 def create_note():
     try:
-        data = request.get_json(silent=True) or {}
+        # Soporta JSON o form
+        data = request.get_json(silent=True) or request.form or {}
         text_body = (data.get("text") or "").strip()
         if not text_body:
             return jsonify(error="text required"), 400
@@ -90,35 +125,154 @@ def create_note():
         db.session.rollback()
         return jsonify(error="db_error", detail=str(e)), 500
 
-def _bump(col, note_id: int):
-    sql = f"UPDATE notes SET {col} = COALESCE({col},0) + 1 WHERE id = :id RETURNING {col}"
-    with db.session.begin():
-        res = db.session.execute(text(sql), {"id": note_id}).first()
-        return int(res[0]) if res else None
+ALLOWED_COUNTERS = {
+    "likes": Note.likes,
+    "views": Note.views,
+    "reports": Note.reports,
+}
+
+
+def _bump(note_id: int, column: str, delta: int = 1):
+    col = ALLOWED_COUNTERS.get(column)
+    if col is None:
+        return None, 400
+    q = db.session.query(Note).filter(Note.id == note_id)
+    updated = q.update({col: col + delta}, synchronize_session=False)
+    if updated == 0:
+        return None, 404
+    db.session.commit()
+    n = db.session.get(Note, note_id)
+    return n, 200
 
 @api_bp.route("/notes/<int:note_id>/like", methods=["POST"])
+@limiter.limit("10 per minute")
+@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
 def like_note(note_id: int):
     try:
-        val = _bump("likes", note_id)
-        return jsonify(ok=True, id=note_id, likes=val), 200
+        n, code = _bump(note_id, "likes", 1)
+        if code == 404:
+            abort(404)
+        if code == 400:
+            return jsonify(error="bad_column"), 400
+        return jsonify(ok=True, id=note_id, likes=n.likes), 200
     except Exception as e:
         current_app.logger.exception("like failed")
         return jsonify(error="db_error", detail=str(e)), 500
 
 @api_bp.route("/notes/<int:note_id>/view", methods=["POST"])
+@limiter.limit("60 per minute")
+@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.headers.get('User-Agent','-')}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
 def view_note(note_id: int):
     try:
-        val = _bump("views", note_id)
-        return jsonify(ok=True, id=note_id, views=val), 200
+        n, code = _bump(note_id, "views", 1)
+        if code == 404:
+            abort(404)
+        if code == 400:
+            return jsonify(error="bad_column"), 400
+        return jsonify(ok=True, id=note_id, views=n.views), 200
     except Exception as e:
         current_app.logger.exception("view failed")
         return jsonify(error="db_error", detail=str(e)), 500
 
 @api_bp.route("/notes/<int:note_id>/report", methods=["POST"])
+@limiter.limit("10 per minute")
+@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
 def report_note(note_id: int):
     try:
-        val = _bump("reports", note_id)
-        return jsonify(ok=True, id=note_id, reports=val), 200
+        # Register unique reporter and auto-delete after 3 unique reports
+        ip = request.headers.get("X-Forwarded-For", "") or request.headers.get("CF-Connecting-IP", "") or (request.remote_addr or "")
+        ua = request.headers.get("User-Agent", "")
+        import hashlib
+        reporter_hash = hashlib.sha256(f"{ip}|{ua}|{note_id}".encode()).hexdigest()[:64]
+        try:
+            db.session.add(NoteReport(note_id=note_id, reporter_hash=reporter_hash))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # duplicate or other issue, continue
+
+        n, code = _bump(note_id, "reports", 1)
+        if code == 404:
+            abort(404)
+        if code == 400:
+            return jsonify(error="bad_column"), 400
+
+        # Soft-delete once threshold reached
+        try:
+            res = db.session.execute(
+                text("SELECT COUNT(DISTINCT reporter_hash) AS c FROM note_report WHERE note_id=:nid"),
+                {"nid": note_id},
+            ).first()
+            unique_count = int(res[0]) if res else 0
+            if unique_count >= 3 and not getattr(n, "deleted_at", None):
+                now = datetime.utcnow()
+                db.session.query(Note).filter(Note.id == note_id).update({Note.deleted_at: now}, synchronize_session=False)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        return jsonify(ok=True, id=note_id, reports=n.reports), 200
     except Exception as e:
         current_app.logger.exception("report failed")
         return jsonify(error="db_error", detail=str(e)), 500
+
+
+@api_bp.get("/health/db")
+def health_db():
+    try:
+        db.session.execute(text("SELECT 1"))
+        return jsonify(db="ok"), 200
+    except Exception as e:
+        current_app.logger.exception("health_db failed")
+        return jsonify(db="error", detail=str(e)), 503
+
+
+# --- Legacy alias endpoints (/api/like|view|report?id=...) ---
+
+def _get_id_param() -> int:
+    raw = request.args.get("id") or request.form.get("id")
+    if not raw:
+        abort(400)
+    try:
+        return int(raw)
+    except Exception:
+        abort(400)
+
+
+@api_bp.route("/like", methods=["POST"])
+@limiter.limit("10 per minute")
+@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.args.get('id') or request.form.get('id')}")
+def like_alias():
+    note_id = _get_id_param()
+    n, code = _bump(note_id, "likes", 1)
+    if code == 404:
+        abort(404)
+    if code == 400:
+        return jsonify(error="bad_column"), 400
+    return jsonify(ok=True, id=note_id, likes=n.likes), 200
+
+
+@api_bp.route("/report", methods=["POST"])
+@limiter.limit("10 per minute")
+@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.args.get('id') or request.form.get('id')}")
+def report_alias():
+    note_id = _get_id_param()
+    return report_note(note_id)
+
+
+@api_bp.route("/view", methods=["GET", "POST"])
+@limiter.limit("60 per minute")
+@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.headers.get('User-Agent','-')}|{request.args.get('id') or request.form.get('id')}")
+def view_alias():
+    raw = request.args.get("id") or request.form.get("id")
+    if not raw:
+        abort(400)
+    try:
+        note_id = int(raw)
+    except Exception:
+        abort(400)
+    n, code = _bump(note_id, "views", 1)
+    if code == 404:
+        abort(404)
+    if code == 400:
+        return jsonify(error="bad_column"), 400
+    return jsonify(ok=True, id=note_id, views=n.views), 200

@@ -5,8 +5,23 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./instance:/app/instance
+      - ./data:/data
     environment:
       - FLASK_ENV=production
       - SECRET_KEY=changeme
-      - DATABASE_URI=sqlite:////app/instance/production.db
+      - SQLALCHEMY_DATABASE_URI=sqlite:////data/paste12.db
+
+  # postgres:
+  #   image: postgres:16
+  #   environment:
+  #     - POSTGRES_USER=paste12
+  #     - POSTGRES_PASSWORD=changeme
+  #     - POSTGRES_DB=paste12
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - ./pgdata:/var/lib/postgresql/data
+  #
+  # To use Postgres, set:
+  #   - DATABASE_URL=postgresql://paste12:changeme@postgres:5432/paste12
+  # and remove SQLALCHEMY_DATABASE_URI above.

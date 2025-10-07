@@ -1,9 +1,15 @@
 import os
+import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 db = SQLAlchemy()
+
+# Global rate limiter (initialized in create_app)
+limiter: Limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"]) 
 
 def create_app():
     app = Flask(__name__)
@@ -14,12 +20,22 @@ def create_app():
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url or "sqlite:////tmp/paste12.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+    })
 
     # --- CORS sólo para /api/* ---
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # --- SQLAlchemy init ---
     db.init_app(app)
+
+    # --- Rate limiter (default 200/min global) ---
+    try:
+        limiter.init_app(app)  # storage in-memory unless configured via env
+    except Exception as exc:
+        logging.getLogger(__name__).warning("[limiter] init failed: %r", exc)
 
     # --- API (si falla import, queda fallback limpio) ---
     try:
@@ -50,6 +66,6 @@ def create_app():
     # --- Health mínimo (si ya existe en api_bp, este no molesta) ---
     @app.get("/api/health")
     def api_health():
-        return jsonify(ok=True, api=True, ver="factory-min-v1")
+        return jsonify(ok=True, status="ok", api=True, ver="factory-min-v1")
 
     return app

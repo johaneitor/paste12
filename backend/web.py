@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, send_from_directory, abort
+from flask import Blueprint, send_from_directory, abort, make_response
 
 BASE_DIR   = os.path.dirname(__file__)
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -11,7 +11,10 @@ def _ok(p): return os.path.isfile(p)
 @bp.route("/")
 def root_index():
     p = os.path.join(STATIC_DIR, "index.html")
-    if _ok(p): return send_from_directory(STATIC_DIR, "index.html")
+    if _ok(p):
+        resp = make_response(send_from_directory(STATIC_DIR, "index.html"))
+        resp.headers["Cache-Control"] = "no-store, max-age=0"
+        return resp
     abort(404)
 
 @bp.route("/privacy")
