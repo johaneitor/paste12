@@ -101,10 +101,11 @@ def create_note():
         if not text_body:
             return jsonify(error="text required"), 400
 
+        # ttlHours alias (spec) + hours fallback
         try:
-            hours = int(data.get("hours", 24))
+            hours = int(data.get("ttlHours", data.get("hours", 144)))
         except Exception:
-            hours = 24
+            hours = 144
         hours = min(168, max(1, hours))
 
         now = datetime.utcnow()
@@ -115,6 +116,28 @@ def create_note():
         )
         db.session.add(note)
         db.session.commit()
+
+        # Capacity enforcement (CAP=400): evict least relevant then oldest
+        try:
+            cap = 400
+            with db.session.begin():
+                total = db.session.execute(text("SELECT COUNT(*) FROM notes")).scalar() or 0
+                if total > cap:
+                    to_delete = total - cap
+                    victims = db.session.execute(text(
+                        """
+                        SELECT id FROM notes
+                        WHERE (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+                        ORDER BY (COALESCE(likes,0)+COALESCE(views,0)) ASC, timestamp ASC
+                        LIMIT :n
+                        """
+                    ), {"n": to_delete}).scalars().all()
+                    if victims:
+                        db.session.execute(text("DELETE FROM notes WHERE id = ANY(:ids)"), {"ids": victims})
+                        # SQLite fallback
+                        db.session.execute(text("DELETE FROM notes WHERE id IN (" + ",".join(str(i) for i in victims) + ")"))
+        except Exception:
+            db.session.rollback()
 
         return jsonify({
             "id": note.id,
@@ -230,6 +253,16 @@ def health_db():
     except Exception as e:
         current_app.logger.exception("health_db failed")
         return jsonify(db="error", detail=str(e)), 503
+
+
+@api_bp.get("/deploy-stamp")
+def deploy_stamp():
+    import os
+    for k in ("RENDER_GIT_COMMIT", "GIT_COMMIT", "SOURCE_COMMIT", "COMMIT_SHA"):
+        v = os.environ.get(k)
+        if v:
+            return jsonify(commit=v, source="env"), 200
+    return jsonify(error="not_found"), 404
 
 
 # --- Legacy alias endpoints (/api/like|view|report?id=...) ---
