@@ -140,7 +140,7 @@ def create_note():
         except Exception:
             db.session.rollback()
 
-        return jsonify({
+        body = {
             "id": note.id,
             "text": note.text,
             "timestamp": note.timestamp.isoformat(),
@@ -149,7 +149,11 @@ def create_note():
             "views": note.views,
             "reports": note.reports,
             "author_fp": getattr(note, "author_fp", None),
-        }), 201
+        }
+        # Aliases for external scripts
+        body["created_at"] = body["timestamp"]
+        body["ttl_expire_at"] = body["expires_at"]
+        return jsonify(body), 201
     except Exception as e:
         current_app.logger.exception("create_note failed")
         db.session.rollback()
@@ -316,3 +320,17 @@ def view_alias():
     if code == 400:
         return jsonify(error="bad_column"), 400
     return jsonify(ok=True, id=note_id, views=n.views), 200
+
+
+# Ensure JSON endpoints are not cached (responses under /api/*)
+@api_bp.after_app_request
+def _api_no_cache(resp):
+    try:
+        if request.path.startswith("/api/"):
+            ct = (resp.headers.get("Content-Type", "").lower())
+            if "application/json" in ct:
+                # 'no-cache' per acceptance; avoid caching intermediaries
+                resp.headers["Cache-Control"] = "no-cache"
+    except Exception:
+        pass
+    return resp
