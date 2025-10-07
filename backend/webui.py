@@ -43,8 +43,8 @@ def ensure_webui(app):
     try:
         if "webui.index" not in app.view_functions:
             app.register_blueprint(webui)
-    except Exception:
-        pass
+    except Exception as exc:
+        app.logger.warning("[webui] register failed: %r", exc)
 
 
 # --- Páginas legales ---
@@ -62,5 +62,7 @@ try:
     def privacy():
         p = _FD / "privacy.html"
         return (send_from_directory(str(_FD), "privacy.html") if p.exists() else ("", 204))
-except Exception:
-    pass
+except Exception as exc:
+    # avoid breaking app startup due to missing optional legal pages
+    import logging as _logging
+    _logging.getLogger(__name__).warning("[webui.legal] disabled: %r", exc)

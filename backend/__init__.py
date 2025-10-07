@@ -33,7 +33,9 @@ def create_app():
 
     # --- Rate limiter (default 200/min global) ---
     try:
-        limiter.init_app(app)  # storage in-memory unless configured via env
+        # In production you should configure FLASK_LIMITER_STORAGE_URI (e.g., redis://)
+        # to avoid in-memory storage.
+        limiter.init_app(app)
     except Exception as exc:
         logging.getLogger(__name__).warning("[limiter] init failed: %r", exc)
 

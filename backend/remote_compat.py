@@ -49,8 +49,8 @@ def _patch_schema():
 def _on_load(setup_state):
     try:
         _patch_schema()
-    except Exception:
-        pass
+    except Exception as exc:
+        setup_state.app.logger.warning("[compat] schema patch skipped: %r", exc)
 
 def _fp(req):
     return req.headers.get("X-Forwarded-For") or req.remote_addr or "anon"

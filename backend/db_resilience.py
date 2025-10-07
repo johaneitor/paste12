@@ -9,11 +9,11 @@ def attach(app, db):
             db.session.execute(text("SELECT 1"))
         except OperationalError:
             # reciclamos conexiones rotas (SSL EOF / bad mac)
+            db.session.remove()
             try:
-                db.session.remove()
                 db.engine.dispose()
-            except Exception:
-                pass
+            except Exception as exc:
+                app.logger.warning("[db] dispose failed: %r", exc)
 
     @app.errorhandler(OperationalError)
     def _db_error(e):

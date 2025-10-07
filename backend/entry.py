@@ -15,8 +15,8 @@ else:
 try:
     from backend.webui import ensure_webui  # type: ignore
     ensure_webui(app)
-except Exception:
-    pass
+except Exception as exc:
+    app.logger.warning("[webui] ensure_webui failed: %r", exc)
 
 # API real: registrar SIEMPRE el blueprint de backend.routes
 try:

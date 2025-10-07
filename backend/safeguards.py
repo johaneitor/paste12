@@ -17,7 +17,8 @@ def register_api_safeguards(app):
     # 2) OPTIONS /api/notes si no existe (normalmente lo intercepta el before_request)
     try:
         exists_opt = any((r.rule == '/api/notes' and 'OPTIONS' in r.methods) for r in app.url_map.iter_rules())
-    except Exception:
+    except Exception as exc:
+        app.logger.debug('[safeguards] exists_opt check failed: %r', exc)
         exists_opt = False
     if not exists_opt:
         app.add_url_rule('/api/notes', 'api_notes_options_safe',
@@ -26,7 +27,8 @@ def register_api_safeguards(app):
     # 3) Fallback GET /api/notes si no existe (no pisa tu route real)
     try:
         exists_get = any((r.rule == '/api/notes' and 'GET' in r.methods) for r in app.url_map.iter_rules())
-    except Exception:
+    except Exception as ex:
+        app.logger.debug('[safeguards] exists_get check failed: %r', ex)
         exists_get = False
     if not exists_get:
         def _api_notes_fallback():
@@ -52,10 +54,7 @@ def register_api_safeguards(app):
                     base = request.url_root.rstrip('/')
                     link = f"{base}/api/notes?limit={limit}&before_id={data[-1]['id']}"
             except Exception as ex:
-                try:
-                    app.logger.warning('fallback /api/notes (db issue): %r', ex)
-                except Exception:
-                    pass
+                app.logger.warning('fallback /api/notes (db issue): %r', ex)
             resp = jsonify(data)
             resp.headers['Access-Control-Allow-Origin'] = '*'
             if link:

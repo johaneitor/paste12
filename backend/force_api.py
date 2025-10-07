@@ -18,5 +18,9 @@ def install(app):
                 info.sort(key=lambda x: x['rule'])
                 return jsonify({'routes': info}), 200
             app.add_url_rule('/api/_routes', endpoint='api_routes_dump_wsgi', view_func=_dump, methods=['GET'])
-    except Exception:
-        pass
+    except Exception as exc:
+        try:
+            app.logger.warning("[force_api] failed: %r", exc)
+        except Exception:
+            # avoid cascading logging failures
+            return

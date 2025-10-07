@@ -1,14 +1,14 @@
-import os, hashlib, datetime, traceback
+import os, hashlib, datetime, traceback, logging
 from sqlalchemy import event
 from flask import request, has_request_context
 
+_LOGGER = logging.getLogger(__name__)
+
 def _log(msg):
     try:
-        with open("/tmp/author_fp_hook.log","a") as f:
-            ts = datetime.datetime.now().isoformat(timespec="seconds")
-            f.write(f"[{ts}] %s\n" % msg)
-    except Exception:
-        pass
+        _LOGGER.info("[author_fp_hook] %s", msg)
+    except Exception as exc:
+        _LOGGER.debug("log fail: %r", exc)
 
 Note = None
 _errs = []

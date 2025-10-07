@@ -17,8 +17,8 @@ def _has_rule(app, rule: str, method: str) -> bool:
         for r in app.url_map.iter_rules():
             if str(r) == rule and method.upper() in r.methods:
                 return True
-    except Exception:
-        pass
+    except Exception as exc:
+        app.logger.debug("[routes_notes] has_rule failed: %r", exc)
     return False
 
 def register_api(app):

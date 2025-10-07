@@ -8,7 +8,8 @@ def enforce_global_cap(app):
     from .models import Note, LikeLog, ReportLog
     try:
         cap = int(os.getenv("MAX_NOTES", "20000") or 0)
-    except Exception:
+    except Exception as exc:
+        app.logger.debug("[tasks] MAX_NOTES parse failed: %r", exc)
         cap = 20000
     if cap <= 0:
         return 0
@@ -32,8 +33,11 @@ def purge_expired(app):
     
     try:
         enforce_global_cap(app)
-    except Exception:
-        pass
-with app.app_context():
-        Note.query.filter(Note.expires_at <= datetime.now(timezone.utc)).delete()
-        db.session.commit()
+    except Exception as exc:
+        app.logger.warning("[tasks] enforce_global_cap failed: %r", exc)
+    with app.app_context():
+        try:
+            Note.query.filter(Note.expires_at <= datetime.now(timezone.utc)).delete()
+            db.session.commit()
+        except Exception as exc:
+            app.logger.warning("[tasks] purge_expired failed: %r", exc)
