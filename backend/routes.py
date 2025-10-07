@@ -54,7 +54,7 @@ def get_notes():
     if nxt and nxt.get("before_id"):
         before_id = nxt["before_id"]
 
-    sql = """
+    sql_main = """
     SELECT id, text, timestamp, expires_at, likes, views, reports, author_fp
     FROM notes
     WHERE (:before_id IS NULL OR id < :before_id)
@@ -67,12 +67,27 @@ def get_notes():
     ORDER BY id DESC
     LIMIT :limit
     """
+    sql_fallback = """
+    SELECT id, text, timestamp, expires_at, likes, views, reports, author_fp
+    FROM notes
+    WHERE (:before_id IS NULL OR id < :before_id)
+      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+    ORDER BY id DESC
+    LIMIT :limit
+    """
     try:
         with db.session.begin():
-            rows = db.session.execute(
-                text(sql),
-                {"before_id": before_id, "limit": limit},
-            ).mappings().all()
+            try:
+                rows = db.session.execute(
+                    text(sql_main),
+                    {"before_id": before_id, "limit": limit},
+                ).mappings().all()
+            except Exception:
+                # Fallback si no existe note_report u otro detalle del filtro
+                rows = db.session.execute(
+                    text(sql_fallback),
+                    {"before_id": before_id, "limit": limit},
+                ).mappings().all()
         data = [dict(r) for r in rows]
         # Link header para paginación simple
         headers = {}
