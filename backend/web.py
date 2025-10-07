@@ -57,9 +57,4 @@ def robots_txt():
 def ads_txt():
     return send_from_directory(STATIC_DIR, "ads.txt")
 
-# SPA fallback (no invadir /api ni /static-like)
-@bp.route("/<path:any_path>")
-def spa(any_path: str):
-    if any_path.startswith(("api/", "css/", "js/", "frontend/", "static/")):
-        abort(404)
-    return root_index()
+# Nota: este blueprint queda en reserva; 'front_bp' es el canónico.
