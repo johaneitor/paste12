@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify, Response, current_app
 from sqlalchemy import text
+from datetime import datetime, timedelta
 from . import db
+from .models import Note
 
 api_bp = Blueprint("api_bp", __name__)
 
@@ -44,9 +46,48 @@ def get_notes():
         if len(data) == limit and data:
             last_id = data[-1]["id"]
             headers["Link"] = f'</api/notes?limit={limit}&before_id={last_id}>; rel="next"'
-        return jsonify(data), 200, headers
+        return jsonify({"notes": data}), 200, headers
     except Exception as e:
         current_app.logger.exception("get_notes failed")
+        return jsonify(error="db_error", detail=str(e)), 500
+
+
+@api_bp.route("/notes", methods=["POST"])
+def create_note():
+    try:
+        data = request.get_json(silent=True) or {}
+        text_body = (data.get("text") or "").strip()
+        if not text_body:
+            return jsonify(error="text required"), 400
+
+        try:
+            hours = int(data.get("hours", 24))
+        except Exception:
+            hours = 24
+        hours = min(168, max(1, hours))
+
+        now = datetime.utcnow()
+        note = Note(
+            text=text_body,
+            timestamp=now,
+            expires_at=now + timedelta(hours=hours),
+        )
+        db.session.add(note)
+        db.session.commit()
+
+        return jsonify({
+            "id": note.id,
+            "text": note.text,
+            "timestamp": note.timestamp.isoformat(),
+            "expires_at": note.expires_at.isoformat() if note.expires_at else None,
+            "likes": note.likes,
+            "views": note.views,
+            "reports": note.reports,
+            "author_fp": getattr(note, "author_fp", None),
+        }), 201
+    except Exception as e:
+        current_app.logger.exception("create_note failed")
+        db.session.rollback()
         return jsonify(error="db_error", detail=str(e)), 500
 
 def _bump(col, note_id: int):
