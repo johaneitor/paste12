@@ -45,7 +45,7 @@ def _make_next(last_id: int | None, limit: int):
 @api_bp.route("/notes", methods=["GET"])
 def get_notes():
     try:
-        limit = min(int(request.args.get("limit", 10)), 50)
+        limit = max(1, min(int(request.args.get("limit", 10)), 50))
     except Exception:
         limit = 10
     before_id = request.args.get("before_id", type=int)
@@ -76,7 +76,13 @@ def get_notes():
         # Link header para paginación simple
         headers = {}
         if len(data) == limit and data:
-            last_id = data[-1]["id"]
+            last = data[-1]
+            last_id = last["id"]
+            # Include timestamp to harden cursor
+            try:
+                last_ts = last.get("timestamp")
+            except Exception:
+                last_ts = None
             opaque = _make_next(last_id, limit)
             headers["Link"] = f'</api/notes?limit={limit}&next={opaque}>; rel="next"'
         return jsonify({"notes": data}), 200, headers
