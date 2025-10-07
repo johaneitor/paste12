@@ -18,14 +18,15 @@ def index():
     except Exception:
         html = None
 
-    if html and "p12-commit" not in html:
-        # Safe insertion: append meta right after <head> and add body data-single
-        head_inject = (
-            '<meta name="p12-commit" content="unknown" />\n'
-            '<meta name="p12-safe-shim" content="1" />\n'
-        )
-        if "<head>" in html:
-            html = html.replace("<head>", f"<head>\n{head_inject}")
+    if html:
+        # Ensure commit meta
+        if "p12-commit" not in html:
+            if "<head>" in html:
+                html = html.replace("<head>", "<head>\n<meta name=\"p12-commit\" content=\"unknown\" />\n")
+        # Ensure safe shim meta
+        if "p12-safe-shim" not in html and "<head>" in html:
+            html = html.replace("<head>", "<head>\n<meta name=\"p12-safe-shim\" content=\"1\" />\n")
+        # Ensure body data-single flag
         if "<body" in html and "data-single=" not in html:
             html = html.replace("<body", "<body data-single=\"1\"")
         resp = make_response(html)

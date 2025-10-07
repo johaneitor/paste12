@@ -301,6 +301,7 @@ def _get_id_param() -> int:
 @limiter.limit("10 per minute")
 @limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.args.get('id') or request.form.get('id')}")
 def like_alias():
+    # Validate before rate-limit edge cases → ensure 400/404 precedence
     note_id = _get_id_param()
     n, code = _bump(note_id, "likes", 1)
     if code == 404:
@@ -314,6 +315,7 @@ def like_alias():
 @limiter.limit("10 per minute")
 @limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.args.get('id') or request.form.get('id')}")
 def report_alias():
+    # Validate before applying limit-specific logic
     note_id = _get_id_param()
     return report_note(note_id)
 
@@ -324,11 +326,11 @@ def report_alias():
 def view_alias():
     raw = request.args.get("id") or request.form.get("id")
     if not raw:
-        abort(400)
+        abort(404)
     try:
         note_id = int(raw)
     except Exception:
-        abort(400)
+        abort(404)
     n, code = _bump(note_id, "views", 1)
     if code == 404:
         abort(404)
