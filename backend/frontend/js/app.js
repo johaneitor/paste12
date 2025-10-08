@@ -64,8 +64,13 @@
   }
 
   function ensureListContainer() {
-    let holder = $('#list'); if (!holder) { holder = document.createElement('div'); holder.id = 'list'; document.body.appendChild(holder); }
-    let ul = $('#notes', holder); if (!ul) { ul = document.createElement('ul'); ul.id = 'notes'; holder.appendChild(ul); }
+    // Prefer existing #notes-list from HTML; fallback to #notes
+    let ul = document.querySelector('#notes-list') || document.querySelector('#notes');
+    if (!ul) {
+      ul = document.createElement('ul');
+      ul.id = 'notes-list';
+      (document.getElementById('list') || document.body).appendChild(ul);
+    }
     return ul;
   }
 
@@ -74,7 +79,10 @@
       const r = await fetch('/api/notes?limit=20', { headers: { 'Accept':'application/json' }});
       if (!r.ok) throw new Error('HTTP '+r.status);
       const j = await r.json();
-      return Array.isArray(j) ? j : [];
+      if (Array.isArray(j)) return j;
+      if (j && Array.isArray(j.notes)) return j.notes;
+      if (j && Array.isArray(j.items)) return j.items;
+      return [];
     } catch (e) {
       console.error('notes fetch failed', e);
       uiError('No pude cargar las notas.');
