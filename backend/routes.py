@@ -368,3 +368,20 @@ def _api_no_cache(resp):
     except Exception:
         pass
     return resp
+
+
+# Pre-guard for legacy alias /api/report to ensure 404 on missing/invalid id
+@api_bp.before_app_request
+def _guard_alias_report_bad_id():
+    try:
+        if request.path == "/api/report" and request.method in ("GET", "POST"):
+            raw = request.args.get("id") or request.form.get("id")
+            if not raw:
+                return jsonify(error="bad_id"), 404
+            try:
+                int(raw)
+            except Exception:
+                return jsonify(error="bad_id"), 404
+    except Exception:
+        # Fail-open to avoid blocking legitimate requests
+        return None
