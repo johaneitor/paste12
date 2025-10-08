@@ -31,6 +31,24 @@ def create_app():
     # --- SQLAlchemy init ---
     db.init_app(app)
 
+    # --- Ensure minimal schema (non-intrusive) ---
+    try:
+        with app.app_context():
+            from sqlalchemy import text as _text
+            db.session.execute(_text(
+                """
+                CREATE TABLE IF NOT EXISTS note_report (
+                  note_id INTEGER NOT NULL,
+                  reporter_hash TEXT NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  UNIQUE(note_id, reporter_hash)
+                )
+                """
+            ))
+            db.session.commit()
+    except Exception as _exc:
+        logging.getLogger(__name__).warning("[schema] ensure note_report skipped: %r", _exc)
+
     # --- Rate limiter (default 200/min global) ---
     try:
         # In production you should configure FLASK_LIMITER_STORAGE_URI (e.g., redis://)
