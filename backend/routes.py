@@ -6,6 +6,7 @@ from .models import Note, NoteReport
 from . import limiter
 import base64
 import json as _json
+import hashlib
 
 api_bp = Blueprint("api_bp", __name__)
 
@@ -231,17 +232,78 @@ def _bump(note_id: int, column: str, delta: int = 1):
     n = db.session.get(Note, note_id)
     return n, 200
 
+
+def _client_fingerprint() -> str:
+    ip = request.headers.get("X-Forwarded-For", "") or request.headers.get("CF-Connecting-IP", "") or (request.remote_addr or "")
+    ua = request.headers.get("User-Agent", "")
+    salt = (request.headers.get("X-Client-Salt") or request.cookies.get("p12uid") or "")
+    return hashlib.sha256(f"{ip}|{ua}|{salt}".encode()).hexdigest()
+
+
+def _like_once(note_id: int):
+    fp = _client_fingerprint()
+    # check existence
+    exists = False
+    try:
+        row = db.session.execute(text("SELECT 1 FROM note_like WHERE note_id=:nid AND fp=:fp LIMIT 1"), {"nid": note_id, "fp": fp}).first()
+        exists = bool(row)
+    except Exception:
+        # try create table if missing (non-intrusive)
+        try:
+            db.session.execute(text(
+                """
+                CREATE TABLE IF NOT EXISTS note_like (
+                  note_id INTEGER NOT NULL,
+                  fp TEXT NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  UNIQUE(note_id, fp)
+                )
+                """
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    if exists:
+        # read current likes
+        val = db.session.execute(text("SELECT COALESCE(likes,0) FROM notes WHERE id=:nid"), {"nid": note_id}).scalar()
+        if val is None:
+            val = db.session.execute(text("SELECT COALESCE(likes,0) FROM note WHERE id=:nid"), {"nid": note_id}).scalar() or 0
+        return int(val)
+    # insert and bump
+    inserted = False
+    try:
+        try:
+            db.session.execute(text("INSERT INTO note_like(note_id, fp) VALUES (:nid, :fp) ON CONFLICT (note_id, fp) DO NOTHING"), {"nid": note_id, "fp": fp})
+            inserted = True
+        except Exception:
+            db.session.execute(text("INSERT OR IGNORE INTO note_like(note_id, fp) VALUES (:nid, :fp)"), {"nid": note_id, "fp": fp})
+            inserted = True
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    # bump only if we could register
+    if inserted:
+        n, code = _bump(note_id, "likes", 1)
+        if code == 200 and n is not None:
+            return int(getattr(n, "likes", 0) or 0)
+    # fallback: return current value
+    val = db.session.execute(text("SELECT COALESCE(likes,0) FROM notes WHERE id=:nid"), {"nid": note_id}).scalar()
+    if val is None:
+        val = db.session.execute(text("SELECT COALESCE(likes,0) FROM note WHERE id=:nid"), {"nid": note_id}).scalar() or 0
+    return int(val)
+
 @api_bp.route("/notes/<int:note_id>/like", methods=["POST"])
 @limiter.limit("30 per minute")
 @limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
 def like_note(note_id: int):
     try:
-        n, code = _bump(note_id, "likes", 1)
-        if code == 404:
+        # idempotent like per fingerprint
+        # ensure note exists first
+        exists = db.session.execute(text("SELECT 1 FROM notes WHERE id=:nid"), {"nid": note_id}).first()
+        if not exists:
             abort(404)
-        if code == 400:
-            return jsonify(error="bad_column"), 400
-        return jsonify(ok=True, id=note_id, likes=n.likes), 200
+        val = _like_once(note_id)
+        return jsonify(ok=True, id=note_id, likes=val), 200
     except Exception as e:
         current_app.logger.exception("like failed")
         return jsonify(error="db_error", detail=str(e)), 500
