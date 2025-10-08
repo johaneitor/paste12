@@ -67,9 +67,17 @@ def get_notes():
     ORDER BY id DESC
     LIMIT :limit
     """
-    sql_fallback = """
+    sql_fallback_notes = """
     SELECT id, text, timestamp, expires_at, likes, views, reports, author_fp
     FROM notes
+    WHERE (:before_id IS NULL OR id < :before_id)
+      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+    ORDER BY id DESC
+    LIMIT :limit
+    """
+    sql_fallback_note = """
+    SELECT id, text, timestamp, expires_at, likes, views, reports, author_fp
+    FROM note
     WHERE (:before_id IS NULL OR id < :before_id)
       AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
     ORDER BY id DESC
@@ -83,11 +91,17 @@ def get_notes():
                     {"before_id": before_id, "limit": limit},
                 ).mappings().all()
             except Exception:
-                # Fallback si no existe note_report u otro detalle del filtro
-                rows = db.session.execute(
-                    text(sql_fallback),
-                    {"before_id": before_id, "limit": limit},
-                ).mappings().all()
+                # Fallback si no existe note_report o la tabla 'notes' no existe
+                try:
+                    rows = db.session.execute(
+                        text(sql_fallback_notes),
+                        {"before_id": before_id, "limit": limit},
+                    ).mappings().all()
+                except Exception:
+                    rows = db.session.execute(
+                        text(sql_fallback_note),
+                        {"before_id": before_id, "limit": limit},
+                    ).mappings().all()
         data = [dict(r) for r in rows]
         # Link header para paginación simple
         headers = {}
