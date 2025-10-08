@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, send_from_directory, current_app, make_response
+from flask import Blueprint, send_from_directory, current_app, make_response, request
 
 front_bp = Blueprint("front_bp", __name__)
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -52,9 +52,46 @@ def privacy():
 def _static_cache(resp):
     try:
         p = (resp.headers.get('Content-Type') or '').lower()
-        if any(seg in (current_app.request_class.path or '') for seg in ("/css/", "/js/", "/img/")):
+        path = request.path or ''
+        if any(seg in path for seg in ("/css/", "/js/", "/img/")):
             if 'text/css' in p or 'javascript' in p or 'image/' in p:
                 resp.headers.setdefault('Cache-Control', 'public, max-age=604800')
     except Exception:
         pass
     return resp
+
+
+# Serve static assets (css/js/img)
+@front_bp.route('/css/<path:fname>')
+def css(fname: str):
+    return send_from_directory(os.path.join(FRONT_DIR, 'css'), fname)
+
+
+@front_bp.route('/js/<path:fname>')
+def js(fname: str):
+    return send_from_directory(os.path.join(FRONT_DIR, 'js'), fname)
+
+
+@front_bp.route('/img/<path:fname>')
+def img(fname: str):
+    return send_from_directory(os.path.join(FRONT_DIR, 'img'), fname)
+
+
+@front_bp.route('/favicon.ico')
+def favicon_ico():
+    return send_from_directory(FRONT_DIR, 'favicon.ico')
+
+
+@front_bp.route('/favicon.svg')
+def favicon_svg():
+    return send_from_directory(FRONT_DIR, 'favicon.svg')
+
+
+@front_bp.route('/robots.txt')
+def robots_txt():
+    return send_from_directory(FRONT_DIR, 'robots.txt')
+
+
+@front_bp.route('/ads.txt')
+def ads_txt():
+    return send_from_directory(FRONT_DIR, 'ads.txt')
