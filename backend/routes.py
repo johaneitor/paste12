@@ -60,6 +60,7 @@ def get_notes():
     FROM notes
     WHERE (:before_id IS NULL OR id < :before_id)
       AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+      AND (deleted_at IS NULL)
       AND (
         SELECT COUNT(DISTINCT reporter_hash)
         FROM note_report nr
@@ -73,6 +74,7 @@ def get_notes():
     FROM notes
     WHERE (:before_id IS NULL OR id < :before_id)
       AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+      AND (deleted_at IS NULL)
     ORDER BY id DESC
     LIMIT :limit
     """

@@ -45,6 +45,16 @@ def create_app():
                 )
                 """
             ))
+            db.session.execute(_text(
+                """
+                CREATE TABLE IF NOT EXISTS note_like (
+                  note_id INTEGER NOT NULL,
+                  fp TEXT NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  UNIQUE(note_id, fp)
+                )
+                """
+            ))
             db.session.commit()
     except Exception as _exc:
         logging.getLogger(__name__).warning("[schema] ensure note_report skipped: %r", _exc)

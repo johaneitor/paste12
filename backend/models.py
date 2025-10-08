@@ -13,8 +13,8 @@ class Note(db.Model):
     views = db.Column(db.Integer, nullable=False, default=0)
     reports = db.Column(db.Integer, nullable=False, default=0)
     author_fp = db.Column(db.String(64), nullable=True)
-    # Optional soft-delete; in new DBs we may omit column until migrations are used
-    # deleted_at = db.Column(db.DateTime, nullable=True)
+    # Soft-delete (migración la añadirá si falta)
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {
