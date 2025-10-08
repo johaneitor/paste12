@@ -328,7 +328,13 @@ def like_alias():
 @limiter.limit("30 per minute")
 def report_alias():
     # Validate before applying limit-specific logic
-    note_id = _get_id_param()
+    raw = request.args.get("id") or request.form.get("id")
+    if not raw:
+        abort(404)
+    try:
+        note_id = int(raw)
+    except Exception:
+        abort(404)
     return report_note(note_id)
 
 
