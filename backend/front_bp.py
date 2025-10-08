@@ -45,3 +45,16 @@ def terms():
 def privacy():
     f = "privacy.html"
     return send_from_directory(FRONT_DIR, f) if os.path.isfile(os.path.join(FRONT_DIR, f)) else ("<h1>Privacidad</h1>", 200)
+
+
+# Static cache headers for assets (allow 7 days caching)
+@front_bp.after_request
+def _static_cache(resp):
+    try:
+        p = (resp.headers.get('Content-Type') or '').lower()
+        if any(seg in (current_app.request_class.path or '') for seg in ("/css/", "/js/", "/img/")):
+            if 'text/css' in p or 'javascript' in p or 'image/' in p:
+                resp.headers.setdefault('Cache-Control', 'public, max-age=604800')
+    except Exception:
+        pass
+    return resp
