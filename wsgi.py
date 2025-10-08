@@ -52,6 +52,22 @@ def _inject_index_flags(html: str) -> str:
     # Ensure body data-single flag
     if "<body" in html and "data-single=" not in html:
         html = html.replace("<body", "<body data-single=\"1\"")
+    # Ensure notes list container exists for FE to render into
+    if 'id="notes-list"' not in html:
+        if "</main>" in html:
+            html = html.replace("</main>", "  <ul id=\"notes-list\"></ul>\n</main>")
+        elif "<body" in html:
+            html = html.replace("<body", "<body>\n<ul id=\"notes-list\"></ul>")
+        else:
+            html += "\n<ul id=\"notes-list\"></ul>\n"
+    # Ensure app.js is loaded
+    if '/js/app.js' not in html:
+        if "</body>" in html:
+            html = html.replace("</body>", "  <script src=\"/js/app.js\" defer></script>\n</body>")
+        elif "</head>" in html:
+            html = html.replace("</head>", "  <script src=\"/js/app.js\" defer></script>\n</head>")
+        else:
+            html += "\n<script src=\"/js/app.js\" defer></script>\n"
     return html
 
 
