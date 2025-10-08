@@ -139,45 +139,69 @@ def create_note():
         hours = min(168, max(1, hours))
 
         now = datetime.utcnow()
-        note = Note(
-            text=text_body,
-            timestamp=now,
-            expires_at=now + timedelta(hours=hours),
-        )
+        expires_at = now + timedelta(hours=hours)
+        note = Note(text=text_body, timestamp=now, expires_at=expires_at)
         db.session.add(note)
         db.session.commit()
+        new_id = note.id
 
         # Capacity enforcement (CAP=400): evict least relevant then oldest
         try:
             cap = 400
             with db.session.begin():
-                total = db.session.execute(text("SELECT COUNT(*) FROM notes")).scalar() or 0
-                if total > cap:
+                total = None
+                victims = []
+                # Main table name 'notes'
+                try:
+                    total = db.session.execute(text("SELECT COUNT(*) FROM notes")).scalar() or 0
+                except Exception:
+                    total = db.session.execute(text("SELECT COUNT(*) FROM note")).scalar() or 0
+                if total and total > cap:
                     to_delete = total - cap
-                    victims = db.session.execute(text(
-                        """
-                        SELECT id FROM notes
-                        WHERE (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-                        ORDER BY (COALESCE(likes,0)+COALESCE(views,0)) ASC, timestamp ASC
-                        LIMIT :n
-                        """
-                    ), {"n": to_delete}).scalars().all()
+                    # Prefer not to delete the just-created note
+                    try:
+                        victims = db.session.execute(text(
+                            """
+                            SELECT id FROM notes
+                            WHERE id <> :new_id AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+                            ORDER BY (COALESCE(likes,0)+COALESCE(views,0)) ASC, timestamp ASC
+                            LIMIT :n
+                            """
+                        ), {"n": to_delete, "new_id": new_id}).scalars().all()
+                    except Exception:
+                        victims = db.session.execute(text(
+                            """
+                            SELECT id FROM note
+                            WHERE id <> :new_id AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+                            ORDER BY (COALESCE(likes,0)+COALESCE(views,0)) ASC, timestamp ASC
+                            LIMIT :n
+                            """
+                        ), {"n": to_delete, "new_id": new_id}).scalars().all()
                     if victims:
-                        db.session.execute(text("DELETE FROM notes WHERE id = ANY(:ids)"), {"ids": victims})
-                        # SQLite fallback
-                        db.session.execute(text("DELETE FROM notes WHERE id IN (" + ",".join(str(i) for i in victims) + ")"))
+                        # Try ANSI
+                        try:
+                            db.session.execute(text("DELETE FROM notes WHERE id = ANY(:ids)"), {"ids": victims})
+                        except Exception:
+                            pass
+                        # Fallback generic IN clause
+                        ids = ",".join(str(i) for i in victims)
+                        try:
+                            db.session.execute(text(f"DELETE FROM notes WHERE id IN ({ids})"))
+                        except Exception:
+                            db.session.execute(text(f"DELETE FROM note WHERE id IN ({ids})"))
         except Exception:
             db.session.rollback()
 
+        # Build response body from known local values to avoid refresh after commit
         body = {
-            "id": note.id,
-            "text": note.text,
-            "timestamp": note.timestamp.isoformat(),
-            "expires_at": note.expires_at.isoformat() if note.expires_at else None,
-            "likes": note.likes,
-            "views": note.views,
-            "reports": note.reports,
-            "author_fp": getattr(note, "author_fp", None),
+            "id": new_id,
+            "text": text_body,
+            "timestamp": now.isoformat(),
+            "expires_at": expires_at.isoformat() if expires_at else None,
+            "likes": 0,
+            "views": 0,
+            "reports": 0,
+            "author_fp": None,
         }
         # Aliases for external scripts
         body["created_at"] = body["timestamp"]
