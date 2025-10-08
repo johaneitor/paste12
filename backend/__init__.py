@@ -55,6 +55,16 @@ def create_app():
                 )
                 """
             ))
+            # Add deleted_at column if missing (best-effort for both notes/note)
+            for tbl in ("notes", "note"):
+                try:
+                    db.session.execute(_text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL"))
+                except Exception:
+                    # SQLite older versions don't support IF NOT EXISTS; try plain add
+                    try:
+                        db.session.execute(_text(f"ALTER TABLE {tbl} ADD COLUMN deleted_at TIMESTAMP NULL"))
+                    except Exception:
+                        pass
             db.session.commit()
     except Exception as _exc:
         logging.getLogger(__name__).warning("[schema] ensure note_report skipped: %r", _exc)
