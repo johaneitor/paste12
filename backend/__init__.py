@@ -68,19 +68,8 @@ def create_app():
     # --- Canonical alias endpoint for /api/report (takes precedence) ---
     @app.route("/api/report", methods=["GET", "POST"])
     def _report_alias_canonical():
-        raw = request.args.get("id") or request.form.get("id")
-        if not raw:
-            return jsonify(error="bad_id"), 404
-        try:
-            note_id = int(raw)
-        except Exception:
-            return jsonify(error="bad_id"), 404
-        try:
-            from .routes import report_note as _report_note  # lazy import to avoid cycles
-            return _report_note(note_id)
-        except Exception as exc:
-            logging.getLogger(__name__).exception("[alias] report failed: %r", exc)
-            return jsonify(error="server_error"), 500
+        # Legacy alias disabled: always respond 404 to avoid legacy handlers.
+        return jsonify(error="deprecated_endpoint"), 404
 
     # --- Rate limiter (default 200/min global) ---
     try:
