@@ -311,9 +311,8 @@ def _get_id_param() -> int:
         abort(400)
 
 
-@api_bp.route("/like", methods=["POST"])
-@limiter.limit("10 per minute")
-@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.args.get('id') or request.form.get('id')}")
+@api_bp.route("/like", methods=["GET", "POST"])
+@limiter.limit("30 per minute")
 def like_alias():
     # Validate before rate-limit edge cases → ensure 400/404 precedence
     note_id = _get_id_param()
@@ -325,9 +324,8 @@ def like_alias():
     return jsonify(ok=True, id=note_id, likes=n.likes), 200
 
 
-@api_bp.route("/report", methods=["POST"])
-@limiter.limit("10 per minute")
-@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.args.get('id') or request.form.get('id')}")
+@api_bp.route("/report", methods=["GET", "POST"])
+@limiter.limit("30 per minute")
 def report_alias():
     # Validate before applying limit-specific logic
     note_id = _get_id_param()
@@ -335,8 +333,7 @@ def report_alias():
 
 
 @api_bp.route("/view", methods=["GET", "POST"])
-@limiter.limit("60 per minute")
-@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.headers.get('User-Agent','-')}|{request.args.get('id') or request.form.get('id')}")
+@limiter.limit("600 per minute")
 def view_alias():
     raw = request.args.get("id") or request.form.get("id")
     if not raw:
