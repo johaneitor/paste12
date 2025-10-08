@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
@@ -48,6 +48,22 @@ def create_app():
             db.session.commit()
     except Exception as _exc:
         logging.getLogger(__name__).warning("[schema] ensure note_report skipped: %r", _exc)
+
+    # --- Early guard for legacy alias /api/report to ensure 404 on bad/missing id ---
+    @app.before_request
+    def _guard_alias_report_early():
+        try:
+            if request.path == "/api/report" and request.method in ("GET", "POST"):
+                raw = request.args.get("id") or request.form.get("id")
+                if not raw:
+                    return jsonify(error="bad_id"), 404
+                try:
+                    int(raw)
+                except Exception:
+                    return jsonify(error="bad_id"), 404
+        except Exception:
+            # Do not block request flow on guard exception
+            return None
 
     # --- Rate limiter (default 200/min global) ---
     try:
