@@ -65,6 +65,23 @@ def create_app():
             # Do not block request flow on guard exception
             return None
 
+    # --- Canonical alias endpoint for /api/report (takes precedence) ---
+    @app.route("/api/report", methods=["GET", "POST"])
+    def _report_alias_canonical():
+        raw = request.args.get("id") or request.form.get("id")
+        if not raw:
+            return jsonify(error="bad_id"), 404
+        try:
+            note_id = int(raw)
+        except Exception:
+            return jsonify(error="bad_id"), 404
+        try:
+            from .routes import report_note as _report_note  # lazy import to avoid cycles
+            return _report_note(note_id)
+        except Exception as exc:
+            logging.getLogger(__name__).exception("[alias] report failed: %r", exc)
+            return jsonify(error="server_error"), 500
+
     # --- Rate limiter (default 200/min global) ---
     try:
         # In production you should configure FLASK_LIMITER_STORAGE_URI (e.g., redis://)
