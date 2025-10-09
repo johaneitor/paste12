@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 BASE="${1:?Uso: $0 BASE_URL [OUTDIR] }"
-OUTDIR="${2:-/sdcard/Download}"
+OUTDIR="${2:-}"
+if [[ -z "$OUTDIR" ]]; then
+  OUTDIR="$(tools/_resolve_outdir.sh || echo "$HOME/Download/paste12-audits")"
+fi
 TS="$(date -u +%Y%m%d-%H%M%SZ)"
 ROOT="$OUTDIR/paste12-remote-deep-$TS"
 SUMMARY_ROOT="$OUTDIR/paste12-remote-deep-$TS.txt"
