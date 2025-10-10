@@ -149,8 +149,10 @@ def create_app():
             if request.path.startswith("/api/"):
                 return jsonify(error="not_found"), 404
         except Exception:
+            # Fall through to default HTML error page
             pass
-        return err, 404
+        # For non-API routes, delegate to Flask's default 404 page
+        return err
 
     @app.errorhandler(400)
     def _json_400(err):
@@ -158,8 +160,10 @@ def create_app():
             if request.path.startswith("/api/"):
                 return jsonify(error="bad_request"), 400
         except Exception:
+            # Fall through to default HTML error page
             pass
-        return err, 400
+        # For non-API routes, delegate to Flask's default 400 page
+        return err
 
     @app.errorhandler(405)
     def _json_405(err):
@@ -175,7 +179,9 @@ def create_app():
                     pass
                 return resp, 405
         except Exception:
+            # Fall through to default HTML error page
             pass
-        return err, 405
+        # For non-API routes, delegate to Flask's default 405 page
+        return err
 
     return app

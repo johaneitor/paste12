@@ -473,12 +473,8 @@ def view_alias():
         note_id = int(raw)
     except Exception:
         abort(404)
-    n, code = _bump(note_id, "views", 1)
-    if code == 404:
-        abort(404)
-    if code == 400:
-        return jsonify(error="bad_column"), 400
-    return jsonify(ok=True, id=note_id, views=n.views), 200
+    # Reuse canonical view logic to ensure fingerprint-based deduplication
+    return view_note(note_id)
 
 
 # Ensure JSON endpoints are not cached (responses under /api/*)
