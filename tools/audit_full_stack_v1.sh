@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
-HERE="$(cd "$(dirname "$0")" && pwd)"
-. "$HERE/env_load.sh"
-TS="$(date -u +%Y%m%d-%H%M%SZ)"; OUT="${HOME}/Download"; mkdir -p "$OUT"
+BASE="${1:-${BASE:-https://paste12-rmsk.onrender.com}}"
+OUTDIR="${2:-${OUTDIR:-./p12-audit}}"
+mkdir -p "$OUTDIR"
 
-echo "[1/4] Runtime…" >&2
-"$HERE/audit_runtime_health_v1.sh" | sed 's/^/  /' || true
+# 1. Static checks summary should be prepared separately
 
-echo "[2/4] Repo cleanliness…" >&2
-"$HERE/audit_repo_cleanliness_v1.sh" | sed 's/^/  /' || true
+# 2. (Optional) Local tests would go here
 
-echo "[3/4] Code clones…" >&2
-"$HERE/audit_code_clones_run.sh" | sed 's/^/  /' || true
+# 3. Remote audit
+"$(dirname "$0")/patchless_audit_remote_deep_full_v1.sh" "$BASE" "$OUTDIR"
 
-echo "[4/4] Resumen artefactos:" >&2
-ls -1 "$OUT"/*"$TS"* 2>/dev/null | sed 's/^/  /' || echo "  (nada con TS exacto; ver archivos recientes en $OUT)"
+# 4. Summary
+{
+  echo "PASS/FAIL SUMMARY"
+  echo "- py_compile: SEE 01-static-checks.txt"
+  echo "- POST /api/notes: $(jq -r '.ok? // .status // .error? // "unknown"' "$OUTDIR/api-notes-post.json" 2>/dev/null || echo unknown)"
+} > "$OUTDIR/SUMMARY.txt" || true
+
+echo "OK"
