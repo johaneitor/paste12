@@ -9,7 +9,8 @@ from flask_limiter.util import get_remote_address
 db = SQLAlchemy()
 
 # Global rate limiter (initialized in create_app)
-limiter: Limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"]) 
+# Default policy aligned with spec: 300 requests per hour for general GETs
+limiter: Limiter = Limiter(key_func=get_remote_address, default_limits=["300 per hour"]) 
 
 def create_app():
     app = Flask(__name__)
@@ -26,7 +27,8 @@ def create_app():
     })
 
     # --- CORS sólo para /api/* ---
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # Expose permissive CORS for API endpoints and allow custom headers like X-FP
+    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
 
     # --- SQLAlchemy init ---
     db.init_app(app)
@@ -42,6 +44,16 @@ def create_app():
                   reporter_hash TEXT NOT NULL,
                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                   UNIQUE(note_id, reporter_hash)
+                )
+                """
+            ))
+            db.session.execute(_text(
+                """
+                CREATE TABLE IF NOT EXISTS note_view (
+                  note_id INTEGER NOT NULL,
+                  fp TEXT NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  UNIQUE(note_id, fp)
                 )
                 """
             ))
@@ -129,5 +141,41 @@ def create_app():
     @app.get("/api/health")
     def api_health():
         return jsonify(ok=True, status="ok", api=True, ver="factory-min-v1")
+
+    # --- Uniform JSON error responses for /api/* ---
+    @app.errorhandler(404)
+    def _json_404(err):
+        try:
+            if request.path.startswith("/api/"):
+                return jsonify(error="not_found"), 404
+        except Exception:
+            pass
+        return err, 404
+
+    @app.errorhandler(400)
+    def _json_400(err):
+        try:
+            if request.path.startswith("/api/"):
+                return jsonify(error="bad_request"), 400
+        except Exception:
+            pass
+        return err, 400
+
+    @app.errorhandler(405)
+    def _json_405(err):
+        try:
+            if request.path.startswith("/api/"):
+                # Include Allow header if available from exception
+                resp = jsonify(error="method_not_allowed")
+                try:
+                    allow = getattr(err, "valid_methods", None)
+                    if allow:
+                        resp.headers["Allow"] = ", ".join(allow)
+                except Exception:
+                    pass
+                return resp, 405
+        except Exception:
+            pass
+        return err, 405
 
     return app

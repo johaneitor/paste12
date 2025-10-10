@@ -68,7 +68,8 @@ def _inject_index_flags(html: str) -> str:
             html = html.replace("</head>", "  <script src=\"/js/app.js\" defer></script>\n</head>")
         else:
             html += "\n<script src=\"/js/app.js\" defer></script>\n"
-    return html
+    # Defensive: ensure we do not accidentally inject malformed braces for format()/regex
+    return html.replace("{", "{").replace("}", "}")
 
 
 def _wrap_with_index_middleware(app):

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, Response, current_app, abort
 from sqlalchemy import text
 from datetime import datetime, timedelta
+import os
 from . import db
 from .models import Note, NoteReport
 from . import limiter
@@ -9,6 +10,9 @@ import json as _json
 import hashlib
 
 api_bp = Blueprint("api_bp", __name__)
+
+# Consensus threshold for reports
+REPORT_THRESHOLD = 3
 
 @api_bp.route("/health", methods=["GET"])
 def health():
@@ -19,7 +23,7 @@ def notes_options():
     r = Response("", 204)
     r.headers["Access-Control-Allow-Origin"]  = "*"
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, HEAD, OPTIONS"
-    r.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    r.headers["Access-Control-Allow-Headers"] = "Content-Type, X-FP"
     r.headers["Access-Control-Max-Age"]       = "86400"
     r.headers["Allow"] = "GET, POST, HEAD, OPTIONS"
     return r
@@ -44,7 +48,7 @@ def _make_next(last_id: int | None, limit: int):
     return base64.urlsafe_b64encode(_json.dumps(payload).encode()).decode()
 
 
-@api_bp.route("/notes", methods=["GET"])
+@api_bp.route("/notes", methods=["GET"])  # includes deleted/report-threshold filter
 def get_notes():
     try:
         limit = max(1, min(int(request.args.get("limit", 10)), 50))
@@ -65,7 +69,7 @@ def get_notes():
         SELECT COUNT(DISTINCT reporter_hash)
         FROM note_report nr
         WHERE nr.note_id = notes.id
-      ) < 3
+      ) < :threshold
     ORDER BY id DESC
     LIMIT :limit
     """
@@ -91,7 +95,7 @@ def get_notes():
             try:
                 rows = db.session.execute(
                     text(sql_main),
-                    {"before_id": before_id, "limit": limit},
+                    {"before_id": before_id, "limit": limit, "threshold": REPORT_THRESHOLD},
                 ).mappings().all()
             except Exception:
                 # Fallback si no existe note_report o la tabla 'notes' no existe
@@ -125,7 +129,7 @@ def get_notes():
 
 
 @api_bp.route("/notes", methods=["POST"])
-@limiter.limit("5 per minute")
+@limiter.limit("10 per hour")
 def create_note():
     try:
         # Soporta JSON o form
@@ -150,7 +154,7 @@ def create_note():
 
         # Capacity enforcement (CAP=400): evict least relevant then oldest
         try:
-            cap = 400
+            cap = int(os.getenv("CAP_LIMIT", "400"))
             with db.session.begin():
                 total = None
                 victims = []
@@ -181,17 +185,13 @@ def create_note():
                             """
                         ), {"n": to_delete, "new_id": new_id}).scalars().all()
                     if victims:
-                        # Try ANSI
-                        try:
-                            db.session.execute(text("DELETE FROM notes WHERE id = ANY(:ids)"), {"ids": victims})
-                        except Exception:
-                            pass
-                        # Fallback generic IN clause
-                        ids = ",".join(str(i) for i in victims)
-                        try:
-                            db.session.execute(text(f"DELETE FROM notes WHERE id IN ({ids})"))
-                        except Exception:
-                            db.session.execute(text(f"DELETE FROM note WHERE id IN ({ids})"))
+                        # Parameterized deletes to avoid SQL injection issues
+                        for vid in victims:
+                            try:
+                                db.session.execute(text("DELETE FROM notes WHERE id=:id"), {"id": vid})
+                            except Exception:
+                                db.session.execute(text("DELETE FROM note WHERE id=:id"), {"id": vid})
+                        db.session.commit()
         except Exception:
             db.session.rollback()
 
@@ -209,7 +209,7 @@ def create_note():
         # Aliases for external scripts
         body["created_at"] = body["timestamp"]
         body["ttl_expire_at"] = body["expires_at"]
-        return jsonify(body), 201
+        return jsonify({"ok": True, "id": new_id, "item": body}), 201
     except Exception as e:
         current_app.logger.exception("create_note failed")
         db.session.rollback()
@@ -295,8 +295,7 @@ def _like_once(note_id: int):
     return int(val)
 
 @api_bp.route("/notes/<int:note_id>/like", methods=["POST"])
-@limiter.limit("30 per minute")
-@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
+@limiter.limit("60 per hour")
 def like_note(note_id: int):
     try:
         # idempotent like per fingerprint
@@ -310,38 +309,71 @@ def like_note(note_id: int):
         current_app.logger.exception("like failed")
         return jsonify(error="db_error", detail=str(e)), 500
 
+def _view_fingerprint(note_id: int) -> str:
+    fp_hdr = (request.headers.get("X-FP") or "").strip()
+    if fp_hdr:
+        return f"h:{fp_hdr}"
+    ip = request.headers.get("X-Forwarded-For", "") or request.headers.get("CF-Connecting-IP", "") or (request.remote_addr or "")
+    ua = request.headers.get("User-Agent", "")
+    return hashlib.sha256(f"{ip}|{ua}|{note_id}".encode()).hexdigest()
+
+
 @api_bp.route("/notes/<int:note_id>/view", methods=["POST"])
-@limiter.limit("60 per minute")
-@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.headers.get('User-Agent','-')}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
+@limiter.limit("60 per hour")
 def view_note(note_id: int):
     try:
-        n, code = _bump(note_id, "views", 1)
-        if code == 404:
+        # idempotent by fingerprint per note
+        fp = _view_fingerprint(note_id)
+        inserted = False
+        try:
+            db.session.execute(text("INSERT INTO note_view(note_id, fp) VALUES (:nid, :fp)"), {"nid": note_id, "fp": fp})
+            db.session.commit()
+            inserted = True
+        except Exception:
+            db.session.rollback()
+        if inserted:
+            n, code = _bump(note_id, "views", 1)
+            if code == 404:
+                abort(404)
+            if code == 400:
+                return jsonify(error="bad_column"), 400
+            return jsonify(ok=True, id=note_id, views=n.views), 200
+        # no-op if already viewed: return current value
+        val = db.session.execute(text("SELECT COALESCE(views,0) FROM notes WHERE id=:nid"), {"nid": note_id}).scalar()
+        if val is None:
             abort(404)
-        if code == 400:
-            return jsonify(error="bad_column"), 400
-        return jsonify(ok=True, id=note_id, views=n.views), 200
+        return jsonify(ok=True, id=note_id, views=int(val)), 200
     except Exception as e:
         current_app.logger.exception("view failed")
         return jsonify(error="db_error", detail=str(e)), 500
 
 @api_bp.route("/notes/<int:note_id>/report", methods=["POST"])
-@limiter.limit("30 per minute")
-@limiter.limit("1 per minute", key_func=lambda: f"{request.remote_addr}|{request.view_args.get('note_id') if request.view_args else request.args.get('id')}")
+@limiter.limit("60 per hour")
 def report_note(note_id: int):
     try:
-        # Register unique reporter and auto-delete after 3 unique reports
-        ip = request.headers.get("X-Forwarded-For", "") or request.headers.get("CF-Connecting-IP", "") or (request.remote_addr or "")
-        ua = request.headers.get("User-Agent", "")
-        import hashlib
-        reporter_hash = hashlib.sha256(f"{ip}|{ua}|{note_id}".encode()).hexdigest()[:64]
+        # Register unique reporter using X-FP when present
+        fp_hdr = (request.headers.get("X-FP") or "").strip()
+        if fp_hdr:
+            reporter_hash = f"h:{hashlib.sha256(fp_hdr.encode()).hexdigest()[:64]}"
+        else:
+            ip = request.headers.get("X-Forwarded-For", "") or request.headers.get("CF-Connecting-IP", "") or (request.remote_addr or "")
+            ua = request.headers.get("User-Agent", "")
+            reporter_hash = hashlib.sha256(f"{ip}|{ua}|{note_id}".encode()).hexdigest()[:64]
+
+        inserted = False
         try:
             db.session.add(NoteReport(note_id=note_id, reporter_hash=reporter_hash))
             db.session.commit()
+            inserted = True
         except Exception:
-            db.session.rollback()  # duplicate or other issue, continue
+            db.session.rollback()  # duplicate or other issue
 
-        n, code = _bump(note_id, "reports", 1)
+        # Only bump reports if first time for this reporter
+        if inserted:
+            n, code = _bump(note_id, "reports", 1)
+        else:
+            n = db.session.get(Note, note_id)
+            code = 200 if n is not None else 404
         if code == 404:
             abort(404)
         if code == 400:
@@ -354,14 +386,19 @@ def report_note(note_id: int):
                 {"nid": note_id},
             ).first()
             unique_count = int(res[0]) if res else 0
-            if unique_count >= 3 and not getattr(n, "deleted_at", None):
+            removed = False
+            if unique_count >= 3 and n is not None and not getattr(n, "deleted_at", None):
                 now = datetime.utcnow()
                 db.session.query(Note).filter(Note.id == note_id).update({Note.deleted_at: now}, synchronize_session=False)
                 db.session.commit()
+                removed = True
         except Exception:
             db.session.rollback()
 
-        return jsonify(ok=True, id=note_id, reports=n.reports), 200
+        payload = {"ok": True, "id": note_id, "reports": int(getattr(n, "reports", 0) or 0)}
+        if unique_count >= 3:
+            payload["removed"] = True
+        return jsonify(payload), 200
     except Exception as e:
         current_app.logger.exception("report failed")
         return jsonify(error="db_error", detail=str(e)), 500
@@ -400,7 +437,7 @@ def _get_id_param() -> int:
 
 
 @api_bp.route("/like", methods=["GET", "POST"])
-@limiter.limit("30 per minute")
+@limiter.limit("60 per hour")
 def like_alias():
     # Validate before rate-limit edge cases → ensure 400/404 precedence
     note_id = _get_id_param()
@@ -413,7 +450,7 @@ def like_alias():
 
 
 @api_bp.route("/report", methods=["GET", "POST"])
-@limiter.limit("30 per minute")
+@limiter.limit("60 per hour")
 def report_alias():
     # Validate before applying limit-specific logic
     raw = request.args.get("id") or request.form.get("id")
@@ -427,7 +464,7 @@ def report_alias():
 
 
 @api_bp.route("/view", methods=["GET", "POST"])
-@limiter.limit("600 per minute")
+@limiter.limit("60 per hour")
 def view_alias():
     raw = request.args.get("id") or request.form.get("id")
     if not raw:
@@ -473,3 +510,58 @@ def _guard_alias_report_bad_id():
     except Exception:
         # Fail-open to avoid blocking legitimate requests
         return None
+
+
+# --- Maintenance: TTL cleanup and capacity enforcement endpoint ---
+@api_bp.post("/cleanup")
+def cleanup():
+    try:
+        now = datetime.utcnow()
+        removed_expired = 0
+        # Delete expired or soft-deleted rows
+        for tbl in ("notes", "note"):
+            try:
+                r = db.session.execute(text(f"DELETE FROM {tbl} WHERE (expires_at IS NOT NULL AND expires_at <= CURRENT_TIMESTAMP) OR (deleted_at IS NOT NULL)"))
+                removed_expired += int(getattr(r, "rowcount", 0) or 0)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        # Enforce CAP after cleanup
+        cap = int(os.getenv("CAP_LIMIT", "400"))
+        total = None
+        try:
+            total = db.session.execute(text("SELECT COUNT(*) FROM notes")).scalar() or 0
+        except Exception:
+            total = db.session.execute(text("SELECT COUNT(*) FROM note")).scalar() or 0
+        removed_cap = 0
+        if total and total > cap:
+            to_delete = total - cap
+            victims = []
+            try:
+                victims = db.session.execute(text(
+                    """
+                    SELECT id FROM notes
+                    ORDER BY (COALESCE(likes,0)+COALESCE(views,0)) ASC, timestamp ASC
+                    LIMIT :n
+                    """
+                ), {"n": to_delete}).scalars().all()
+            except Exception:
+                victims = db.session.execute(text(
+                    """
+                    SELECT id FROM note
+                    ORDER BY (COALESCE(likes,0)+COALESCE(views,0)) ASC, timestamp ASC
+                    LIMIT :n
+                    """
+                ), {"n": to_delete}).scalars().all()
+            for vid in victims:
+                try:
+                    db.session.execute(text("DELETE FROM notes WHERE id=:id"), {"id": vid})
+                except Exception:
+                    db.session.execute(text("DELETE FROM note WHERE id=:id"), {"id": vid})
+                removed_cap += 1
+            db.session.commit()
+        return jsonify(ok=True, removed_expired=removed_expired, removed_cap=removed_cap), 200
+    except Exception as e:
+        current_app.logger.exception("cleanup failed")
+        db.session.rollback()
+        return jsonify(error="db_error", detail=str(e)), 500
