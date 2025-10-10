@@ -27,7 +27,15 @@ curl -sS "$BASE/api/notes?limit=10" -o "$OUTDIR/api-notes-get.json"
 curl -sS -X POST "$BASE/api/notes" -H 'Content-Type: application/json' -d '{"text":"hello remote","ttlHours":6}' -o "$OUTDIR/api-notes-post.json" -D "$OUTDIR/api-notes-post.h"
 
 # View dedupe
-nid=$(jq -r '.item.id // .id // empty' "$OUTDIR/api-notes-post.json" || true)
+nid=$(python3 - <<'PY'
+import json,sys
+try:
+  j=json.load(open(sys.argv[1]))
+  print(j.get('item',{}).get('id') or j.get('id') or '')
+except Exception:
+  print('')
+PY
+"$OUTDIR/api-notes-post.json")
 if [[ -n "$nid" ]]; then
   curl -sS -X POST "$BASE/api/notes/$nid/view" -H 'X-FP: abc123' -o "$OUTDIR/view-1.json"
   curl -sS -X POST "$BASE/api/notes/$nid/view" -H 'X-FP: abc123' -o "$OUTDIR/view-2.json"
