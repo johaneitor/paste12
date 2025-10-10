@@ -1,0 +1,4 @@
+<meta name="p12-commit" content="a441309800a4c9f39f40e18cf0b230188f80e5da">
+  const isSingle = !!document.querySelector("meta[name=\"p12-single\"]") || (document.body && document.body.getAttribute("data-single")==="1");
+<meta name="p12-safe-shim" content="1">
+<body data-single="1">

@@ -1,0 +1,9 @@
+PASS/FAIL SUMMARY
+- py_compile: PASS
+- flake8/bandit: SKIPPED (not installed in env)
+- POST /api/notes: CHECK artifacts api-notes-post.json (expect 201 and ok:true)
+- view dedupe: CHECK view-1.json vs view-2.json (not captured due to jq missing in wrapper)
+- report consensus: CHECK report-1..3.json (not captured due to jq missing)
+- negatives: like/report 404 — see negatives-like.txt, negatives-report.txt
+- deploy-stamp: see deploy-stamp.json
+- FE flags present: see fe-flags.txt
