@@ -1,0 +1,4 @@
+-- index flags check --
+OK: name="p12-commit"
+OK: p12-safe-shim
+OK: data-single

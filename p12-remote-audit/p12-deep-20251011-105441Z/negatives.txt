@@ -1,0 +1,6 @@
+/api/like?id=99999999 -> 404
+/api/view?id=99999999 -> 404
+/api/report?id=99999999 -> 404
+POST /api/view -> 404
+POST /api/report -> 404
+POST /api/like -> 400
