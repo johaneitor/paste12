@@ -112,7 +112,19 @@ def create_app():
     @app.route("/api/report", methods=["GET", "POST"])
     def _report_alias_canonical():
         # Legacy alias disabled: always respond 404 to avoid legacy handlers.
-        return jsonify(error="deprecated_endpoint"), 404
+        return jsonify(error="not_found"), 404
+
+    # --- Legacy like alias to homogenize negatives ---
+    @app.route("/api/like", methods=["GET", "POST"])  # ensure 404/405 similar to view/report
+    def _like_alias_canonical():
+        # Require numeric id like other aliases; otherwise respond 404
+        nid = (request.args.get("id") if request.method == "GET" else (request.get_json(silent=True) or {}).get("id"))
+        try:
+            nid_int = int(nid)
+        except Exception:
+            return jsonify(error="not_found"), 404
+        # We don't implement side-effects here; this legacy alias is disabled
+        return jsonify(error="not_found"), 404
 
     # --- Rate limiter (default 200/min global) ---
     try:
@@ -201,6 +213,18 @@ def create_app():
         except Exception:
             pass
         return resp, 200
+
+    # --- Health DB (opcional) ---
+    @app.get("/api/health/db")
+    def api_health_db():
+        try:
+            from sqlalchemy import text as _text
+            with app.app_context():
+                # simple round-trip (sqlite/pg compatible)
+                db.session.execute(_text("SELECT 1"))
+            return jsonify(ok=True, db=True), 200
+        except Exception as exc:
+            return jsonify(ok=False, db=False, error=str(exc)), 500
 
     # --- Uniform JSON error responses for /api/* ---
     @app.errorhandler(404)

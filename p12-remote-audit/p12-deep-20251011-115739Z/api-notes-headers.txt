@@ -1,0 +1,14 @@
+HTTP/2 200 
+date: Sat, 11 Oct 2025 11:57:40 GMT
+content-type: application/json
+access-control-allow-origin: *
+cache-control: no-cache
+link: </api/notes?limit=10&next=eyJiZWZvcmVfaWQiOiA2MzgsICJsaW1pdCI6IDEwfQ==>; rel="next"
+rndr-id: 1be1abf8-afef-4cbd
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98ce2e68489ac146-PDX
+alt-svc: h3=":443"; ma=86400
+
