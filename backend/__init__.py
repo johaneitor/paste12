@@ -120,7 +120,12 @@ def create_app():
 
         @app.route("/api/health")
         def _health_fallback():
-            return jsonify(ok=True, api=False, ver="factory-fallback", detail=str(exc)), 200
+            resp = jsonify(ok=True, api=False, ver="factory-fallback", detail=str(exc))
+            try:
+                resp.headers["Cache-Control"] = "no-store"
+            except Exception:
+                pass
+            return resp, 200
 
         # Asegurar que el health nunca sea limitado por tasa
         try:
@@ -147,13 +152,23 @@ def create_app():
     @app.get("/api/health")
     @limiter.exempt
     def api_health():
-        return jsonify(ok=True, status="ok", api=True, ver="factory-min-v1")
+        resp = jsonify(ok=True, status="ok", api=True, ver="factory-min-v1")
+        try:
+            resp.headers["Cache-Control"] = "no-store"
+        except Exception:
+            pass
+        return resp, 200
 
     # Alias mínimo independiente para health checks de la plataforma
     @app.get("/healthz")
     @limiter.exempt
     def healthz():
-        return jsonify(ok=True), 200
+        resp = jsonify(ok=True)
+        try:
+            resp.headers["Cache-Control"] = "no-store"
+        except Exception:
+            pass
+        return resp, 200
 
     # --- Uniform JSON error responses for /api/* ---
     @app.errorhandler(404)
