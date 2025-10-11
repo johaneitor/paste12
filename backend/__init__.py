@@ -122,6 +122,12 @@ def create_app():
         def _health_fallback():
             return jsonify(ok=True, api=False, ver="factory-fallback", detail=str(exc)), 200
 
+        # Asegurar que el health nunca sea limitado por tasa
+        try:
+            limiter.exempt(_health_fallback)
+        except Exception:
+            pass
+
         @app.route("/api/notes", methods=["GET", "POST", "OPTIONS"])
         def _notes_unavail():
             return jsonify(error="API routes not loaded", detail=str(exc)), 500
@@ -139,8 +145,15 @@ def create_app():
 
     # --- Health mínimo (si ya existe en api_bp, este no molesta) ---
     @app.get("/api/health")
+    @limiter.exempt
     def api_health():
         return jsonify(ok=True, status="ok", api=True, ver="factory-min-v1")
+
+    # Alias mínimo independiente para health checks de la plataforma
+    @app.get("/healthz")
+    @limiter.exempt
+    def healthz():
+        return jsonify(ok=True), 200
 
     # --- Uniform JSON error responses for /api/* ---
     @app.errorhandler(404)
