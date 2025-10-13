@@ -168,6 +168,12 @@
       if (!ul._p12LikeBound) { ul.addEventListener('click', onNotesClick); ul._p12LikeBound = true; }
       await loadAndRender();
       window.p12Enhance?.();
+      // AdSense fallback init if actions_menu is not loaded
+      try {
+        if (document.querySelector('ins.adsbygoogle')) {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        }
+      } catch (_) {}
     } catch (e) {
       console.error('boot failed', e);
       uiError('Error inesperado en la UI.');
@@ -220,6 +226,8 @@
   async function setup(){
     const list = findNotesList();
     if (!list) return;
+    // Evitar duplicados si otra feature ya insertó botón (hotfix/views/actions)
+    if (document.getElementById('load-more-btn')) return;
     let wrap = document.getElementById('load-more');
     if (!wrap){
       wrap = document.createElement('div');

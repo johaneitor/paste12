@@ -19,7 +19,8 @@
       const page = getCurrentPage();
       const r = await fetch(`/api/notes?page=${page}`);
       const j = await r.json();
-      (j.items||[]).forEach(n => cache.set(String(n.id), n));
+      const arr = Array.isArray(j) ? j : (Array.isArray(j.items) ? j.items : (Array.isArray(j.notes) ? j.notes : []));
+      arr.forEach(n => cache.set(String(n.id), n));
     }catch(e){ console.warn('[views] no se pudo hidratar', e); }
     finally{ fetching = false; }
   }
