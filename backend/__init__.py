@@ -214,6 +214,11 @@ def create_app():
             pass
         return resp, 200
 
+    # --- Platform healthz (Render/ALB probes) ---
+    @app.get("/healthz")
+    def healthz():
+        return "ok", 200
+
     # --- Health DB (opcional) ---
     @app.get("/api/health/db")
     def api_health_db():
