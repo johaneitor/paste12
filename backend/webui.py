@@ -39,8 +39,20 @@ def favicon():
     return (send_from_directory(FRONT_DIR, "favicon.ico") if p.exists() else ("", 204))
 
 def ensure_webui(app):
-    """Idempotente: registra el blueprint sólo si falta."""
+    """Idempotente: registra el blueprint sólo si falta y no hay rutas canónicas.
+
+    Evita duplicar la ruta '/' cuando ya existe un frontend canónico (p. ej. 'front_bp').
+    """
     try:
+        # Si el blueprint canónico ya expone '/', no registrar este fallback
+        if "front_bp.index" in app.view_functions:
+            return
+        # Si ya hay alguna regla para '/', evitar duplicación de ruta
+        try:
+            if any(str(r.rule) == "/" for r in app.url_map.iter_rules()):
+                return
+        except Exception:
+            pass
         if "webui.index" not in app.view_functions:
             app.register_blueprint(webui)
     except Exception as exc:
