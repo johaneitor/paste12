@@ -1,0 +1,24 @@
+# /api/health
+0.154706 200 application/json
+0.151089 200 application/json
+0.158063 200 application/json
+0.075493 200 application/json
+0.087134 200 application/json
+# /
+0.087144 200 text/html; charset=utf-8
+0.057759 200 text/html; charset=utf-8
+0.065922 200 text/html; charset=utf-8
+0.118332 200 text/html; charset=utf-8
+0.056440 200 text/html; charset=utf-8
+# /js/app.js
+0.069544 200 text/javascript; charset=utf-8
+0.127407 200 text/javascript; charset=utf-8
+0.060141 200 text/javascript; charset=utf-8
+0.056991 200 text/javascript; charset=utf-8
+0.055360 200 text/javascript; charset=utf-8
+# /css/styles.css
+0.060625 200 text/css; charset=utf-8
+0.056132 200 text/css; charset=utf-8
+0.054018 200 text/css; charset=utf-8
+0.054191 200 text/css; charset=utf-8
+0.064229 200 text/css; charset=utf-8
