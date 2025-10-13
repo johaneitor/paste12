@@ -33,6 +33,12 @@ def create_app():
     # --- SQLAlchemy init ---
     db.init_app(app)
 
+    # --- Rate limit storage config (prefer Redis in prod) ---
+    try:
+        app.config.setdefault("RATELIMIT_STORAGE_URI", os.environ.get("FLASK_LIMITER_STORAGE_URI") or "memory://")
+    except Exception:
+        pass
+
     # --- Ensure minimal schema (non-intrusive) ---
     try:
         with app.app_context():
@@ -237,5 +243,18 @@ def create_app():
             pass
         # For non-API routes, delegate to Flask's default 405 page
         return err
+
+    # --- Optional secure headers (enable with P12_SECURE_HEADERS=1) ---
+    if os.environ.get("P12_SECURE_HEADERS", "0") == "1":
+        @app.after_request
+        def _secure_headers(resp):
+            try:
+                resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+                resp.headers.setdefault("X-Frame-Options", "DENY")
+                resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+                resp.headers.setdefault("Referrer-Policy", "no-referrer")
+            except Exception:
+                pass
+            return resp
 
     return app
