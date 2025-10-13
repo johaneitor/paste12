@@ -18,13 +18,11 @@ try:
 except Exception as exc:
     app.logger.warning("[webui] ensure_webui failed: %r", exc)
 
-# API real: registrar SIEMPRE el blueprint de backend.routes
+# API real: registrar blueprint de backend.routes si no está presente
 try:
-    from backend.routes import api as api_bp  # type: ignore
-    # Evitar sombras: si había un blueprint 'api' residual, limpiamos su referencia
-    if "api" in app.blueprints:
-        app.blueprints.pop("api", None)
-    app.register_blueprint(api_bp)  # type: ignore[attr-defined]
+    from backend.routes import api_bp as _api_bp  # type: ignore
+    if "api" not in app.blueprints:
+        app.register_blueprint(_api_bp, url_prefix="/api")  # type: ignore[attr-defined]
 except Exception as e:
     # Si fallara el import, exponer el motivo
     @app.get("/__api_import_error")
