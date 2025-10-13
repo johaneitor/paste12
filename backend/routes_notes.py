@@ -36,36 +36,97 @@ def register_api(app):
 
     @api_bp.get("/notes")
     def list_notes():
-        page = max(1, int(request.args.get("page", 1) or 1))
-        q = Note.query.order_by(Note.timestamp.desc())
-        items = q.limit(20).offset((page-1)*20).all()
-        now = _now()
-        out = []
-        for n in items:
-            out.append({
-                "id": n.id,
-                "text": n.text,
-                "timestamp": n.timestamp.isoformat(),
-                "expires_at": n.expires_at.isoformat() if n.expires_at else None,
-                "likes": n.likes,
-                "views": n.views,
-                "reports": n.reports,
-                "author_fp": getattr(n, "author_fp", None),
-                "now": now.isoformat(),
-            })
-        return jsonify(out), 200
+        """
+        Lista notas con compatibilidad incremental:
+        - Soporta paginación por cursor via before_id (id descendente).
+        - "limit" (1..100), default 20.
+        - "active_only=1" oculta eliminadas/expiradas (si hay TTL).
+        - "wrap=1" devuelve {items, has_more, next_before_id}; sin wrap → array crudo.
+        Además, si hay siguiente página, agrega Link: <...>; rel="next".
+        """
+        try:
+            try:
+                limit = int(request.args.get("limit", 20) or 20)
+            except Exception:
+                limit = 20
+            limit = max(1, min(100, limit))
+
+            before_id_raw = request.args.get("before_id")
+            before_id = int(before_id_raw) if before_id_raw and before_id_raw.isdigit() else None
+
+            wrap = (request.args.get("wrap") or "").lower() in ("1", "true", "yes", "on")
+            active_only = (request.args.get("active_only") or "").lower() in ("1", "true", "yes", "on")
+
+            q = Note.query
+            if active_only:
+                try:
+                    q = q.filter((Note.deleted_at.is_(None)))
+                except Exception:
+                    pass
+            if before_id:
+                q = q.filter(Note.id < before_id)
+            q = q.order_by(Note.id.desc())
+            rows = q.limit(limit).all()
+
+            now = _now()
+            items = [
+                {
+                    "id": n.id,
+                    "text": n.text,
+                    "timestamp": (n.timestamp or now).isoformat(),
+                    "expires_at": (n.expires_at.isoformat() if n.expires_at else None),
+                    "likes": n.likes,
+                    "views": n.views,
+                    "reports": n.reports,
+                    "author_fp": getattr(n, "author_fp", None),
+                }
+                for n in rows
+            ]
+
+            has_more = len(items) >= limit
+            next_before_id = (items[-1]["id"] if has_more else None)
+
+            resp_body = ( {"items": items, "has_more": has_more, "next_before_id": next_before_id} if wrap else items )
+            resp = jsonify(resp_body)
+
+            # Link header para la siguiente página
+            if has_more and next_before_id:
+                try:
+                    base = (request.url_root or "").rstrip("/")
+                    nxt = f"{base}/api/notes?limit={limit}&before_id={next_before_id}"
+                    resp.headers["Link"] = f"<{nxt}>; rel=\"next\""
+                except Exception:
+                    pass
+            return resp, 200
+        except Exception as exc:
+            return jsonify(error="server_error"), 500
 
     @api_bp.post("/notes")
     def create_note():
-        data = request.get_json(silent=True) or {}
+        """Crea una nota. Acepta JSON o x-www-form-urlencoded.
+        Reconoce "ttl_hours" (canónico) o "hours" (legacy).
+        """
+        data = {}
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
+        else:
+            try:
+                data = {k: v for k, v in (request.form or {}).items()}
+            except Exception:
+                data = {}
+
         text = (data.get("text") or "").strip()
         if not text:
             return jsonify(error="text required"), 400
+
+        # TTL: preferir ttl_hours; fallback a hours; default Note.default_ttl_hours()
+        ttl_raw = data.get("ttl_hours") or data.get("hours") or Note.default_ttl_hours()
         try:
-            hours = int(data.get("hours", 24))
+            hours = int(ttl_raw)
         except Exception:
-            hours = 24
+            hours = Note.default_ttl_hours()
         hours = min(168, max(1, hours))
+
         now = _now()
         n = Note(
             text=text,
@@ -84,7 +145,6 @@ def register_api(app):
             "views": n.views,
             "reports": n.reports,
             "author_fp": getattr(n, "author_fp", None),
-            "now": now.isoformat(),
         }), 201
 
     app.register_blueprint(api_bp, url_prefix="/api")

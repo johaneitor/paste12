@@ -2,8 +2,8 @@ import os
 from flask import Blueprint, send_from_directory, current_app, make_response, request
 
 front_bp = Blueprint("front_bp", __name__)
-BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-FRONT_DIR = os.path.join(BASE, "frontend")
+# Servir UI desde backend/frontend (canónico)
+FRONT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "frontend"))
 
 @front_bp.route("/", methods=["GET"])
 def index():
