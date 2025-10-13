@@ -36,6 +36,11 @@ def create_app():
     # --- Ensure minimal schema (non-intrusive) ---
     try:
         with app.app_context():
+            # Ensure core models are loaded so create_all() is aware
+            from . import models as _models  # noqa: F401
+            # Create tables for declared models if missing (e.g., notes)
+            db.create_all()
+
             from sqlalchemy import text as _text
             db.session.execute(_text(
                 """
@@ -118,9 +123,17 @@ def create_app():
     except Exception as exc:
         app.logger.error("[api] fallback: no pude registrar api_bp: %r", exc)
 
+        # Guardar el detalle en una variable local (el binding del 'exc' de except
+        # se limpia tras salir del bloque en Python 3). Evitamos capturar 'exc'.
+        _api_fallback_detail = str(exc)
+
         @app.route("/api/health")
         def _health_fallback():
-            resp = jsonify(ok=True, api=False, ver="factory-fallback", detail=str(exc))
+            # Do not leak internal exception details unless explicitly enabled
+            body = {"ok": True, "api": False, "ver": "factory-fallback"}
+            if os.environ.get("P12_HEALTH_DETAIL", "0") == "1":
+                body["detail"] = _api_fallback_detail
+            resp = jsonify(**body)
             try:
                 resp.headers["Cache-Control"] = "no-store"
             except Exception:
@@ -133,9 +146,22 @@ def create_app():
         except Exception:
             pass
 
-        @app.route("/api/notes", methods=["GET", "POST", "OPTIONS"])
-        def _notes_unavail():
-            return jsonify(error="API routes not loaded", detail=str(exc)), 500
+        # No definir fallback de /api/notes aquí para permitir que la cápsula
+        # de notas se registre más abajo si está disponible.
+
+    # --- Asegurar /api/notes mínimo si falta ---
+    try:
+        from .routes_notes import register_api as _register_notes  # type: ignore
+        _register_notes(app)
+    except Exception as _e:
+        app.logger.warning("[api] notes capsule not registered: %r", _e)
+
+    # --- Registrar interacciones (like/view/report) si el módulo está disponible ---
+    try:
+        from .modules.interactions import register_into as _register_interactions  # type: ignore
+        _register_interactions(app)
+    except Exception as _e:
+        app.logger.warning("[api] interactions not registered: %r", _e)
 
     # --- Frontend blueprint (sirve /, /terms, /privacy) ---
     try:

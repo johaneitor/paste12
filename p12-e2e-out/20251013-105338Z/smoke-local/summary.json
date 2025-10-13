@@ -1,0 +1,22 @@
+[
+  {
+    "path": "/api/health",
+    "status": 200,
+    "ct": "application/json"
+  },
+  {
+    "path": "/",
+    "status": 200,
+    "ct": "text/html; charset=utf-8"
+  },
+  {
+    "path": "/js/app.js",
+    "status": 200,
+    "ct": "text/javascript; charset=utf-8"
+  },
+  {
+    "path": "/css/styles.css",
+    "status": 200,
+    "ct": "text/css; charset=utf-8"
+  }
+]
