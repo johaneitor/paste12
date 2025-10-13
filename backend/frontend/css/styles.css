@@ -13,7 +13,7 @@ button:hover{border-color:var(--accent)}
 .msg{margin-top:8px; color:var(--muted)}
 .note{border-top:1px solid #222c3b; padding:10px 0}
 .note:first-child{border-top:none}
-.note .text{white-space:pre-wrap; margin-bottom:6px}
+.note .text, .note-text{white-space:pre-wrap; margin-bottom:6px}
 .note .meta{color:#9bb2c7; font-size:.9rem; display:flex; gap:10px; flex-wrap:wrap}
 footer a{color:var(--muted); text-decoration:none}
 footer a:hover{color:var(--fg); text-decoration:underline}

@@ -340,7 +340,8 @@ window.addEventListener('DOMContentLoaded', function() {
     state.loading = false;
   }
   function ensureButton(){
-    if ($('#load-more-btn')) return;
+    // Evita duplicar si ya existe el botón alternativo
+    if ($('#load-more-btn') || document.getElementById('load-more')) return;
     const container = document.createElement('div');
     container.style.textAlign='center'; container.style.margin='16px 0 32px';
     container.innerHTML = `<button id="load-more-btn" class="btn" type="button">Cargar más</button>`;
