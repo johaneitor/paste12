@@ -1,0 +1,128 @@
+name: Deploy and Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL del entorno (ej: https://app.onrender.com)"
+        required: false
+        default: "https://paste12-rmsk.onrender.com"
+      deploy_hook_url:
+        description: "Render Deploy Hook URL (opcional)"
+        required: false
+        default: ""
+      cloudflare_zone_id:
+        description: "Cloudflare Zone ID (opcional)"
+        required: false
+        default: ""
+      purge_paths:
+        description: "Rutas a purgar (coma-separadas)"
+        required: false
+        default: "/,/js/app.js,/css/styles.css"
+
+  push:
+    branches:
+      - main
+      - master
+      - "release/**"
+
+jobs:
+  build:
+    name: Build Docker (buildx, no push)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: local/build:smoke
+
+  deploy_and_smoke:
+    name: Deploy, Health, Purge, Smokes
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      BASE_URL: ${{ inputs.base_url || secrets.BASE_URL || 'https://paste12-rmsk.onrender.com' }}
+      DEPLOY_HOOK_URL: ${{ inputs.deploy_hook_url || secrets.RENDER_DEPLOY_HOOK || '' }}
+      CF_ZONE_ID: ${{ inputs.cloudflare_zone_id || secrets.CF_ZONE_ID || '' }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN || '' }}
+      PURGE_PATHS: ${{ inputs.purge_paths }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar deps necesarias (jq, curl)
+        run: sudo apt-get update && sudo apt-get install -y jq curl
+
+      - name: Trigger deploy (Render deploy hook si está configurado)
+        if: env.DEPLOY_HOOK_URL != ''
+        run: |
+          set -euo pipefail
+          echo "Triggering deploy via hook: $DEPLOY_HOOK_URL"
+          curl -fsS -X POST "$DEPLOY_HOOK_URL" -d '' || true
+
+      - name: Esperar health GET /api/health
+        run: |
+          set -euo pipefail
+          echo "Esperando salud en: $BASE_URL/api/health"
+          tools/verify_boot_after_deploy_v1.sh "$BASE_URL" "/tmp"
+
+      - name: Purge Cloudflare (HTML y assets)
+        if: env.CF_ZONE_ID != '' && env.CF_API_TOKEN != ''
+        env:
+          ZONE_ID: ${{ env.CF_ZONE_ID }}
+          TOKEN: ${{ env.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra paths <<< "${PURGE_PATHS}"
+          payload=$(jq -nc --arg base "$BASE_URL" --argjson p "$(printf '%s\n' "${paths[@]}" | jq -R . | jq -s .)" '{files: ($p | map($base + .))}')
+          echo "Purging: $payload"
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+            --data "$payload"
+
+      - name: Ejecutar smokes (run_smoke_now_v3)
+        run: |
+          set -euo pipefail
+          chmod +x tools/run_smoke_now_v3.sh || true
+          mkdir -p e2e-artifacts
+          tools/run_smoke_now_v3.sh "$BASE_URL" "$(pwd)/e2e-artifacts"
+
+      - name: Ejecutar smoke_api end-to-end
+        run: |
+          set -euo pipefail
+          chmod +x tools/smoke_api.sh
+          tools/smoke_api.sh "$BASE_URL"
+
+      - name: Ejecutar smokes opcionales (no bloqueantes)
+        run: |
+          set -euo pipefail
+          if [[ -x tools/smoke_index_integrity.sh ]]; then tools/smoke_index_integrity.sh "$BASE_URL" || echo "[warn] smoke_index_integrity falló"; fi
+          if [[ -x tools/smoke_pagination_and_buttons.sh ]]; then tools/smoke_pagination_and_buttons.sh "$BASE_URL" || echo "[warn] smoke_pagination_and_buttons falló"; fi
+          true
+
+      - name: Publicar artefactos (capturas y logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-artifacts
+          path: |
+            e2e-artifacts
+            /tmp/boot-health-*.log
+            /tmp/*.json
+
