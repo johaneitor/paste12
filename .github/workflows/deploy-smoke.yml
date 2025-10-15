@@ -1,0 +1,315 @@
+name: Deploy and Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment (staging|prod)"
+        required: true
+        type: choice
+        options: [staging, prod]
+      provider:
+        description: "Deploy provider (render|vercel|netlify|none)"
+        required: false
+        type: choice
+        default: render
+        options: [render, vercel, netlify, none]
+      deploy_hook_url:
+        description: "Override deploy hook URL (optional)"
+        required: false
+        type: string
+      base_url:
+        description: "Override base URL for smokes (optional)"
+        required: false
+        type: string
+      confirm-prod:
+        description: "Must be true to allow prod deploy"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+      auto_pr:
+        description: "Create PR automatically when GH_TOKEN available"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+      push_image:
+        description: "Push image to registry (disabled by default)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  deployments: write
+  id-token: write # for OIDC (optional commented blocks)
+  packages: write # for optional GHCR push (guarded)
+
+jobs:
+  derive-env:
+    name: Derive environment safely
+    runs-on: ubuntu-latest
+    outputs:
+      base_url: ${{ steps.out.outputs.base_url }}
+      deploy_hook_url: ${{ steps.out.outputs.deploy_hook_url }}
+      provider: ${{ steps.out.outputs.provider }}
+      environment: ${{ steps.out.outputs.environment }}
+    steps:
+      - name: Validate provider input
+        id: validate
+        run: |
+          set -euo pipefail
+          PROV="${{ inputs.provider || 'render' }}"
+          case "$PROV" in
+            render|vercel|netlify|none) : ;;
+            *) echo "::error::Invalid provider '$PROV'. Allowed: render, vercel, netlify, none"; exit 64 ;;
+          esac
+          echo "provider_source=input" >> "$GITHUB_OUTPUT"
+      - name: Derive secrets and inputs
+        id: derive
+        env:
+          IN_ENV: ${{ inputs.environment }}
+          IN_BASE_URL: ${{ inputs.base_url }}
+          IN_DEPLOY_HOOK_URL: ${{ inputs.deploy_hook_url }}
+          RENDER_DEPLOY_HOOK_STAGING: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
+          RENDER_DEPLOY_HOOK_PROD: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+          BASE_URL_STAGING: ${{ secrets.BASE_URL_STAGING }}
+          BASE_URL_PROD: ${{ secrets.BASE_URL_PROD }}
+        run: |
+          set -euo pipefail
+          env_in="${IN_ENV:-staging}"
+          if [[ "$env_in" != "staging" && "$env_in" != "prod" ]]; then
+            echo "::error::Invalid environment '$env_in'. Use staging|prod"; exit 65
+          fi
+
+          # Select source values without printing secrets
+          if [[ -n "${IN_DEPLOY_HOOK_URL:-}" ]]; then
+            deploy_hook_url="$IN_DEPLOY_HOOK_URL"; hook_src="input"
+          else
+            if [[ "$env_in" == "staging" ]]; then
+              deploy_hook_url="$RENDER_DEPLOY_HOOK_STAGING"; hook_src="secret"
+            else
+              deploy_hook_url="$RENDER_DEPLOY_HOOK_PROD"; hook_src="secret"
+            fi
+          fi
+
+          if [[ -n "${IN_BASE_URL:-}" ]]; then
+            base_url="$IN_BASE_URL"; base_src="input"
+          else
+            if [[ "$env_in" == "staging" ]]; then
+              base_url="$BASE_URL_STAGING"; base_src="secret"
+            else
+              base_url="$BASE_URL_PROD"; base_src="secret"
+            fi
+          fi
+
+          if [[ -z "${deploy_hook_url:-}" && "${{ inputs.provider }}" != "none" ]]; then
+            echo "::error::Missing deploy hook URL for provider ${{ inputs.provider }}"; exit 66
+          fi
+          if [[ -z "${base_url:-}" ]]; then
+            echo "::error::Missing BASE_URL for environment $env_in"; exit 67
+          fi
+
+          # For prod, require explicit confirmation to allow deploy
+          if [[ "$env_in" == "prod" && "${{ inputs.confirm-prod }}" != "true" ]]; then
+            echo "::warning::confirm-prod is not true; deployments will be skipped"
+          fi
+
+          # Log only sources, not values
+          echo "Using provider: ${{ inputs.provider }}"
+          echo "Base URL source: $base_src"
+          echo "Deploy hook source: $hook_src"
+
+          # Export to environment for other jobs
+          {
+            echo "PROVIDER=${{ inputs.provider }}"
+            echo "ENVIRONMENT=$env_in"
+            echo "BASE_URL=$base_url"
+            echo "DEPLOY_HOOK_URL=$deploy_hook_url"
+          } >> "$GITHUB_ENV"
+
+      - name: Set outputs
+        id: out
+        run: |
+          echo "base_url=${BASE_URL}" >> "$GITHUB_OUTPUT"
+          # Mask secrets in logs
+          echo "::add-mask::${DEPLOY_HOOK_URL}"
+          echo "deploy_hook_url=${DEPLOY_HOOK_URL}" >> "$GITHUB_OUTPUT"
+          echo "provider=${PROVIDER}" >> "$GITHUB_OUTPUT"
+          echo "environment=${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
+
+  build-and-deploy:
+    name: Build, deploy and smoke
+    runs-on: ubuntu-latest
+    needs: derive-env
+    env:
+      BASE_URL: ${{ needs.derive-env.outputs.base_url }}
+      DEPLOY_HOOK_URL: ${{ needs.derive-env.outputs.deploy_hook_url }}
+      PROVIDER: ${{ needs.derive-env.outputs.provider }}
+      ENVIRONMENT: ${{ needs.derive-env.outputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache buildx (best-effort)
+        id: buildx-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /tmp/.buildx-cache
+            /tmp/.buildx-cache-new
+          key: docker-buildx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            docker-buildx-${{ runner.os }}-
+        continue-on-error: true
+
+      - name: Docker build (no push)
+        id: docker-build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+        continue-on-error: true
+
+      - name: Move buildx cache (atomic)
+        if: always()
+        run: |
+          set -euo pipefail
+          if [[ -d /tmp/.buildx-cache-new ]]; then
+            rm -rf /tmp/.buildx-cache
+            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          fi
+
+      - name: Render deploy hook (conditional)
+        if: ${{ env.PROVIDER == 'render' && (env.ENVIRONMENT != 'prod' || inputs['confirm-prod'] == 'true') }}
+        id: render-deploy
+        env:
+          HOOK: ${{ env.DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${HOOK:-}" ]]; then
+            echo "No deploy hook configured; skipping"; exit 0
+          fi
+          echo "Triggering provider: render (hook provided)"
+          attempt=0
+          max=3
+          backoff=(3 9 27)
+          resp_file="render_deploy_response.json"
+          while (( attempt < max )); do
+            attempt=$((attempt+1))
+            echo "Attempt $attempt"
+            code=0
+            # timeout 20s; do not print full URL
+            out=$(curl -sS -m 20 -w '\n%{http_code}' -X POST "${HOOK}" 2>&1) || code=$?
+            body="${out%$'\n'*}"
+            http="${out##*$'\n'}"
+            if [[ "$code" -eq 0 && "$http" =~ ^2 ]]; then
+              printf '%s' "$body" > "$resp_file"
+              echo "status=$http" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            if (( attempt < max )); then
+              sleep "${backoff[$((attempt-1))]}"
+            fi
+          done
+          if [[ "${http:-}" != 2* ]]; then
+            echo "::error::Render hook failed (non-2xx or timeout)"
+            exit 1
+          fi
+
+      - name: Save deploy response artifact
+        if: steps.render-deploy.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-response
+          path: render_deploy_response.json
+          if-no-files-found: ignore
+
+      - name: Conditional Cloudflare purge
+        if: ${{ env.PROVIDER != 'none' && secrets.CF_API_TOKEN && secrets.CF_ZONE_ID }}
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          set -euo pipefail
+          echo "Purging limited Cloudflare paths"
+          payload='{"files":["'"${BASE_URL%/}"'/","'"${BASE_URL%/}"'/index.html","'"${BASE_URL%/}"'/js/app.js","'"${BASE_URL%/}"'/css/*"]}'
+          resp=$(curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "$payload")
+          echo "$resp" > cloudflare_purge_response.json
+          ok=$(python -c 'import json,sys;print(json.loads(open(sys.argv[1]).read()).get("success"))' cloudflare_purge_response.json)
+          if [[ "$ok" != "True" ]]; then
+            echo "::error::Cloudflare purge failed"; exit 1
+          fi
+
+      - name: Smoke tests (front+api minimal)
+        id: smokes
+        env:
+          BASE: ${{ env.BASE_URL }}
+        run: |
+          set -euo pipefail
+          echo "BASE=$BASE" > smoke_env.txt
+          bash tools/smoke_all.sh "$BASE" | tee smoke_all.log
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p12-e2e-out
+          path: |
+            p12-e2e-out/
+            smoke_all.log
+            cloudflare_purge_response.json
+            render_deploy_response.json
+          if-no-files-found: ignore
+
+      - name: Fail if smoke_api failed
+        if: ${{ steps.smokes.outcome != 'success' }}
+        run: |
+          echo "::error::Smoke tests failed"
+          exit 1
+
+  # Optional blocks (disabled by default)
+  # k8s example (requires secret KUBE_CONFIG_BASE64)
+  #  - name: Setup kubectl
+  #    if: false
+  #    uses: azure/setup-kubectl@v4
+  #  - name: Configure kubeconfig
+  #    if: false
+  #    run: |
+  #      echo "$KUBE_CONFIG_BASE64" | base64 --decode > kubeconfig
+  #      echo "KUBECONFIG=$PWD/kubeconfig" >> "$GITHUB_ENV"
+
+  # AWS ECR/ECS with OIDC (instructions only)
+  #  - name: Configure AWS credentials via OIDC
+  #    if: false
+  #    uses: aws-actions/configure-aws-credentials@v4
+  #    with:
+  #      role-to-assume: arn:aws:iam::123456789012:role/your-oidc-role
+  #      aws-region: us-east-1
+
+  # Optional GHCR push (disabled unless push_image == 'true')
+  #  - name: Login to GHCR
+  #    if: ${{ inputs.push_image == 'true' }}
+  #    run: echo ${{ github.token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+  #  - name: Build and push image
+  #    if: ${{ inputs.push_image == 'true' }}
+  #    uses: docker/build-push-action@v6
+  #    with:
+  #      context: .
+  #      push: true
+  #      tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
