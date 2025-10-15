@@ -19,12 +19,49 @@ on:
         description: "Rutas a purgar (coma-separadas)"
         required: false
         default: "/,/js/app.js,/css/styles.css"
+      vercel_deploy_hook_url:
+        description: "Vercel Deploy Hook URL (opcional)"
+        required: false
+        default: ""
+      netlify_deploy_hook_url:
+        description: "Netlify Deploy Hook URL (opcional)"
+        required: false
+        default: ""
+      ghcr_image:
+        description: "Imagen GHCR (ej: ghcr.io/owner/app)"
+        required: false
+        default: ""
+      ecr_registry:
+        description: "AWS ECR registry (ej: 123.dkr.ecr.us-east-1.amazonaws.com)"
+        required: false
+        default: ""
+      ecr_repository:
+        description: "AWS ECR repository (ej: myapp)"
+        required: false
+        default: ""
+      kube_namespace:
+        description: "K8s namespace para rollout (opcional)"
+        required: false
+        default: ""
+      kube_deployment:
+        description: "K8s deployment name para rollout (opcional)"
+        required: false
+        default: ""
+      kube_container:
+        description: "K8s container name dentro del deployment (opcional)"
+        required: false
+        default: ""
 
   push:
     branches:
       - main
       - master
       - "release/**"
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
 
 jobs:
   build:
@@ -59,7 +96,7 @@ jobs:
       DEPLOY_HOOK_URL: ${{ inputs.deploy_hook_url || secrets.RENDER_DEPLOY_HOOK || '' }}
       CF_ZONE_ID: ${{ inputs.cloudflare_zone_id || secrets.CF_ZONE_ID || '' }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN || '' }}
-      PURGE_PATHS: ${{ inputs.purge_paths }}
+      PURGE_PATHS: ${{ inputs.purge_paths || '/,/js/app.js,/css/styles.css' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,12 +104,34 @@ jobs:
       - name: Instalar deps necesarias (jq, curl)
         run: sudo apt-get update && sudo apt-get install -y jq curl
 
+      - name: Asegurar python está accesible
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y python3 || true
+          if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+            sudo ln -sf "$(command -v python3)" /usr/bin/python
+          fi
+
       - name: Trigger deploy (Render deploy hook si está configurado)
         if: env.DEPLOY_HOOK_URL != ''
         run: |
           set -euo pipefail
           echo "Triggering deploy via hook: $DEPLOY_HOOK_URL"
           curl -fsS -X POST "$DEPLOY_HOOK_URL" -d '' || true
+
+      - name: Trigger deploy (Vercel hook si está configurado)
+        if: ${{ inputs.vercel_deploy_hook_url != '' }}
+        run: |
+          set -euo pipefail
+          echo "Triggering Vercel deploy via hook"
+          curl -fsS -X POST "${{ inputs.vercel_deploy_hook_url }}" -d '' || true
+
+      - name: Trigger deploy (Netlify hook si está configurado)
+        if: ${{ inputs.netlify_deploy_hook_url != '' }}
+        run: |
+          set -euo pipefail
+          echo "Triggering Netlify deploy via hook"
+          curl -fsS -X POST "${{ inputs.netlify_deploy_hook_url }}" -d '' || true
 
       - name: Esperar health GET /api/health
         run: |
@@ -125,4 +184,116 @@ jobs:
             e2e-artifacts
             /tmp/boot-health-*.log
             /tmp/*.json
+
+  push_container_images:
+    name: Push container images (GHCR/ECR)
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      GHCR_IMAGE: ${{ inputs.ghcr_image || secrets.GHCR_IMAGE || '' }}
+      ECR_REGISTRY: ${{ inputs.ecr_registry || secrets.AWS_ECR_REGISTRY || '' }}
+      ECR_REPOSITORY: ${{ inputs.ecr_repository || secrets.AWS_ECR_REPOSITORY || '' }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+    outputs:
+      ghcr_ref: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
+      ecr_ref: ${{ steps.meta_ecr.outputs.ecr_ref }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute metadata (GHCR)
+        id: meta_ghcr
+        if: env.GHCR_IMAGE != ''
+        run: |
+          sha_short="${GITHUB_SHA::7}"
+          echo "ghcr_ref=${GHCR_IMAGE}:sha-${sha_short}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        if: env.GHCR_IMAGE != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push to GHCR
+        if: env.GHCR_IMAGE != ''
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
+
+      - name: Configure AWS credentials
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Compute metadata (ECR)
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        id: meta_ecr
+        run: |
+          sha_short="${GITHUB_SHA::7}"
+          echo "ecr_ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:sha-${sha_short}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push to ECR
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta_ecr.outputs.ecr_ref }}
+
+  rollout:
+    name: Rollout por CLI (K8s/ECS)
+    runs-on: ubuntu-latest
+    needs: push_container_images
+    env:
+      KUBE_NAMESPACE: ${{ inputs.kube_namespace || secrets.KUBE_NAMESPACE || '' }}
+      KUBE_DEPLOYMENT: ${{ inputs.kube_deployment || secrets.KUBE_DEPLOYMENT || '' }}
+      KUBE_CONTAINER: ${{ inputs.kube_container || secrets.KUBE_CONTAINER || '' }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+    steps:
+      - name: Rollout K8s si está configurado
+        if: env.KUBE_DEPLOYMENT != '' && env.KUBE_CONTAINER != '' && (needs.push_container_images.outputs.ghcr_ref != '' || needs.push_container_images.outputs.ecr_ref != '')
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.27.3'
+
+      - name: Aplicar rollout K8s
+        if: env.KUBE_DEPLOYMENT != '' && env.KUBE_CONTAINER != '' && (needs.push_container_images.outputs.ghcr_ref != '' || needs.push_container_images.outputs.ecr_ref != '')
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          set -euo pipefail
+          echo "$KUBECONFIG_B64" | base64 -d > kubeconfig
+          export KUBECONFIG="$PWD/kubeconfig"
+          IMAGE_REF="${{ needs.push_container_images.outputs.ghcr_ref || needs.push_container_images.outputs.ecr_ref }}"
+          ns="${KUBE_NAMESPACE:-default}"
+          kubectl -n "$ns" set image deployment/"$KUBE_DEPLOYMENT" "$KUBE_CONTAINER"="$IMAGE_REF"
+          kubectl -n "$ns" rollout status deployment/"$KUBE_DEPLOYMENT" --timeout=5m
+
+      - name: Rollout ECS si está configurado
+        if: ${{ secrets.ECS_CLUSTER != '' && secrets.ECS_SERVICE != '' }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update && sudo apt-get install -y awscli
+          aws configure set default.region "$AWS_REGION"
+          aws ecs update-service --cluster "${{ secrets.ECS_CLUSTER }}" --service "${{ secrets.ECS_SERVICE }}" --force-new-deployment
+          aws ecs wait services-stable --cluster "${{ secrets.ECS_CLUSTER }}" --services "${{ secrets.ECS_SERVICE }}"
 
