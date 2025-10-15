@@ -86,6 +86,8 @@ jobs:
           load: true
           platforms: linux/amd64
           tags: local/build:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy_and_smoke:
     name: Deploy, Health, Purge, Smokes
@@ -111,6 +113,26 @@ jobs:
           if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
             sudo ln -sf "$(command -v python3)" /usr/bin/python
           fi
+
+      - name: Derivar variables base
+        env:
+          IN_BASE: ${{ inputs.base_url }}
+          SEC_BASE: ${{ secrets.BASE_URL }}
+          IN_PURGE: ${{ inputs.purge_paths }}
+          IN_RENDER_HOOK: ${{ inputs.deploy_hook_url }}
+          SEC_RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          base="${IN_BASE:-}"
+          if [ -z "$base" ]; then base="${SEC_BASE:-}"; fi
+          if [ -z "$base" ]; then base="https://paste12-rmsk.onrender.com"; fi
+          echo "BASE_URL=$base" >> "$GITHUB_ENV"
+          purge="${IN_PURGE:-}"
+          if [ -z "$purge" ]; then purge="/,/js/app.js,/css/styles.css"; fi
+          echo "PURGE_PATHS=$purge" >> "$GITHUB_ENV"
+          dh="${IN_RENDER_HOOK:-}"
+          if [ -z "$dh" ]; then dh="${SEC_RENDER_HOOK:-}"; fi
+          echo "DEPLOY_HOOK_URL=$dh" >> "$GITHUB_ENV"
 
       - name: Trigger deploy (Render deploy hook si está configurado)
         if: env.DEPLOY_HOOK_URL != ''
@@ -228,6 +250,8 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Configure AWS credentials
         if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
@@ -258,6 +282,8 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: ${{ steps.meta_ecr.outputs.ecr_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   rollout:
     name: Rollout por CLI (K8s/ECS)
