@@ -193,7 +193,7 @@ jobs:
           fi
 
       - name: Render deploy hook (conditional)
-        if: ${{ env.PROVIDER == 'render' && (env.ENVIRONMENT != 'prod' || inputs['confirm-prod'] == 'true') }}
+        if: ${{ env.PROVIDER == 'render' && (env.ENVIRONMENT != 'prod' || github.event.inputs['confirm-prod'] == 'true') }}
         id: render-deploy
         env:
           HOOK: ${{ env.DEPLOY_HOOK_URL }}
@@ -238,12 +238,16 @@ jobs:
           if-no-files-found: ignore
 
       - name: Conditional Cloudflare purge
-        if: ${{ env.PROVIDER != 'none' && secrets.CF_API_TOKEN && secrets.CF_ZONE_ID }}
+        if: ${{ env.PROVIDER != 'none' }}
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
         run: |
           set -euo pipefail
+          if [[ -z "${CF_API_TOKEN:-}" || -z "${CF_ZONE_ID:-}" ]]; then
+            echo "Skipping Cloudflare purge: missing CF secrets"
+            exit 0
+          fi
           echo "Purging limited Cloudflare paths"
           payload='{"files":["'"${BASE_URL%/}"'/","'"${BASE_URL%/}"'/index.html","'"${BASE_URL%/}"'/js/app.js","'"${BASE_URL%/}"'/css/*"]}'
           resp=$(curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
