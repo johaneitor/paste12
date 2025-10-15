@@ -50,10 +50,41 @@ try:
     # Reemplaza el root, o define uno si no existía
     @app.get("/")
     def root_index():
-        static_dir = current_app.static_folder or "backend/static"
-        resp = make_response(send_from_directory(static_dir, "index.html"))
+        """Serve frontend index with no-store, preferring backend/frontend."""
+        # Preferir la vista canónica si existe (inyecta flags cuando hace falta)
+        try:
+            vf = current_app.view_functions.get("front_bp.index")
+            if vf:
+                resp = vf()
+                try:
+                    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                except Exception:
+                    pass
+                return resp
+        except Exception:
+            pass
+
+        # Fallback: servir directamente desde backend/frontend; último recurso: static
+        front_dir = None
+        try:
+            from backend.front_bp import FRONT_DIR as _FD  # type: ignore
+            front_dir = _FD
+        except Exception:
+            front_dir = None
+
+        try:
+            dir_to_use = front_dir or os.path.join(os.getcwd(), "backend", "frontend")
+            resp = make_response(send_from_directory(dir_to_use, "index.html"))
+        except Exception:
+            static_dir = (getattr(current_app, "static_folder", None)
+                          or os.path.join(os.getcwd(), "backend", "static"))
+            resp = make_response(send_from_directory(static_dir, "index.html"))
+
         # evita cache en la raíz
-        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        try:
+            resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        except Exception:
+            pass
         return resp
 
     # Cinturón y tirantes: si otra vista sirve '/', igual marcamos no-store
@@ -74,12 +105,21 @@ try:
     import os
     from flask import send_from_directory, current_app, make_response, request
 
-    def _resolve_static_dir():
-        sd = getattr(current_app, "static_folder", None)
-        # si no hay static_folder válido, probamos backend/static relativo al repo
-        cand = sd if sd else os.path.join(os.getcwd(), "backend", "static")
-        idx  = os.path.join(cand, "index.html")
-        return cand if os.path.isfile(idx) else (sd or cand)
+    def _resolve_front_dir():
+        """Resolve preferred frontend directory (backend/frontend), with fallbacks."""
+        # Canonical FRONT_DIR si está disponible
+        try:
+            from backend.front_bp import FRONT_DIR as _FD  # type: ignore
+            if os.path.isfile(os.path.join(_FD, "index.html")):
+                return _FD
+        except Exception:
+            pass
+        # Fallback al path del repo
+        cand = os.path.join(os.getcwd(), "backend", "frontend")
+        if os.path.isfile(os.path.join(cand, "index.html")):
+            return cand
+        # Último recurso: static_folder (podría no tener index.html)
+        return getattr(current_app, "static_folder", None) or os.path.join(os.getcwd(), "backend", "static")
 
     @app.after_request
     def _no_store_root(resp):
@@ -93,8 +133,21 @@ try:
 
     # Reemplaza/define la ruta raíz para servir el index pastel
     def _root_index_override():
-        static_dir = _resolve_static_dir()
-        resp = make_response(send_from_directory(static_dir, "index.html"))
+        # Preferir la vista canónica si está registrada
+        try:
+            vf = app.view_functions.get("front_bp.index")
+            if vf:
+                resp = vf()
+                try:
+                    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                except Exception:
+                    pass
+                return resp
+        except Exception:
+            pass
+
+        front_dir = _resolve_front_dir()
+        resp = make_response(send_from_directory(front_dir, "index.html"))
         # Cinturón y tirantes: no-store explícito acá también
         resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         return resp
@@ -110,6 +163,6 @@ try:
             # Último recurso: registramos sin endpoint específico
             app.add_url_rule("/", view_func=_root_index_override, methods=["GET", "HEAD"])
 
-    print("[app] root_index activo (index pastel + no-store)")
+    print("[app] root_index activo (frontend canónico + no-store)")
 except Exception as _e:
     print("[app] Aviso: no pude instalar root_index/no-store:", _e)
