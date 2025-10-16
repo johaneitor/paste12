@@ -94,11 +94,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     env:
-      BASE_URL: ${{ github.event.inputs.base_url || secrets.BASE_URL || 'https://paste12-rmsk.onrender.com' }}
-      DEPLOY_HOOK_URL: ${{ github.event.inputs.deploy_hook_url || secrets.RENDER_DEPLOY_HOOK || '' }}
-      CF_ZONE_ID: ${{ github.event.inputs.cloudflare_zone_id || secrets.CF_ZONE_ID || '' }}
+      BASE_URL: ${{ secrets.BASE_URL || 'https://paste12-rmsk.onrender.com' }}
+      DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK || '' }}
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID || '' }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN || '' }}
-      PURGE_PATHS: ${{ github.event.inputs.purge_paths || '/,/js/app.js,/css/styles.css' }}
+      PURGE_PATHS: '/,/js/app.js,/css/styles.css'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -114,25 +114,41 @@ jobs:
             sudo ln -sf "$(command -v python3)" /usr/bin/python
           fi
 
-      - name: Derivar variables base
+      - name: Derivar variables (workflow_dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
-          IN_BASE: ${{ github.event.inputs.base_url }}
           SEC_BASE: ${{ secrets.BASE_URL }}
-          IN_PURGE: ${{ github.event.inputs.purge_paths }}
-          IN_RENDER_HOOK: ${{ github.event.inputs.deploy_hook_url }}
           SEC_RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           set -euo pipefail
-          base="${IN_BASE:-}"
-          if [ -z "$base" ]; then base="${SEC_BASE:-}"; fi
-          if [ -z "$base" ]; then base="https://paste12-rmsk.onrender.com"; fi
+          sudo apt-get update -y && sudo apt-get install -y jq
+          in_base=$(jq -r '.inputs.base_url // ""' "$GITHUB_EVENT_PATH")
+          in_purge=$(jq -r '.inputs.purge_paths // ""' "$GITHUB_EVENT_PATH")
+          in_hook=$(jq -r '.inputs.deploy_hook_url // ""' "$GITHUB_EVENT_PATH")
+          base="$in_base"; [ -z "$base" ] && base="${SEC_BASE:-}"; [ -z "$base" ] && base="https://paste12-rmsk.onrender.com"
           echo "BASE_URL=$base" >> "$GITHUB_ENV"
-          purge="${IN_PURGE:-}"
-          if [ -z "$purge" ]; then purge="/,/js/app.js,/css/styles.css"; fi
+          purge="$in_purge"; [ -z "$purge" ] && purge="/,/js/app.js,/css/styles.css"
           echo "PURGE_PATHS=$purge" >> "$GITHUB_ENV"
-          dh="${IN_RENDER_HOOK:-}"
-          if [ -z "$dh" ]; then dh="${SEC_RENDER_HOOK:-}"; fi
+          dh="$in_hook"; [ -z "$dh" ] && dh="${SEC_RENDER_HOOK:-}"
           echo "DEPLOY_HOOK_URL=$dh" >> "$GITHUB_ENV"
+          vercel=$(jq -r '.inputs.vercel_deploy_hook_url // ""' "$GITHUB_EVENT_PATH")
+          netlify=$(jq -r '.inputs.netlify_deploy_hook_url // ""' "$GITHUB_EVENT_PATH")
+          echo "VERCEL_HOOK=$vercel" >> "$GITHUB_ENV"
+          echo "NETLIFY_HOOK=$netlify" >> "$GITHUB_ENV"
+
+      - name: Derivar variables (push/otros eventos)
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        env:
+          SEC_BASE: ${{ secrets.BASE_URL }}
+          SEC_RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          base="${SEC_BASE:-}"; [ -z "$base" ] && base="https://paste12-rmsk.onrender.com"
+          echo "BASE_URL=$base" >> "$GITHUB_ENV"
+          echo "PURGE_PATHS=/,/js/app.js,/css/styles.css" >> "$GITHUB_ENV"
+          echo "DEPLOY_HOOK_URL=${SEC_RENDER_HOOK:-}" >> "$GITHUB_ENV"
+          echo "VERCEL_HOOK=" >> "$GITHUB_ENV"
+          echo "NETLIFY_HOOK=" >> "$GITHUB_ENV"
 
       - name: Trigger deploy (Render deploy hook si está configurado)
         if: env.DEPLOY_HOOK_URL != ''
@@ -142,18 +158,18 @@ jobs:
           curl -fsS -X POST "$DEPLOY_HOOK_URL" -d '' || true
 
       - name: Trigger deploy (Vercel hook si está configurado)
-        if: ${{ github.event.inputs.vercel_deploy_hook_url != '' }}
+        if: ${{ env.VERCEL_HOOK != '' }}
         run: |
           set -euo pipefail
           echo "Triggering Vercel deploy via hook"
-          curl -fsS -X POST "${{ github.event.inputs.vercel_deploy_hook_url }}" -d '' || true
+          curl -fsS -X POST "$VERCEL_HOOK" -d '' || true
 
       - name: Trigger deploy (Netlify hook si está configurado)
-        if: ${{ github.event.inputs.netlify_deploy_hook_url != '' }}
+        if: ${{ env.NETLIFY_HOOK != '' }}
         run: |
           set -euo pipefail
           echo "Triggering Netlify deploy via hook"
-          curl -fsS -X POST "${{ github.event.inputs.netlify_deploy_hook_url }}" -d '' || true
+          curl -fsS -X POST "$NETLIFY_HOOK" -d '' || true
 
       - name: Esperar health GET /api/health
         run: |
@@ -212,9 +228,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     env:
-      GHCR_IMAGE: ${{ github.event.inputs.ghcr_image || secrets.GHCR_IMAGE || '' }}
-      ECR_REGISTRY: ${{ github.event.inputs.ecr_registry || secrets.AWS_ECR_REGISTRY || '' }}
-      ECR_REPOSITORY: ${{ github.event.inputs.ecr_repository || secrets.AWS_ECR_REPOSITORY || '' }}
+      GHCR_IMAGE: ${{ secrets.GHCR_IMAGE || '' }}
+      ECR_REGISTRY: ${{ secrets.AWS_ECR_REGISTRY || '' }}
+      ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY || '' }}
       AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
     outputs:
       ghcr_ref: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
@@ -290,9 +306,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: push_container_images
     env:
-      KUBE_NAMESPACE: ${{ github.event.inputs.kube_namespace || secrets.KUBE_NAMESPACE || '' }}
-      KUBE_DEPLOYMENT: ${{ github.event.inputs.kube_deployment || secrets.KUBE_DEPLOYMENT || '' }}
-      KUBE_CONTAINER: ${{ github.event.inputs.kube_container || secrets.KUBE_CONTAINER || '' }}
+      KUBE_NAMESPACE: ${{ secrets.KUBE_NAMESPACE || '' }}
+      KUBE_DEPLOYMENT: ${{ secrets.KUBE_DEPLOYMENT || '' }}
+      KUBE_CONTAINER: ${{ secrets.KUBE_CONTAINER || '' }}
       AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
     steps:
       - name: Rollout K8s si está configurado
