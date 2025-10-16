@@ -1,0 +1,23 @@
+-- Rate-limit probe (OPTIONS + repeated HEAD) --
+HTTP/2 204 
+date: Sat, 11 Oct 2025 11:57:42 GMT
+content-type: text/html; charset=utf-8
+access-control-allow-headers: Content-Type, X-FP
+access-control-allow-methods: GET, POST, HEAD, OPTIONS
+access-control-allow-origin: *
+access-control-max-age: 86400
+allow: GET, POST, HEAD, OPTIONS
+content-encoding: br
+rndr-id: 796b61a6-2206-4a3c
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98ce2e71dad56c24-PDX
+alt-svc: h3=":443"; ma=86400
+
+200 
+200 
+200 
+200 
+200 

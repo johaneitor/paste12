@@ -1,0 +1,51 @@
+p12 DEEP REMOTE AUDIT - 20251011-115739Z
+BASE: https://paste12-rmsk.onrender.com
+
+INDEX HTTP: 200
+INDEX flags file: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/fe-flags.txt
+INDEX errors hints: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/fe-index-errors.txt
+
+JS bundle: <none> (fetched status: <none>)
+JS error hints: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/js-suspected-errors.txt
+
+deploy-stamp status: 200 -> /workspace/p12-remote-audit/p12-deep-20251011-115739Z/deploy-stamp.json
+deploy compare: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/deploy-compare.txt
+
+health: 200 -> /workspace/p12-remote-audit/p12-deep-20251011-115739Z/health.json
+GET /api/notes: 200 -> /workspace/p12-remote-audit/p12-deep-20251011-115739Z/api-notes-get.json
+api notes parse: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/api-notes-parse.txt
+
+negatives: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/negatives.txt
+POST probe status: 201 (allowed only if --allow-post)
+post stress: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/post-stress-summary.txt
+rate-limit-probe: /workspace/p12-remote-audit/p12-deep-20251011-115739Z/rate-limit-probe.txt
+
+collected artifacts (up to 10):
+api-notes-get.json
+api-notes-headers.txt
+api-notes-parse.txt
+api-notes-post.json
+assets.txt
+deploy-compare.txt
+deploy-stamp.json
+fe-flags.txt
+fe-index-errors.txt
+health.json
+index-remote-headers.txt
+index-remote.html
+negatives.txt
+neg-like?id=99999999
+neg-post-like
+neg-post-report
+neg-post-view
+neg-report?id=99999999
+neg-view?id=99999999
+post-stress-1.json
+post-stress-2.json
+post-stress-3.json
+post-stress-4.json
+post-stress-5.json
+post-stress-summary.txt
+rate-limit-probe.txt
+remote-errors-found.txt
+summary.txt

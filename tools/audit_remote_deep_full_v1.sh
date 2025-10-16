@@ -72,6 +72,8 @@ echo "[1.c] FE index error hints -> $OUTDIR/fe-index-errors.txt"
 
 # 2) Find main JS bundle (simple heuristics) and fetch it
 echo "-- locating JS bundle --"
+JS_F=""   # ensure defined to avoid set -u issues if not found
+JS_STATUS=""
 SCRIPT_SRC="$(sed -n '1,400p' "$INDEX_F" | tr '\n' ' ' | sed -E 's/</\n</g' | grep -iEo '<script[^>]+>' \
   | grep -iEo 'src=[\"'\''][^\"'\'']+[\"'\'']' | sed -E "s/src=['\"](.*)['\"]/\\1/" \
   | grep -Ei 'app(\.min)?\.js|/js/|main\.[a-z0-9]+\.js' | head -n1 || true)"
@@ -197,7 +199,7 @@ echo "[8] rate-limit probe -> $RL_F"
 # 9) Search for stacktraces or errors across saved artifacts (index, JS, API bodies)
 ERRS_F="$OUTDIR/remote-errors-found.txt"
 : > "$ERRS_F"
-for f in "$INDEX_F" "$JS_F" "$API_GET_F" "$POST_F" "$HEALTH_F" "$DEP_STAMP_F"; do
+for f in "$INDEX_F" "${JS_F:-}" "$API_GET_F" "${POST_F:-}" "$HEALTH_F" "$DEP_STAMP_F"; do
   if [[ -f "$f" ]]; then
     grep -Ein "traceback|exception|error handling request|500 internal server error|patternerror|valueerror|syntaxerror|uncaught|ReferenceError|TypeError" "$f" \
       | sed -n '1,50p' >> "$ERRS_F" || true

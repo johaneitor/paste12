@@ -1,0 +1,12 @@
+HTTP/2 200 
+date: Sat, 11 Oct 2025 11:57:39 GMT
+content-type: text/html; charset=utf-8
+cache-control: no-store
+rndr-id: bc917e6d-c91e-4e02
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98ce2e6419f15509-PDX
+alt-svc: h3=":443"; ma=86400
+

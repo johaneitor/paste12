@@ -1,0 +1,43 @@
+p12 DEEP REMOTE AUDIT - 20251011-105635Z
+BASE: https://paste12-rmsk.onrender.com
+
+INDEX HTTP: 200
+INDEX flags file: /workspace/p12-remote-audit/p12-deep-20251011-105635Z/fe-flags.txt
+INDEX errors hints: /workspace/p12-remote-audit/p12-deep-20251011-105635Z/fe-index-errors.txt
+
+JS bundle: <none> (fetched status: <none>)
+JS error hints: /workspace/p12-remote-audit/p12-deep-20251011-105635Z/js-suspected-errors.txt
+
+deploy-stamp status: 200 -> /workspace/p12-remote-audit/p12-deep-20251011-105635Z/deploy-stamp.json
+deploy compare: /workspace/p12-remote-audit/p12-deep-20251011-105635Z/deploy-compare.txt
+
+health: 200 -> /workspace/p12-remote-audit/p12-deep-20251011-105635Z/health.json
+GET /api/notes: 200 -> /workspace/p12-remote-audit/p12-deep-20251011-105635Z/api-notes-get.json
+api notes parse: /workspace/p12-remote-audit/p12-deep-20251011-105635Z/api-notes-parse.txt
+
+negatives: /workspace/p12-remote-audit/p12-deep-20251011-105635Z/negatives.txt
+POST probe status: SKIP (allowed only if --allow-post)
+rate-limit-probe: /workspace/p12-remote-audit/p12-deep-20251011-105635Z/rate-limit-probe.txt
+
+collected artifacts (up to 10):
+api-notes-get.json
+api-notes-headers.txt
+api-notes-parse.txt
+assets.txt
+deploy-compare.txt
+deploy-stamp.json
+fe-flags.txt
+fe-index-errors.txt
+health.json
+index-remote-headers.txt
+index-remote.html
+negatives.txt
+neg-like?id=99999999
+neg-post-like
+neg-post-report
+neg-post-view
+neg-report?id=99999999
+neg-view?id=99999999
+rate-limit-probe.txt
+remote-errors-found.txt
+summary.txt

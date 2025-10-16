@@ -1,0 +1,3 @@
+index.commit: name="p12-commit" content="a441309800a4c9f39f40e18cf0b230188f80e5da"
+deploy-stamp.commit: <none>
+WARN: mismatch or missing commits
