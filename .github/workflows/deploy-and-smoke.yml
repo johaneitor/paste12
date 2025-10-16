@@ -58,6 +58,10 @@ on:
       - master
       - "release/**"
 
+concurrency:
+  group: deploy-and-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   packages: write
