@@ -1,0 +1,325 @@
+name: Deploy and Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL del entorno (ej: https://app.onrender.com)"
+        required: false
+        default: "https://paste12-rmsk.onrender.com"
+      deploy_hook_url:
+        description: "Render Deploy Hook URL (opcional)"
+        required: false
+        default: ""
+      cloudflare_zone_id:
+        description: "Cloudflare Zone ID (opcional)"
+        required: false
+        default: ""
+      purge_paths:
+        description: "Rutas a purgar (coma-separadas)"
+        required: false
+        default: "/,/js/app.js,/css/styles.css"
+      vercel_deploy_hook_url:
+        description: "Vercel Deploy Hook URL (opcional)"
+        required: false
+        default: ""
+      netlify_deploy_hook_url:
+        description: "Netlify Deploy Hook URL (opcional)"
+        required: false
+        default: ""
+      ghcr_image:
+        description: "Imagen GHCR (ej: ghcr.io/owner/app)"
+        required: false
+        default: ""
+      ecr_registry:
+        description: "AWS ECR registry (ej: 123.dkr.ecr.us-east-1.amazonaws.com)"
+        required: false
+        default: ""
+      ecr_repository:
+        description: "AWS ECR repository (ej: myapp)"
+        required: false
+        default: ""
+      kube_namespace:
+        description: "K8s namespace para rollout (opcional)"
+        required: false
+        default: ""
+      kube_deployment:
+        description: "K8s deployment name para rollout (opcional)"
+        required: false
+        default: ""
+      kube_container:
+        description: "K8s container name dentro del deployment (opcional)"
+        required: false
+        default: ""
+
+  push:
+    branches:
+      - main
+      - master
+      - "release/**"
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build Docker (buildx, no push)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: local/build:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy_and_smoke:
+    name: Deploy, Health, Purge, Smokes
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      BASE_URL: ${{ inputs.base_url || secrets.BASE_URL || 'https://paste12-rmsk.onrender.com' }}
+      DEPLOY_HOOK_URL: ${{ inputs.deploy_hook_url || secrets.RENDER_DEPLOY_HOOK || '' }}
+      CF_ZONE_ID: ${{ inputs.cloudflare_zone_id || secrets.CF_ZONE_ID || '' }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN || '' }}
+      PURGE_PATHS: ${{ inputs.purge_paths || '/,/js/app.js,/css/styles.css' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar deps necesarias (jq, curl)
+        run: sudo apt-get update && sudo apt-get install -y jq curl
+
+      - name: Asegurar python está accesible
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y python3 || true
+          if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+            sudo ln -sf "$(command -v python3)" /usr/bin/python
+          fi
+
+      - name: Derivar variables base
+        env:
+          IN_BASE: ${{ inputs.base_url }}
+          SEC_BASE: ${{ secrets.BASE_URL }}
+          IN_PURGE: ${{ inputs.purge_paths }}
+          IN_RENDER_HOOK: ${{ inputs.deploy_hook_url }}
+          SEC_RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+          base="${IN_BASE:-}"
+          if [ -z "$base" ]; then base="${SEC_BASE:-}"; fi
+          if [ -z "$base" ]; then base="https://paste12-rmsk.onrender.com"; fi
+          echo "BASE_URL=$base" >> "$GITHUB_ENV"
+          purge="${IN_PURGE:-}"
+          if [ -z "$purge" ]; then purge="/,/js/app.js,/css/styles.css"; fi
+          echo "PURGE_PATHS=$purge" >> "$GITHUB_ENV"
+          dh="${IN_RENDER_HOOK:-}"
+          if [ -z "$dh" ]; then dh="${SEC_RENDER_HOOK:-}"; fi
+          echo "DEPLOY_HOOK_URL=$dh" >> "$GITHUB_ENV"
+
+      - name: Trigger deploy (Render deploy hook si está configurado)
+        if: env.DEPLOY_HOOK_URL != ''
+        run: |
+          set -euo pipefail
+          echo "Triggering deploy via hook: $DEPLOY_HOOK_URL"
+          curl -fsS -X POST "$DEPLOY_HOOK_URL" -d '' || true
+
+      - name: Trigger deploy (Vercel hook si está configurado)
+        if: ${{ inputs.vercel_deploy_hook_url != '' }}
+        run: |
+          set -euo pipefail
+          echo "Triggering Vercel deploy via hook"
+          curl -fsS -X POST "${{ inputs.vercel_deploy_hook_url }}" -d '' || true
+
+      - name: Trigger deploy (Netlify hook si está configurado)
+        if: ${{ inputs.netlify_deploy_hook_url != '' }}
+        run: |
+          set -euo pipefail
+          echo "Triggering Netlify deploy via hook"
+          curl -fsS -X POST "${{ inputs.netlify_deploy_hook_url }}" -d '' || true
+
+      - name: Esperar health GET /api/health
+        run: |
+          set -euo pipefail
+          echo "Esperando salud en: $BASE_URL/api/health"
+          tools/verify_boot_after_deploy_v1.sh "$BASE_URL" "/tmp"
+
+      - name: Purge Cloudflare (HTML y assets)
+        if: env.CF_ZONE_ID != '' && env.CF_API_TOKEN != ''
+        env:
+          ZONE_ID: ${{ env.CF_ZONE_ID }}
+          TOKEN: ${{ env.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra paths <<< "${PURGE_PATHS}"
+          payload=$(jq -nc --arg base "$BASE_URL" --argjson p "$(printf '%s\n' "${paths[@]}" | jq -R . | jq -s .)" '{files: ($p | map($base + .))}')
+          echo "Purging: $payload"
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+            --data "$payload"
+
+      - name: Ejecutar smokes (run_smoke_now_v3)
+        run: |
+          set -euo pipefail
+          chmod +x tools/run_smoke_now_v3.sh || true
+          mkdir -p e2e-artifacts
+          tools/run_smoke_now_v3.sh "$BASE_URL" "$(pwd)/e2e-artifacts"
+
+      - name: Ejecutar smoke_api end-to-end
+        run: |
+          set -euo pipefail
+          chmod +x tools/smoke_api.sh
+          tools/smoke_api.sh "$BASE_URL"
+
+      - name: Ejecutar smokes opcionales (no bloqueantes)
+        run: |
+          set -euo pipefail
+          if [[ -x tools/smoke_index_integrity.sh ]]; then tools/smoke_index_integrity.sh "$BASE_URL" || echo "[warn] smoke_index_integrity falló"; fi
+          if [[ -x tools/smoke_pagination_and_buttons.sh ]]; then tools/smoke_pagination_and_buttons.sh "$BASE_URL" || echo "[warn] smoke_pagination_and_buttons falló"; fi
+          true
+
+      - name: Publicar artefactos (capturas y logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-artifacts
+          path: |
+            e2e-artifacts
+            /tmp/boot-health-*.log
+            /tmp/*.json
+
+  push_container_images:
+    name: Push container images (GHCR/ECR)
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      GHCR_IMAGE: ${{ inputs.ghcr_image || secrets.GHCR_IMAGE || '' }}
+      ECR_REGISTRY: ${{ inputs.ecr_registry || secrets.AWS_ECR_REGISTRY || '' }}
+      ECR_REPOSITORY: ${{ inputs.ecr_repository || secrets.AWS_ECR_REPOSITORY || '' }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+    outputs:
+      ghcr_ref: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
+      ecr_ref: ${{ steps.meta_ecr.outputs.ecr_ref }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute metadata (GHCR)
+        id: meta_ghcr
+        if: env.GHCR_IMAGE != ''
+        run: |
+          sha_short="${GITHUB_SHA::7}"
+          echo "ghcr_ref=${GHCR_IMAGE}:sha-${sha_short}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        if: env.GHCR_IMAGE != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push to GHCR
+        if: env.GHCR_IMAGE != ''
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Configure AWS credentials
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Compute metadata (ECR)
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        id: meta_ecr
+        run: |
+          sha_short="${GITHUB_SHA::7}"
+          echo "ecr_ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:sha-${sha_short}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push to ECR
+        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta_ecr.outputs.ecr_ref }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  rollout:
+    name: Rollout por CLI (K8s/ECS)
+    runs-on: ubuntu-latest
+    needs: push_container_images
+    env:
+      KUBE_NAMESPACE: ${{ inputs.kube_namespace || secrets.KUBE_NAMESPACE || '' }}
+      KUBE_DEPLOYMENT: ${{ inputs.kube_deployment || secrets.KUBE_DEPLOYMENT || '' }}
+      KUBE_CONTAINER: ${{ inputs.kube_container || secrets.KUBE_CONTAINER || '' }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+    steps:
+      - name: Rollout K8s si está configurado
+        if: env.KUBE_DEPLOYMENT != '' && env.KUBE_CONTAINER != '' && (needs.push_container_images.outputs.ghcr_ref != '' || needs.push_container_images.outputs.ecr_ref != '')
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.27.3'
+
+      - name: Aplicar rollout K8s
+        if: env.KUBE_DEPLOYMENT != '' && env.KUBE_CONTAINER != '' && (needs.push_container_images.outputs.ghcr_ref != '' || needs.push_container_images.outputs.ecr_ref != '')
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          set -euo pipefail
+          echo "$KUBECONFIG_B64" | base64 -d > kubeconfig
+          export KUBECONFIG="$PWD/kubeconfig"
+          IMAGE_REF="${{ needs.push_container_images.outputs.ghcr_ref || needs.push_container_images.outputs.ecr_ref }}"
+          ns="${KUBE_NAMESPACE:-default}"
+          kubectl -n "$ns" set image deployment/"$KUBE_DEPLOYMENT" "$KUBE_CONTAINER"="$IMAGE_REF"
+          kubectl -n "$ns" rollout status deployment/"$KUBE_DEPLOYMENT" --timeout=5m
+
+      - name: Rollout ECS si está configurado
+        if: ${{ secrets.ECS_CLUSTER != '' && secrets.ECS_SERVICE != '' }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update && sudo apt-get install -y awscli
+          aws configure set default.region "$AWS_REGION"
+          aws ecs update-service --cluster "${{ secrets.ECS_CLUSTER }}" --service "${{ secrets.ECS_SERVICE }}" --force-new-deployment
+          aws ecs wait services-stable --cluster "${{ secrets.ECS_CLUSTER }}" --services "${{ secrets.ECS_SERVICE }}"
+
