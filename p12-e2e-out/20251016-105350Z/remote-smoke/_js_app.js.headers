@@ -1,0 +1,15 @@
+HTTP/2 200 
+date: Thu, 16 Oct 2025 10:53:51 GMT
+content-type: text/javascript; charset=utf-8
+cache-control: no-cache
+content-disposition: inline; filename=app.js
+etag: W/"1760566011.0-10021-3782283996"
+last-modified: Wed, 15 Oct 2025 22:06:51 GMT
+rndr-id: 42581fcc-4554-4fd2
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98f703c93e50bdc9-CMH
+alt-svc: h3=":443"; ma=86400
+

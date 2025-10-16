@@ -1,0 +1,15 @@
+HTTP/2 200 
+date: Thu, 16 Oct 2025 10:53:51 GMT
+content-type: text/css; charset=utf-8
+cache-control: no-cache
+content-disposition: inline; filename=styles.css
+etag: W/"1760566011.0-3076-1212224791"
+last-modified: Wed, 15 Oct 2025 22:06:51 GMT
+rndr-id: 2b227e00-e5e5-48eb
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98f703ca3921227c-CMH
+alt-svc: h3=":443"; ma=86400
+
