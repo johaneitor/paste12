@@ -70,10 +70,9 @@ def register_into(app):
         fp = _get_fp(request)
         now = _now()
         with _engine().begin() as cx:
-            # Asegura tablas mínimas si faltan (no rompe si existen)
+            # Asegura tablas mínimas si faltan (dialecto-agnóstico)
             cx.execute(sa.text("""
                 CREATE TABLE IF NOT EXISTS like_log(
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                   note_id INTEGER NOT NULL,
                   fingerprint VARCHAR(128) NOT NULL,
                   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -103,7 +102,6 @@ def register_into(app):
         with _engine().begin() as cx:
             cx.execute(sa.text("""
                 CREATE TABLE IF NOT EXISTS view_log(
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                   note_id INTEGER NOT NULL,
                   fingerprint VARCHAR(128) NOT NULL,
                   day TEXT NOT NULL,
@@ -134,7 +132,6 @@ def register_into(app):
         with _engine().begin() as cx:
             cx.execute(sa.text("""
                 CREATE TABLE IF NOT EXISTS report_log(
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                   note_id INTEGER NOT NULL,
                   fingerprint VARCHAR(128) NOT NULL,
                   reason TEXT,
