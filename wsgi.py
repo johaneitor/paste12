@@ -85,6 +85,19 @@ def _wrap_with_index_middleware(app):
                 ("Cache-Control", "no-store"),
                 ("Content-Length", str(len(body))),
             ]
+            # Apply security headers here as the WSGI wrapper bypasses Flask's
+            # after_request hooks. This keeps behavior consistent with
+            # backend factory when P12_SECURE_HEADERS is enabled.
+            try:
+                if os.environ.get("P12_SECURE_HEADERS", "0") == "1":
+                    headers.extend([
+                        ("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload"),
+                        ("X-Frame-Options", "DENY"),
+                        ("X-Content-Type-Options", "nosniff"),
+                        ("Referrer-Policy", "no-referrer"),
+                    ])
+            except Exception:
+                pass
             start_response("200 OK", headers)
             return [body]
         return app(environ, start_response)
