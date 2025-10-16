@@ -315,11 +315,14 @@ jobs:
           kubectl -n "$ns" rollout status deployment/"$KUBE_DEPLOYMENT" --timeout=5m
 
       - name: Rollout ECS si está configurado
-        if: ${{ secrets.ECS_CLUSTER != '' && secrets.ECS_SERVICE != '' }}
+        env:
+          ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+        if: ${{ env.ECS_CLUSTER != '' && env.ECS_SERVICE != '' }}
         run: |
           set -euo pipefail
           sudo apt-get update && sudo apt-get install -y awscli
           aws configure set default.region "$AWS_REGION"
-          aws ecs update-service --cluster "${{ secrets.ECS_CLUSTER }}" --service "${{ secrets.ECS_SERVICE }}" --force-new-deployment
-          aws ecs wait services-stable --cluster "${{ secrets.ECS_CLUSTER }}" --services "${{ secrets.ECS_SERVICE }}"
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --force-new-deployment
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
 

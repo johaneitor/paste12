@@ -24,6 +24,14 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+      BASE_URL_PROD: ${{ secrets.BASE_URL_PROD }}
+      BASE_URL_STAGING: ${{ secrets.BASE_URL_STAGING }}
+      RENDER_DEPLOY_HOOK_PROD: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+      RENDER_DEPLOY_HOOK_STAGING: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,12 +43,12 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR (optional)
-        if: ${{ secrets.GHCR_TOKEN != '' }}
+        if: ${{ env.GHCR_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          password: ${{ env.GHCR_TOKEN }}
 
       - name: Build image
         uses: docker/build-push-action@v6
@@ -59,9 +67,9 @@ jobs:
           base="${{ github.event.inputs.base_url || '' }}"
           if [[ -z "$base" ]]; then
             if [[ "$env_target" == "prod" || "$env_target" == "production" ]]; then
-              base="${{ secrets.BASE_URL_PROD }}"
+              base="${BASE_URL_PROD:-}"
             else
-              base="${{ secrets.BASE_URL_STAGING }}"
+              base="${BASE_URL_STAGING:-}"
             fi
           fi
           if [[ -z "$base" ]]; then
@@ -70,9 +78,9 @@ jobs:
           fi
           # Render deploy hook (optional)
           if [[ "$env_target" == "prod" || "$env_target" == "production" ]]; then
-            hook="${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
+            hook="${RENDER_DEPLOY_HOOK_PROD:-}"
           else
-            hook="${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}"
+            hook="${RENDER_DEPLOY_HOOK_STAGING:-}"
           fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "hook=$hook" >> "$GITHUB_OUTPUT"
@@ -102,15 +110,15 @@ jobs:
           done
 
       - name: Purge CDN cache (Cloudflare optional)
-        if: ${{ secrets.CF_API_TOKEN != '' && secrets.CF_ZONE_ID != '' }}
+        if: ${{ env.CF_API_TOKEN != '' && env.CF_ZONE_ID != '' }}
         shell: bash
         run: |
           set -euo pipefail
           base="${{ steps.cfg.outputs.base }}"
           files=("$base/" "$base/index.html" "$base/js/app.js" "$base/js/actions.js" "$base/css/actions.css")
           body=$(printf '{"files":[%s]}' "$(printf '"%s",' "${files[@]}" | sed 's/,$//')")
-          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
-               -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${{ env.CF_ZONE_ID }}/purge_cache" \
+               -H "Authorization: Bearer ${{ env.CF_API_TOKEN }}" \
                -H 'Content-Type: application/json' \
                --data "$body" -o /tmp/cf.json
           echo "CF purge response:"; head -c 400 /tmp/cf.json || true
