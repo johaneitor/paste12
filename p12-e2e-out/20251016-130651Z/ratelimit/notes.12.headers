@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+Server: gunicorn
+Date: Thu, 16 Oct 2025 13:06:51 GMT
+Connection: close
+Content-Type: application/json
+Content-Length: 192
+Link: <http://127.0.0.1:8000/api/notes?limit=1&before_id=4>; rel="next"
+Access-Control-Allow-Origin: *
+
