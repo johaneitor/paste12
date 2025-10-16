@@ -52,7 +52,11 @@ on:
         required: false
         default: ""
 
-  # push disabled temporarily to stabilize workflow
+  push:
+    branches:
+      - main
+      - master
+      - "release/**"
 
 permissions:
   contents: read
