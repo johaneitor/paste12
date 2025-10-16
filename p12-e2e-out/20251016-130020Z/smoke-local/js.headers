@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Server: gunicorn
+Date: Thu, 16 Oct 2025 13:00:20 GMT
+Connection: close
+Content-Disposition: inline; filename=app.js
+Content-Type: text/javascript; charset=utf-8
+Content-Length: 10021
+Last-Modified: Thu, 16 Oct 2025 10:44:36 GMT
+Cache-Control: no-cache
+ETag: "1760611476.2898157-10021-221580812"
+

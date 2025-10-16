@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+Server: gunicorn
+Date: Thu, 16 Oct 2025 13:00:20 GMT
+Connection: close
+Content-Type: application/json
+Content-Length: 60
+Cache-Control: no-store
+Access-Control-Allow-Origin: *
+
