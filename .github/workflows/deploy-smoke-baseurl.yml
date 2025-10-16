@@ -1,0 +1,70 @@
+name: Deploy and Smoke (BASE_URL only)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y jq curl
+
+      - name: Verify BASE_URL
+        run: |
+          set -euo pipefail
+          if [ -z "${BASE_URL:-}" ]; then echo "BASE_URL secret not set" >&2; exit 2; fi
+          echo "Using BASE_URL=$BASE_URL"
+
+      - name: Wait for health
+        run: |
+          set -euo pipefail
+          echo "Waiting for $BASE_URL/api/health ..."
+          tools/verify_boot_after_deploy_v1.sh "$BASE_URL" "/tmp"
+
+      - name: Purge Cloudflare (optional)
+        if: ${{ env.CF_ZONE_ID != '' && env.CF_API_TOKEN != '' }}
+        env:
+          ZONE_ID: ${{ env.CF_ZONE_ID }}
+          TOKEN: ${{ env.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          payload='{ "purge_everything": true }'
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
+            --data "$payload" || true
+
+      - name: Run smokes
+        run: |
+          set -euo pipefail
+          chmod +x tools/run_smoke_now_v3.sh || true
+          mkdir -p e2e-artifacts
+          tools/run_smoke_now_v3.sh "$BASE_URL" "$(pwd)/e2e-artifacts" || true
+          chmod +x tools/smoke_api.sh
+          set +e
+          tools/smoke_api.sh "$BASE_URL" > e2e-artifacts/smoke_api.txt 2>&1
+          rc=$?
+          set -e
+          echo "api_rc=$rc" >> $GITHUB_OUTPUT
+          [ "$rc" -eq 0 ] || echo "Smoke API failed with code $rc" >&2
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-artifacts
+          path: e2e-artifacts
+
+      - name: Fail if API smoke failed
+        if: ${{ steps.smoke.outputs.api_rc != '0' }}
+        run: |
+          echo "API smoke failed" >&2
+          exit 1
