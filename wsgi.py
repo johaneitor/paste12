@@ -21,6 +21,7 @@ def _guess_commit() -> str:
 def _read_index_text() -> str:
     root = os.path.dirname(os.path.abspath(__file__))
     candidates = [
+        os.path.join(root, "backend", "frontend", "index.html"),
         os.path.join(root, "backend", "static", "index.html"),
         os.path.join(root, "public", "index.html"),
         os.path.join(root, "frontend", "index.html"),
