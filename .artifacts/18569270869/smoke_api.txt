@@ -1,0 +1,81 @@
+== smoke_api @ https://paste12-rmsk.onrender.com ==
+
+-- GET /api/health --
+status:200
+{
+    "api": true,
+    "ok": true,
+    "status": "ok",
+    "ver": "factory-min-v1"
+}
+
+-- GET /__api_import_error (esperado 404) --
+status:404
+
+-- GET /__whoami (blueprint 'api' y rutas detalle) --
+status:404
+<!doctype html>
+<html lang=en>
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+
+WARN /__whoami no disponible (continuo)
+
+-- GET /api/_routes (debe listar endpoints de notas) --
+status:404
+{
+    "error": "not_found"
+}
+WARN /api/_routes no disponible (continuo)
+
+-- POST /api/notes (crear) --
+status:201
+{
+    "author_fp": "d7894ed7f914fac80691e8f1b64b4c32",
+    "expires_at": "2025-10-17T17:16:44.972711",
+    "id": 689,
+    "likes": 0,
+    "reports": 0,
+    "text": "smoke 2025-10-16T17:16:44Z",
+    "timestamp": "2025-10-16T17:16:44.972711",
+    "views": 0
+}
+ID=689
+
+-- POST /api/notes/689/view --
+status:500
+<!doctype html>
+<html lang=en>
+<title>500 Internal Server Error</title>
+<h1>Internal Server Error</h1>
+<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>
+
+WARN /view !=200 (ok si silente)
+
+-- POST /api/notes/689/like --
+status:500
+<!doctype html>
+<html lang=en>
+<title>500 Internal Server Error</title>
+<h1>Internal Server Error</h1>
+<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>
+
+WARN /like !=200
+
+-- POST /api/notes/689/report --
+status:500
+<!doctype html>
+<html lang=en>
+<title>500 Internal Server Error</title>
+<h1>Internal Server Error</h1>
+<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>
+
+WARN /report !=200
+
+-- GET /api/notes/689 (ver contadores) --
+status:404
+{
+    "error": "not_found"
+}
+FAIL get nota individual

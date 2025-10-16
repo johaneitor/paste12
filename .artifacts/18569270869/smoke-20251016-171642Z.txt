@@ -1,0 +1,74 @@
+== SMOKE 20251016-171642Z ==
+BASE: https://paste12-rmsk.onrender.com
+
+-- /api/health --
+{"api":true,"ok":true,"status":"ok","ver":"factory-min-v1"}
+
+
+-- OPTIONS /api/notes --
+HTTP/2 200 
+date: Thu, 16 Oct 2025 17:16:42 GMT
+content-type: text/html; charset=utf-8
+access-control-allow-origin: *
+allow: OPTIONS, POST, GET, HEAD
+rndr-id: fce1a31c-4452-4bc4
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98f9349e1b366200-ORD
+alt-svc: h3=":443"; ma=86400
+
+
+-- GET /api/notes (headers) --
+HTTP/2 200 
+date: Thu, 16 Oct 2025 17:16:43 GMT
+content-type: application/json
+access-control-allow-origin: *
+link: <https://paste12-rmsk.onrender.com/api/notes?limit=10&before_id=679>; rel="next"
+rndr-id: e34f327d-9d2f-4f7d
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98f934a06ad10262-ORD
+alt-svc: h3=":443"; ma=86400
+
+
+-- GET /api/notes (body, prefix) --
+[{"author_fp":"ad092e0850663606c4ad513fbbfaf50a","expires_at":"2025-10-14T23:55:36.455728","id":688,"likes":0,"reports":0,"text":"smoke 1760399736","timestamp":"2025-10-13T23:55:36.455728","views":0},{"author_fp":"b24101ba883f9ac53c5440115e07af29","expires
+
+-- GET / (headers) --
+HTTP/2 200 
+date: Thu, 16 Oct 2025 17:16:43 GMT
+content-type: text/html; charset=utf-8
+cache-control: no-store
+rndr-id: df6d9133-eb21-4abb
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98f934a29f39f81d-DFW
+alt-svc: h3=":443"; ma=86400
+
+
+-- GET / (html, prefix) --
+<!doctype html><html><head>
+<meta name="p12-safe-shim" content="1" />
+
+<meta name="p12-commit" content="974d296f6d90354b2b3a8bae6c3981b8443bf62d" />
+</head><body>
+<ul id="notes-list"></ul> data-single="1">paste12  <script src="/js/app.js" defer></script>
+</body></html>
+-- js headers --
+
+Archivos:
+  /home/runner/work/paste12/paste12/e2e-artifacts/health-20251016-171642Z.json
+  /home/runner/work/paste12/paste12/e2e-artifacts/options-20251016-171642Z.txt
+  /home/runner/work/paste12/paste12/e2e-artifacts/api-notes-h-20251016-171642Z.txt
+  /home/runner/work/paste12/paste12/e2e-artifacts/api-notes-20251016-171642Z.json
+  /home/runner/work/paste12/paste12/e2e-artifacts/index-headers-20251016-171642Z.txt
+  /home/runner/work/paste12/paste12/e2e-artifacts/index-20251016-171642Z.html
+  /home/runner/work/paste12/paste12/e2e-artifacts/jsapp.js.headers-20251016-171642Z.txt
+  /home/runner/work/paste12/paste12/e2e-artifacts/cssstyles.css.headers-20251016-171642Z.txt
+== END ==
