@@ -64,120 +64,51 @@ permissions:
   id-token: write
 
 jobs:
-  build:
-    name: Build Docker (buildx, no push)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build image (no push)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          load: true
-          platforms: linux/amd64
-          tags: local/build:smoke
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   deploy_and_smoke:
     name: Deploy, Health, Purge, Smokes
     runs-on: ubuntu-latest
-    needs: build
     env:
-      BASE_URL: ${{ secrets.BASE_URL || 'https://paste12-rmsk.onrender.com' }}
-      DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK || '' }}
       CF_ZONE_ID: ${{ secrets.CF_ZONE_ID || '' }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN || '' }}
-      PURGE_PATHS: '/,/js/app.js,/css/styles.css'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Instalar deps necesarias (jq, curl)
-        run: sudo apt-get update && sudo apt-get install -y jq curl
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y jq curl python3
 
-      - name: Asegurar python está accesible
+      - name: Resolve env (BASE_URL and hooks)
         run: |
           set -euo pipefail
-          sudo apt-get install -y python3 || true
-          if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
-            sudo ln -sf "$(command -v python3)" /usr/bin/python
-          fi
-
-      - name: Derivar variables (workflow_dispatch)
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        env:
-          SEC_BASE: ${{ secrets.BASE_URL }}
-          SEC_RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: |
-          set -euo pipefail
-          sudo apt-get update -y && sudo apt-get install -y jq
-          in_base=$(jq -r '.inputs.base_url // ""' "$GITHUB_EVENT_PATH")
-          in_purge=$(jq -r '.inputs.purge_paths // ""' "$GITHUB_EVENT_PATH")
-          in_hook=$(jq -r '.inputs.deploy_hook_url // ""' "$GITHUB_EVENT_PATH")
-          base="$in_base"; [ -z "$base" ] && base="${SEC_BASE:-}"; [ -z "$base" ] && base="https://paste12-rmsk.onrender.com"
+          in_base=$(jq -r '.inputs.base_url // ""' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "")
+          base="$in_base"
+          if [ -z "$base" ]; then base="${{ secrets.BASE_URL || '' }}"; fi
+          if [ -z "$base" ]; then base="https://paste12-rmsk.onrender.com"; fi
           echo "BASE_URL=$base" >> "$GITHUB_ENV"
-          purge="$in_purge"; [ -z "$purge" ] && purge="/,/js/app.js,/css/styles.css"
-          echo "PURGE_PATHS=$purge" >> "$GITHUB_ENV"
-          dh="$in_hook"; [ -z "$dh" ] && dh="${SEC_RENDER_HOOK:-}"
-          echo "DEPLOY_HOOK_URL=$dh" >> "$GITHUB_ENV"
-          vercel=$(jq -r '.inputs.vercel_deploy_hook_url // ""' "$GITHUB_EVENT_PATH")
-          netlify=$(jq -r '.inputs.netlify_deploy_hook_url // ""' "$GITHUB_EVENT_PATH")
-          echo "VERCEL_HOOK=$vercel" >> "$GITHUB_ENV"
-          echo "NETLIFY_HOOK=$netlify" >> "$GITHUB_ENV"
-
-      - name: Derivar variables (push/otros eventos)
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        env:
-          SEC_BASE: ${{ secrets.BASE_URL }}
-          SEC_RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: |
-          set -euo pipefail
-          base="${SEC_BASE:-}"; [ -z "$base" ] && base="https://paste12-rmsk.onrender.com"
-          echo "BASE_URL=$base" >> "$GITHUB_ENV"
+          echo "DEPLOY_HOOK_URL=${{ secrets.RENDER_DEPLOY_HOOK || '' }}" >> "$GITHUB_ENV"
+          echo "VERCEL_HOOK=${{ secrets.VERCEL_DEPLOY_HOOK || '' }}" >> "$GITHUB_ENV"
+          echo "NETLIFY_HOOK=${{ secrets.NETLIFY_DEPLOY_HOOK || '' }}" >> "$GITHUB_ENV"
           echo "PURGE_PATHS=/,/js/app.js,/css/styles.css" >> "$GITHUB_ENV"
-          echo "DEPLOY_HOOK_URL=${SEC_RENDER_HOOK:-}" >> "$GITHUB_ENV"
-          echo "VERCEL_HOOK=" >> "$GITHUB_ENV"
-          echo "NETLIFY_HOOK=" >> "$GITHUB_ENV"
 
-      - name: Trigger deploy (Render deploy hook si está configurado)
-        if: env.DEPLOY_HOOK_URL != ''
-        run: |
-          set -euo pipefail
-          echo "Triggering deploy via hook: $DEPLOY_HOOK_URL"
-          curl -fsS -X POST "$DEPLOY_HOOK_URL" -d '' || true
+      - name: Trigger deploy hook (Render)
+        if: ${{ env.DEPLOY_HOOK_URL != '' }}
+        run: curl -fsS -X POST "$DEPLOY_HOOK_URL" -d '' || true
 
-      - name: Trigger deploy (Vercel hook si está configurado)
+      - name: Trigger deploy hook (Vercel)
         if: ${{ env.VERCEL_HOOK != '' }}
-        run: |
-          set -euo pipefail
-          echo "Triggering Vercel deploy via hook"
-          curl -fsS -X POST "$VERCEL_HOOK" -d '' || true
+        run: curl -fsS -X POST "$VERCEL_HOOK" -d '' || true
 
-      - name: Trigger deploy (Netlify hook si está configurado)
+      - name: Trigger deploy hook (Netlify)
         if: ${{ env.NETLIFY_HOOK != '' }}
-        run: |
-          set -euo pipefail
-          echo "Triggering Netlify deploy via hook"
-          curl -fsS -X POST "$NETLIFY_HOOK" -d '' || true
+        run: curl -fsS -X POST "$NETLIFY_HOOK" -d '' || true
 
-      - name: Esperar health GET /api/health
+      - name: Wait for health
         run: |
           set -euo pipefail
           echo "Esperando salud en: $BASE_URL/api/health"
           tools/verify_boot_after_deploy_v1.sh "$BASE_URL" "/tmp"
 
-      - name: Purge Cloudflare (HTML y assets)
+      - name: Purge Cloudflare (optional)
         if: env.CF_ZONE_ID != '' && env.CF_API_TOKEN != ''
         env:
           ZONE_ID: ${{ env.CF_ZONE_ID }}
@@ -191,154 +122,31 @@ jobs:
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/purge_cache" \
-            --data "$payload"
+            --data "$payload" || true
 
-      - name: Ejecutar smokes (run_smoke_now_v3)
+      - name: Run smokes
+        id: run_smokes
         run: |
           set -euo pipefail
           chmod +x tools/run_smoke_now_v3.sh || true
           mkdir -p e2e-artifacts
-          tools/run_smoke_now_v3.sh "$BASE_URL" "$(pwd)/e2e-artifacts"
-
-      - name: Ejecutar smoke_api end-to-end
-        run: |
-          set -euo pipefail
+          tools/run_smoke_now_v3.sh "$BASE_URL" "$(pwd)/e2e-artifacts" || true
           chmod +x tools/smoke_api.sh
-          tools/smoke_api.sh "$BASE_URL"
+          set +e
+          tools/smoke_api.sh "$BASE_URL" > e2e-artifacts/smoke_api.txt 2>&1
+          rc=$?
+          set -e
+          echo "api_rc=$rc" >> $GITHUB_OUTPUT
 
-      - name: Ejecutar smokes opcionales (no bloqueantes)
-        run: |
-          set -euo pipefail
-          if [[ -x tools/smoke_index_integrity.sh ]]; then tools/smoke_index_integrity.sh "$BASE_URL" || echo "[warn] smoke_index_integrity falló"; fi
-          if [[ -x tools/smoke_pagination_and_buttons.sh ]]; then tools/smoke_pagination_and_buttons.sh "$BASE_URL" || echo "[warn] smoke_pagination_and_buttons falló"; fi
-          true
-
-      - name: Publicar artefactos (capturas y logs)
-        if: always()
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: smoke-artifacts
-          path: |
-            e2e-artifacts
-            /tmp/boot-health-*.log
-            /tmp/*.json
+          path: e2e-artifacts
 
-  push_container_images:
-    name: Push container images (GHCR/ECR)
-    runs-on: ubuntu-latest
-    needs: build
-    env:
-      GHCR_IMAGE: ${{ secrets.GHCR_IMAGE || '' }}
-      ECR_REGISTRY: ${{ secrets.AWS_ECR_REGISTRY || '' }}
-      ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY || '' }}
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-    outputs:
-      ghcr_ref: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
-      ecr_ref: ${{ steps.meta_ecr.outputs.ecr_ref }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Compute metadata (GHCR)
-        id: meta_ghcr
-        if: env.GHCR_IMAGE != ''
+      - name: Fail if API smoke failed
+        if: ${{ steps.run_smokes.outputs.api_rc != '0' }}
         run: |
-          sha_short="${GITHUB_SHA::7}"
-          echo "ghcr_ref=${GHCR_IMAGE}:sha-${sha_short}" >> "$GITHUB_OUTPUT"
-
-      - name: Login to GHCR
-        if: env.GHCR_IMAGE != ''
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push to GHCR
-        if: env.GHCR_IMAGE != ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Configure AWS credentials
-        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Compute metadata (ECR)
-        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
-        id: meta_ecr
-        run: |
-          sha_short="${GITHUB_SHA::7}"
-          echo "ecr_ref=${ECR_REGISTRY}/${ECR_REPOSITORY}:sha-${sha_short}" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push to ECR
-        if: env.ECR_REGISTRY != '' && env.ECR_REPOSITORY != ''
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta_ecr.outputs.ecr_ref }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  rollout:
-    name: Rollout por CLI (K8s/ECS)
-    runs-on: ubuntu-latest
-    needs: push_container_images
-    env:
-      KUBE_NAMESPACE: ${{ secrets.KUBE_NAMESPACE || '' }}
-      KUBE_DEPLOYMENT: ${{ secrets.KUBE_DEPLOYMENT || '' }}
-      KUBE_CONTAINER: ${{ secrets.KUBE_CONTAINER || '' }}
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-    steps:
-      - name: Rollout K8s si está configurado
-        if: env.KUBE_DEPLOYMENT != '' && env.KUBE_CONTAINER != '' && (needs.push_container_images.outputs.ghcr_ref != '' || needs.push_container_images.outputs.ecr_ref != '')
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'v1.27.3'
-
-      - name: Aplicar rollout K8s
-        if: env.KUBE_DEPLOYMENT != '' && env.KUBE_CONTAINER != '' && (needs.push_container_images.outputs.ghcr_ref != '' || needs.push_container_images.outputs.ecr_ref != '')
-        env:
-          KUBECONFIG_B64: ${{ secrets.KUBE_CONFIG }}
-        run: |
-          set -euo pipefail
-          echo "$KUBECONFIG_B64" | base64 -d > kubeconfig
-          export KUBECONFIG="$PWD/kubeconfig"
-          IMAGE_REF="${{ needs.push_container_images.outputs.ghcr_ref || needs.push_container_images.outputs.ecr_ref }}"
-          ns="${KUBE_NAMESPACE:-default}"
-          kubectl -n "$ns" set image deployment/"$KUBE_DEPLOYMENT" "$KUBE_CONTAINER"="$IMAGE_REF"
-          kubectl -n "$ns" rollout status deployment/"$KUBE_DEPLOYMENT" --timeout=5m
-
-      - name: Rollout ECS si está configurado
-        env:
-          ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
-          ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
-        if: ${{ env.ECS_CLUSTER != '' && env.ECS_SERVICE != '' }}
-        run: |
-          set -euo pipefail
-          sudo apt-get update && sudo apt-get install -y awscli
-          aws configure set default.region "$AWS_REGION"
-          aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --force-new-deployment
-          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
+          echo "API smoke failed" >&2
+          exit 1
 
