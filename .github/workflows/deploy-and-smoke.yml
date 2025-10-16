@@ -94,11 +94,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     env:
-      BASE_URL: ${{ inputs.base_url || secrets.BASE_URL || 'https://paste12-rmsk.onrender.com' }}
-      DEPLOY_HOOK_URL: ${{ inputs.deploy_hook_url || secrets.RENDER_DEPLOY_HOOK || '' }}
-      CF_ZONE_ID: ${{ inputs.cloudflare_zone_id || secrets.CF_ZONE_ID || '' }}
+      BASE_URL: ${{ github.event.inputs.base_url || secrets.BASE_URL || 'https://paste12-rmsk.onrender.com' }}
+      DEPLOY_HOOK_URL: ${{ github.event.inputs.deploy_hook_url || secrets.RENDER_DEPLOY_HOOK || '' }}
+      CF_ZONE_ID: ${{ github.event.inputs.cloudflare_zone_id || secrets.CF_ZONE_ID || '' }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN || '' }}
-      PURGE_PATHS: ${{ inputs.purge_paths || '/,/js/app.js,/css/styles.css' }}
+      PURGE_PATHS: ${{ github.event.inputs.purge_paths || '/,/js/app.js,/css/styles.css' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -116,10 +116,10 @@ jobs:
 
       - name: Derivar variables base
         env:
-          IN_BASE: ${{ inputs.base_url }}
+          IN_BASE: ${{ github.event.inputs.base_url }}
           SEC_BASE: ${{ secrets.BASE_URL }}
-          IN_PURGE: ${{ inputs.purge_paths }}
-          IN_RENDER_HOOK: ${{ inputs.deploy_hook_url }}
+          IN_PURGE: ${{ github.event.inputs.purge_paths }}
+          IN_RENDER_HOOK: ${{ github.event.inputs.deploy_hook_url }}
           SEC_RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           set -euo pipefail
@@ -142,18 +142,18 @@ jobs:
           curl -fsS -X POST "$DEPLOY_HOOK_URL" -d '' || true
 
       - name: Trigger deploy (Vercel hook si está configurado)
-        if: ${{ inputs.vercel_deploy_hook_url != '' }}
+        if: ${{ github.event.inputs.vercel_deploy_hook_url != '' }}
         run: |
           set -euo pipefail
           echo "Triggering Vercel deploy via hook"
-          curl -fsS -X POST "${{ inputs.vercel_deploy_hook_url }}" -d '' || true
+          curl -fsS -X POST "${{ github.event.inputs.vercel_deploy_hook_url }}" -d '' || true
 
       - name: Trigger deploy (Netlify hook si está configurado)
-        if: ${{ inputs.netlify_deploy_hook_url != '' }}
+        if: ${{ github.event.inputs.netlify_deploy_hook_url != '' }}
         run: |
           set -euo pipefail
           echo "Triggering Netlify deploy via hook"
-          curl -fsS -X POST "${{ inputs.netlify_deploy_hook_url }}" -d '' || true
+          curl -fsS -X POST "${{ github.event.inputs.netlify_deploy_hook_url }}" -d '' || true
 
       - name: Esperar health GET /api/health
         run: |
@@ -212,9 +212,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     env:
-      GHCR_IMAGE: ${{ inputs.ghcr_image || secrets.GHCR_IMAGE || '' }}
-      ECR_REGISTRY: ${{ inputs.ecr_registry || secrets.AWS_ECR_REGISTRY || '' }}
-      ECR_REPOSITORY: ${{ inputs.ecr_repository || secrets.AWS_ECR_REPOSITORY || '' }}
+      GHCR_IMAGE: ${{ github.event.inputs.ghcr_image || secrets.GHCR_IMAGE || '' }}
+      ECR_REGISTRY: ${{ github.event.inputs.ecr_registry || secrets.AWS_ECR_REGISTRY || '' }}
+      ECR_REPOSITORY: ${{ github.event.inputs.ecr_repository || secrets.AWS_ECR_REPOSITORY || '' }}
       AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
     outputs:
       ghcr_ref: ${{ steps.meta_ghcr.outputs.ghcr_ref }}
@@ -290,9 +290,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: push_container_images
     env:
-      KUBE_NAMESPACE: ${{ inputs.kube_namespace || secrets.KUBE_NAMESPACE || '' }}
-      KUBE_DEPLOYMENT: ${{ inputs.kube_deployment || secrets.KUBE_DEPLOYMENT || '' }}
-      KUBE_CONTAINER: ${{ inputs.kube_container || secrets.KUBE_CONTAINER || '' }}
+      KUBE_NAMESPACE: ${{ github.event.inputs.kube_namespace || secrets.KUBE_NAMESPACE || '' }}
+      KUBE_DEPLOYMENT: ${{ github.event.inputs.kube_deployment || secrets.KUBE_DEPLOYMENT || '' }}
+      KUBE_CONTAINER: ${{ github.event.inputs.kube_container || secrets.KUBE_CONTAINER || '' }}
       AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
     steps:
       - name: Rollout K8s si está configurado
