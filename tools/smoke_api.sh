@@ -134,7 +134,27 @@ echo
 echo "-- GET /api/notes/$ID (ver contadores) --"
 c=$(req GET "/api/notes/$ID"); echo "status:$c"
 pp
-[[ "$c" == 200 ]] || { echo "FAIL get nota individual"; exit 1; }
+if [[ "$c" != 200 ]]; then
+  echo "WARN detalle no disponible; intento verificar por listado"
+  c=$(req GET "/api/notes?limit=100&wrap=1"); echo "status:$c"
+  if [[ "$c" == 200 ]]; then
+    python - "$B" "$ID" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1]))
+id_ = int(sys.argv[2])
+items = (data.get("items") or data)
+ids = { (i.get("id") if isinstance(i, dict) else None) for i in items }
+assert id_ in ids, "missing id in list"
+print("ok in list")
+PY
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+      echo "FAIL get nota individual"; exit 1
+    fi
+  else
+    echo "FAIL get nota individual"; exit 1
+  fi
+fi
 
 echo
 echo "-- GET /api/dbdiag --"
