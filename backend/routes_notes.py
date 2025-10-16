@@ -27,8 +27,7 @@ def register_api(app):
     Registra /api/notes GET y POST si no existen aún. Idempotente.
     Requiere backend.models.Note y backend.db ya inicializados por create_app().
     """
-    if _has_rule(app, "/api/notes", "GET") and _has_rule(app, "/api/notes", "POST"):
-        return "present"
+    already_had_list = _has_rule(app, "/api/notes", "GET") and _has_rule(app, "/api/notes", "POST")
 
     from backend import db
     from backend.models import Note  # debe existir el modelo con author_fp
@@ -151,5 +150,37 @@ def register_api(app):
             "author_fp": getattr(n, "author_fp", None),
         }), 201
 
-    app.register_blueprint(api_bp, url_prefix="/api")
+    # Registrar listado/creación solo si faltaban
+    if not already_had_list:
+        app.register_blueprint(api_bp, url_prefix="/api")
+
+    # Asegurar detalle GET /api/notes/<id> siempre que falte
+    if not _has_rule(app, "/api/notes/<int:note_id>", "GET"):
+        from backend.models import Note  # import aquí para evitar ciclos
+
+        def _note_to_dict(n: Note):
+            return {
+                "id": n.id,
+                "text": n.text,
+                "timestamp": (n.timestamp or _now()).isoformat(),
+                "expires_at": (n.expires_at.isoformat() if n.expires_at else None),
+                "likes": n.likes,
+                "views": n.views,
+                "reports": n.reports,
+                "author_fp": getattr(n, "author_fp", None),
+            }
+
+        def api_note_detail(note_id: int):
+            n = Note.query.filter_by(id=note_id).first()
+            if not n:
+                return jsonify(error="not_found"), 404
+            return jsonify(_note_to_dict(n)), 200
+
+        app.add_url_rule(
+            "/api/notes/<int:note_id>",
+            endpoint="api_notes_detail",
+            view_func=api_note_detail,
+            methods=["GET"],
+        )
+
     return "registered"
