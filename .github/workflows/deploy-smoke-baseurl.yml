@@ -2,6 +2,11 @@ name: Deploy and Smoke (BASE_URL only)
 
 on:
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Override BASE_URL (fallback a secret o default)"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -17,11 +22,15 @@ jobs:
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y jq curl
 
-      - name: Verify BASE_URL
+      - name: Resolve BASE_URL
         run: |
           set -euo pipefail
-          if [ -z "${BASE_URL:-}" ]; then echo "BASE_URL secret not set" >&2; exit 2; fi
-          echo "Using BASE_URL=$BASE_URL"
+          in_base=$(jq -r '.inputs.base_url // ""' "$GITHUB_EVENT_PATH")
+          base="$in_base"
+          if [ -z "$base" ]; then base="${BASE_URL:-}"; fi
+          if [ -z "$base" ]; then base="https://paste12-rmsk.onrender.com"; fi
+          echo "BASE_URL=$base" >> "$GITHUB_ENV"
+          echo "Using BASE_URL=$base"
 
       - name: Wait for health
         run: |
@@ -44,6 +53,7 @@ jobs:
             --data "$payload" || true
 
       - name: Run smokes
+        id: smoke
         run: |
           set -euo pipefail
           chmod +x tools/run_smoke_now_v3.sh || true
