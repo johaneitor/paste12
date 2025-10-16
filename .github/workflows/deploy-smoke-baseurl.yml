@@ -4,15 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: "Override BASE_URL (fallback a secret o default)"
-        required: false
+        description: "BASE_URL del entorno a testear (obligatorio)"
+        required: true
         default: ""
+      allow_purge:
+        description: "Permitir purge de Cloudflare (true/false)"
+        required: false
+        default: "false"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      BASE_URL: ${{ secrets.BASE_URL }}
       CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
     steps:
@@ -22,15 +25,16 @@ jobs:
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y jq curl
 
-      - name: Resolve BASE_URL
+      - name: Resolve BASE_URL y flags
         run: |
           set -euo pipefail
           in_base=$(jq -r '.inputs.base_url // ""' "$GITHUB_EVENT_PATH")
           base="$in_base"
-          if [ -z "$base" ]; then base="${BASE_URL:-}"; fi
-          if [ -z "$base" ]; then base="https://paste12-rmsk.onrender.com"; fi
+          if [ -z "$base" ]; then echo "base_url input es requerido" >&2; exit 2; fi
           echo "BASE_URL=$base" >> "$GITHUB_ENV"
           echo "Using BASE_URL=$base"
+          allow_purge=$(jq -r '.inputs.allow_purge // "false"' "$GITHUB_EVENT_PATH")
+          echo "ALLOW_PURGE=$allow_purge" >> "$GITHUB_ENV"
 
       - name: Wait for health
         run: |
@@ -39,7 +43,7 @@ jobs:
           tools/verify_boot_after_deploy_v1.sh "$BASE_URL" "/tmp"
 
       - name: Purge Cloudflare (optional)
-        if: ${{ env.CF_ZONE_ID != '' && env.CF_API_TOKEN != '' }}
+        if: ${{ env.ALLOW_PURGE == 'true' && env.CF_ZONE_ID != '' && env.CF_API_TOKEN != '' }}
         env:
           ZONE_ID: ${{ env.CF_ZONE_ID }}
           TOKEN: ${{ env.CF_API_TOKEN }}
