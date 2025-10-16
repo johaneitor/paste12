@@ -185,78 +185,130 @@
   else boot();
 })();
 
-/* === paste12: Load More (BEGIN) ================================= */
+/* === paste12: Unified Pagination (BEGIN) ============================ */
 (() => {
-  function q(s,r=document){return r.querySelector(s);}
-  function qa(s,r=document){return [...r.querySelectorAll(s)];}
+  const state = { nextUrl: null, loading: false, limit: 20 };
+  const seenIds = new Set();
 
-  function findNotesList(){
-    return q('#notes-list') || q('ul.notes') || q('main ul') ||
-           qa('[data-note-id], .note, .note-card').map(el=>el.parentElement).find(Boolean) || null;
+  function q(sel, r=document){ return r.querySelector(sel); }
+  function qa(sel, r=document){ return [...r.querySelectorAll(sel)]; }
+
+  function listRoot(){
+    return q('#notes-list') || q('ul.notes') || q('main ul') || q('section ul') || q('ol') || q('ul');
   }
-  async function fetchPage(opts={}){
-    const limit = opts.limit ?? 20;
-    const before = opts.before;
-    const ps = new URLSearchParams({active_only:'1', limit:String(limit), wrap:'1'});
-    if (before) ps.set('before_id', String(before));
-    try{
-      const r = await fetch('/api/notes?'+ps.toString());
-      const j = await r.json();
-      if (Array.isArray(j)) {
-        const items = j;
-        return { items, has_more: items.length >= limit, next_before_id: items.at(-1)?.id ?? null };
-      }
-      return { items: j.items || [], has_more: !!j.has_more, next_before_id: j.next_before_id ?? (j.items?.at(-1)?.id ?? null) };
-    }catch(_){ return { items:[], has_more:false, next_before_id:null }; }
-  }
-  function esc(s){ return (s??'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
-  function fmt(iso){ try{ return new Date(iso).toLocaleString(); }catch{ return iso||''; } }
-  function makeItem(n){
+
+  function makeLi(n){
     const li = document.createElement('li');
     li.className = 'note';
     li.dataset.noteId = String(n.id);
     li.id = 'note-'+n.id;
-    li.innerHTML = `<div class="note-text">${esc(n.text)}</div>
-      <div class="meta"><small>
-        #${n.id} &nbsp; ts: ${fmt(n.timestamp)} &nbsp; expira: ${fmt(n.expires_at)} &nbsp;
-        ❤ ${n.likes||0} &nbsp; 👁 ${n.views||0} &nbsp; 🚩 ${n.reports||0}
-      </small></div>`;
+    li.innerHTML = `
+      <div class="note-text">${esc(n.text)}</div>
+      <div class="note-stats stats">
+        <small>#${n.id}&nbsp;ts: ${String(n.timestamp||'').replace('T',' ')}&nbsp;&nbsp;expira: ${String(n.expires_at||'').replace('T',' ')}</small>
+        <span class="stat like">❤ ${n.likes||0}</span>
+        <span class="stat view">👁 ${n.views||0}</span>
+        <span class="stat flag">🚩 ${n.reports||0}</span>
+      </div>`;
     return li;
   }
-  async function setup(){
-    const list = findNotesList();
-    if (!list) return;
-    // Evitar duplicados si otra feature ya insertó botón (hotfix/views/actions)
-    if (document.getElementById('load-more-btn')) return;
-    let wrap = document.getElementById('load-more');
+
+  function ensureMore(){
+    let wrap = document.getElementById('p12-more');
     if (!wrap){
       wrap = document.createElement('div');
-      wrap.id = 'load-more';
+      wrap.id = 'p12-more';
       wrap.className = 'load-more';
-      wrap.innerHTML = `<button type="button" class="btn-more">Cargar más</button><span class="hint" style="margin-left:8px;"></span>`;
-      (list.parentElement || document.body).appendChild(wrap);
+      wrap.innerHTML = `<button type="button" class="btn-more" aria-live="polite">Cargar más</button><span class="hint" aria-live="polite" style="margin-left:8px;"></span>`;
+      (listRoot()?.parentElement || document.body).appendChild(wrap);
     }
+    return wrap;
+  }
+
+  function setBtn(stateName){
+    const wrap = ensureMore();
     const btn = wrap.querySelector('.btn-more');
     const hint = wrap.querySelector('.hint');
-    let busy = false;
-    async function onClick(){
-      if (busy) return;
-      busy = true; btn.disabled = true; hint.textContent = 'Cargando…';
-      const last = qa('[data-note-id], [id^="note-"]', list).pop();
-      const id = last?.dataset?.noteId || (last?.id?.match(/note-(\d+)/)?.[1]);
-      const {items, has_more} = await fetchPage({ before: id ? Number(id) : undefined, limit: 20 });
-      for (const n of items){
-        if (list.querySelector(`[data-note-id="${n.id}"]`)) continue;
-        list.appendChild(makeItem(n));
+    if (!btn || !hint) return;
+    if (stateName === 'idle'){ btn.disabled = false; btn.textContent = 'Cargar más'; hint.textContent = ''; }
+    if (stateName === 'loading'){ btn.disabled = true; btn.textContent = 'Cargando…'; hint.textContent = 'Cargando página…'; }
+    if (stateName === 'error'){ btn.disabled = false; btn.textContent = 'Reintentar'; hint.textContent = 'Error al cargar'; }
+  }
+
+  function showSkeleton(count=3){
+    const root = listRoot(); if (!root) return [];
+    const nodes = [];
+    for (let i=0; i<count; i++){
+      const li = document.createElement('li');
+      li.className = 'note skeleton';
+      li.innerHTML = `<div class="s1"></div><div class="s2"></div>`;
+      root.appendChild(li); nodes.push(li);
+    }
+    return nodes;
+  }
+
+  function removeNodes(nodes){ nodes.forEach(n => n && n.remove()); }
+
+  function parseNext(resp, body){
+    try{
+      const link = resp.headers.get('Link') || resp.headers.get('link');
+      if (link){
+        const m = /<([^>]+)>;\s*rel="?next"?/i.exec(link);
+        if (m) return m[1];
+      }
+      const xnc = resp.headers.get('X-Next-Cursor');
+      if (xnc){
+        try{ const xn = JSON.parse(xnc); if (xn && xn.cursor_ts && xn.cursor_id){ return `/api/notes?cursor_ts=${encodeURIComponent(xn.cursor_ts)}&cursor_id=${xn.cursor_id}`; } }catch{}
+      }
+      const xna = resp.headers.get('X-Next-After');
+      if (xna){ return `/api/notes?limit=${state.limit}&after_id=${encodeURIComponent(xna)}`; }
+      if (body && body.has_more && body.next_before_id){
+        return `/api/notes?wrap=1&active_only=1&limit=${state.limit}&before_id=${body.next_before_id}`;
+      }
+    }catch{}
+    return null;
+  }
+
+  async function fetchPage(next){
+    if (state.loading) return { ok:false };
+    const root = listRoot(); if (!root) return { ok:false };
+    state.loading = true; setBtn('loading');
+    const sk = showSkeleton(3);
+    try{
+      const url = next || `/api/notes?wrap=1&active_only=1&limit=${state.limit}`;
+      const res = await fetch(url, { headers:{ 'Accept':'application/json' } });
+      const body = await res.json().catch(()=>({}));
+      const items = Array.isArray(body) ? body : (body.items || []);
+      for (const it of items){
+        const id = Number(it.id);
+        if (!id || seenIds.has(id)) continue;
+        seenIds.add(id);
+        root.appendChild(makeLi(it));
       }
       window.p12Enhance?.();
-      if (!has_more || items.length === 0) wrap.style.display = 'none';
-      hint.textContent = ''; btn.disabled = false; busy = false;
+      window.p12InitRemaining?.();
+      state.nextUrl = parseNext(res, body);
+      ensureMore().style.display = state.nextUrl ? '' : 'none';
+      setBtn('idle');
+      return { ok:true };
+    }catch(_){
+      setBtn('error');
+      return { ok:false };
+    }finally{
+      removeNodes(sk);
+      state.loading = false;
     }
-    btn.addEventListener('click', onClick);
-    window.p12SetupLoadMore = setup;
-    window.p12LoadMoreClick = onClick;
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+
+  async function init(){
+    const root = listRoot(); if (!root) return;
+    ensureMore();
+    const wrap = ensureMore();
+    const btn = wrap.querySelector('.btn-more');
+    if (btn && !btn._p12Bound){ btn.addEventListener('click', () => fetchPage(state.nextUrl)); btn._p12Bound = true; }
+    await fetchPage(null);
+  }
+
+  window.p12Pager = { init, fetchNext: () => fetchPage(state.nextUrl) };
 })();
-/* === paste12: Load More (END) =============================== */
+/* === paste12: Unified Pagination (END) ============================== */

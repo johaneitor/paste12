@@ -42,12 +42,13 @@ def create_app():
     # --- Ensure minimal schema (non-intrusive) ---
     try:
         with app.app_context():
-            # Ensure core models are loaded so create_all() is aware
+            from sqlalchemy import text as _text
+
+            # Ensure models are loaded and base tables exist
             from . import models as _models  # noqa: F401
-            # Create tables for declared models if missing (e.g., notes)
             db.create_all()
 
-            from sqlalchemy import text as _text
+            # Minimal auxiliary tables for idempotent logs
             db.session.execute(_text(
                 """
                 CREATE TABLE IF NOT EXISTS note_report (
@@ -78,16 +79,36 @@ def create_app():
                 )
                 """
             ))
-            # Add deleted_at column if missing (best-effort for both notes/note)
+
+            # Ensure counters exist (likes/views/reports) for legacy DBs
+            def _ensure_counter_columns(table_name: str) -> None:
+                for col, ddl in (
+                    ("likes",   "INTEGER NOT NULL DEFAULT 0"),
+                    ("views",   "INTEGER NOT NULL DEFAULT 0"),
+                    ("reports", "INTEGER NOT NULL DEFAULT 0"),
+                ):
+                    try:
+                        db.session.execute(_text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS {col} {ddl}"))
+                    except Exception:
+                        try:
+                            db.session.execute(_text(f"ALTER TABLE {table_name} ADD COLUMN {col} {ddl}"))
+                        except Exception:
+                            pass
+
+            # Apply for both historic names
+            for tbl in ("notes", "note"):
+                _ensure_counter_columns(tbl)
+
+            # Soft-delete column (may already exist)
             for tbl in ("notes", "note"):
                 try:
                     db.session.execute(_text(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL"))
                 except Exception:
-                    # SQLite older versions don't support IF NOT EXISTS; try plain add
                     try:
                         db.session.execute(_text(f"ALTER TABLE {tbl} ADD COLUMN deleted_at TIMESTAMP NULL"))
                     except Exception:
                         pass
+
             db.session.commit()
     except Exception as _exc:
         logging.getLogger(__name__).warning("[schema] ensure note_report skipped: %r", _exc)
@@ -169,6 +190,37 @@ def create_app():
     except Exception as _e:
         app.logger.warning("[api] interactions not registered: %r", _e)
 
+        # Minimal safe fallbacks to avoid 500s when interactions module isn't available
+        from sqlalchemy import text as _text
+
+        @app.post("/api/notes/<int:note_id>/like")
+        def _like_fallback(note_id: int):
+            try:
+                with app.app_context():
+                    db.session.execute(_text("UPDATE notes SET likes = COALESCE(likes,0)+1 WHERE id=:id"), {"id": note_id})
+                    row = db.session.execute(_text("SELECT id, COALESCE(likes,0) AS likes FROM notes WHERE id=:id"), {"id": note_id}).first()
+                    db.session.commit()
+                if not row:
+                    return jsonify(ok=False, error="not_found"), 404
+                return jsonify(ok=True, id=row.id, likes=row.likes), 200
+            except Exception as exc:
+                db.session.rollback()
+                return jsonify(ok=False, error="server_error"), 500
+
+        @app.post("/api/notes/<int:note_id>/report")
+        def _report_fallback(note_id: int):
+            try:
+                with app.app_context():
+                    db.session.execute(_text("UPDATE notes SET reports = COALESCE(reports,0)+1 WHERE id=:id"), {"id": note_id})
+                    row = db.session.execute(_text("SELECT id, COALESCE(reports,0) AS reports FROM notes WHERE id=:id"), {"id": note_id}).first()
+                    db.session.commit()
+                if not row:
+                    return jsonify(ok=False, error="not_found"), 404
+                return jsonify(ok=True, id=row.id, reports=row.reports), 200
+            except Exception:
+                db.session.rollback()
+                return jsonify(ok=False, error="server_error"), 500
+
     # --- Frontend blueprint (sirve /, /terms, /privacy) ---
     try:
         from .front_bp import front_bp  # type: ignore
@@ -213,6 +265,40 @@ def create_app():
             pass
         # For non-API routes, delegate to Flask's default 404 page
         return err
+
+    # --- Debug/diagnostic helpers used by smoke scripts ---
+    @app.get("/__whoami")
+    @limiter.exempt
+    def __whoami():
+        try:
+            bl = sorted(list(app.blueprints.keys()))
+        except Exception:
+            bl = []
+        has_detail = False
+        try:
+            for r in app.url_map.iter_rules():
+                s = str(r)
+                if s in ("/api/notes/<int:note_id>", "/api/notes/<int:note_id>/like", "/api/notes/<int:note_id>/report"):
+                    has_detail = True
+                    break
+        except Exception:
+            pass
+        return jsonify(blueprints=bl, has_detail_routes=has_detail), 200
+
+    @app.get('/api/_routes')
+    @limiter.exempt
+    def api_routes_dump():
+        routes = []
+        try:
+            for r in app.url_map.iter_rules():
+                routes.append({
+                    "rule": str(r),
+                    "methods": sorted(list(r.methods or [])),
+                    "endpoint": r.endpoint,
+                })
+        except Exception:
+            pass
+        return jsonify(routes=routes), 200
 
     @app.errorhandler(400)
     def _json_400(err):

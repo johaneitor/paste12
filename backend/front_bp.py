@@ -26,18 +26,35 @@ def index():
         # Ensure safe shim meta
         if "p12-safe-shim" not in html and "<head>" in html:
             html = html.replace("<head>", "<head>\n<meta name=\"p12-safe-shim\" content=\"1\" />\n")
-        # Ensure body data-single flag
+        # Ensure body data-single flag (preserving existing attributes)
         if "<body" in html and "data-single=" not in html:
-            html = html.replace("<body", "<body data-single=\"1\"")
-        # Ensure notes list container exists
+            try:
+                idx = html.lower().find("<body")
+                if idx != -1:
+                    end = html.find(">", idx)
+                    if end != -1:
+                        html = html[:idx] + html[idx:end] + " data-single=\"1\"" + html[end:]
+            except Exception:
+                # fallback minimal replacement without breaking attributes
+                html = html.replace("<body>", "<body data-single=\"1\">")
+        # Ensure notes list container exists (insert right after <body...>)
         if 'id="notes-list"' not in html:
             if "</main>" in html:
                 html = html.replace("</main>", "  <ul id=\"notes-list\"></ul>\n</main>")
             elif "<body" in html:
-                html = html.replace("<body", "<body>\n<ul id=\"notes-list\"></ul>")
+                try:
+                    idx = html.lower().find("<body")
+                    if idx != -1:
+                        end = html.find(">", idx)
+                        if end != -1:
+                            html = html[:end+1] + "\n<ul id=\"notes-list\"></ul>\n" + html[end+1:]
+                except Exception:
+                    html = html.replace("<body>", "<body>\n<ul id=\"notes-list\"></ul>")
             else:
                 html += "\n<ul id=\"notes-list\"></ul>\n"
-        # Ensure app.js is loaded
+        # Ensure core assets are loaded
+        if '/css/actions.css' not in html and "</head>" in html:
+            html = html.replace("</head>", "  <link rel=\"stylesheet\" href=\"/css/actions.css\">\n</head>")
         if '/js/app.js' not in html:
             if "</body>" in html:
                 html = html.replace("</body>", "  <script src=\"/js/app.js\" defer></script>\n</body>")
@@ -45,6 +62,13 @@ def index():
                 html = html.replace("</head>", "  <script src=\"/js/app.js\" defer></script>\n</head>")
             else:
                 html += "\n<script src=\"/js/app.js\" defer></script>\n"
+        if '/js/actions.js' not in html:
+            if "</body>" in html:
+                html = html.replace("</body>", "  <script src=\"/js/actions.js\"></script>\n</body>")
+            elif "</head>" in html:
+                html = html.replace("</head>", "  <script src=\"/js/actions.js\"></script>\n</head>")
+            else:
+                html += "\n<script src=\"/js/actions.js\"></script>\n"
         resp = make_response(html)
         resp.headers["Content-Type"] = "text/html; charset=utf-8"
     else:
