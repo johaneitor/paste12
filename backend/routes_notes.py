@@ -2,6 +2,7 @@ from __future__ import annotations
 import hashlib, os
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
+from backend import limiter
 
 def _now(): 
     return datetime.utcnow()
@@ -35,6 +36,7 @@ def register_api(app):
     api_bp = Blueprint("api_notes_capsule", __name__)
 
     @api_bp.get("/notes")
+    @limiter.limit("60/minute")
     def list_notes():
         """
         Lista notas con compatibilidad incremental:
@@ -102,6 +104,8 @@ def register_api(app):
             return jsonify(error="server_error"), 500
 
     @api_bp.post("/notes")
+    @limiter.limit("1 per 10 seconds")
+    @limiter.limit("500 per day")
     def create_note():
         """Crea una nota. Acepta JSON o x-www-form-urlencoded.
         Reconoce "ttl_hours" (canónico) o "hours" (legacy).

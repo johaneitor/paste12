@@ -1,0 +1,54 @@
+:root { --bg:#0b0f14; --fg:#e7edf3; --muted:#9fb3c8; --card:#121822; --accent:#4da3ff; }
+*{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,Roboto,Segoe UI; }
+header,footer{max-width:920px;margin:18px auto;padding:0 14px}
+h1{margin:.2rem 0 0; font-weight:700}
+.subtitle{color:var(--muted); margin:.25rem 0 0}
+main{max-width:920px;margin:12px auto;padding:0 14px; display:grid; gap:12px}
+.card{background:var(--card); border:1px solid #1e2633; border-radius:12px; padding:14px; box-shadow:0 1px 12px rgba(0,0,0,.2)}
+.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+textarea{width:100%; min-height:110px; padding:10px; border-radius:10px; border:1px solid #2a3648; background:#0f141c; color:var(--fg)}
+input[type=number]{width:100px; padding:6px 8px; border-radius:8px; border:1px solid #2a3648; background:#0f141c; color:var(--fg)}
+button{padding:8px 14px; border-radius:10px; border:1px solid #2a3648; background:#152033; color:var(--fg); cursor:pointer}
+button:hover{border-color:var(--accent)}
+.msg{margin-top:8px; color:var(--muted)}
+.note{border-top:1px solid #222c3b; padding:10px 0}
+.note:first-child{border-top:none}
+.note .text, .note-text{white-space:pre-wrap; margin-bottom:6px}
+.note .meta{color:#9bb2c7; font-size:.9rem; display:flex; gap:10px; flex-wrap:wrap}
+footer a{color:var(--muted); text-decoration:none}
+footer a:hover{color:var(--fg); text-decoration:underline}
+
+/* ====== KRAI palette (dark night + orange/purple) ====== */
+:root{
+  --bg-krai:#0c1222;        /* fondo */
+  --bg-2-krai:#111a2f;      /* panel */
+  --card-krai:#151c2e;      /* tarjetas */
+  --text-krai:#e9eefc;      /* texto */
+  --muted-krai:#9fb0d0;     /* texto secundario */
+  --accent-krai:#ff7b3b;    /* naranja */
+  --accent2-krai:#7b61ff;   /* lila */
+  --border-krai:rgba(255,255,255,.08);
+}
+/* aplica sin romper clases existentes */
+html,body{ background: radial-gradient(1200px 500px at 30% -10%, #1b2545 0%, var(--bg-krai) 55%); color: var(--text-krai); }
+.container, main, .card, .note, .note-card, .panel, section { background-color: transparent; }
+.card, .note, .note-card { background: var(--card-krai); border:1px solid var(--border-krai); border-radius:12px; }
+h1,h2,h3{ color: var(--text-krai); letter-spacing:.2px; }
+a{ color: var(--accent2-krai); }
+.btn, button.primary{
+  background: linear-gradient(180deg, var(--accent-krai), #f25c21);
+  color:#fff; border:0; border-radius:12px; padding:.6rem 1rem; font-weight:600;
+  box-shadow: 0 6px 18px rgba(255,123,59,.25);
+}
+.btn:hover, button.primary:hover{ filter: brightness(1.05); }
+.badge, .counter, .stat{
+  background: rgba(255,255,255,.06); border:1px solid var(--border-krai); color: var(--text-krai);
+  padding:.18rem .45rem; border-radius:999px; font-size:.85rem;
+}
+/* corazon/ojito/bandera más “vivos” */
+.stat.like  { color:#ff8a6b; }
+.stat.view  { color:#e0d3ff; }
+.stat.flag  { color:#ff6b6b; }
+
+/* menú ⋮ (ya lo tenías en actions.css, reforzamos hover) */
+.note-menu .kebab:hover{ background: rgba(255,255,255,.08); }

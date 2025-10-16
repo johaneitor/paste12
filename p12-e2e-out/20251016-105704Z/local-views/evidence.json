@@ -1,0 +1,24 @@
+{
+  "note_id": 2,
+  "resp1": {
+    "id": 2,
+    "ok": true,
+    "views": 1
+  },
+  "resp2": {
+    "id": 2,
+    "ok": true,
+    "views": 1
+  },
+  "resp3": {
+    "id": 2,
+    "ok": true,
+    "views": 2
+  },
+  "status": [
+    200,
+    200,
+    200
+  ],
+  "views_after": 2
+}

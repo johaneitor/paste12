@@ -1,0 +1,20 @@
+{
+  "api_404": {
+    "status": 404,
+    "json": {
+      "error": "not_found"
+    }
+  },
+  "api_405": {
+    "status": 405,
+    "json": {
+      "error": "method_not_allowed"
+    },
+    "allow": "GET, HEAD, OPTIONS"
+  },
+  "html_404": {
+    "status": 404,
+    "ctype": "text/html; charset=utf-8",
+    "is_json": false
+  }
+}

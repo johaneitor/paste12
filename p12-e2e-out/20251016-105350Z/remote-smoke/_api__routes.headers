@@ -1,0 +1,12 @@
+HTTP/2 404 
+date: Thu, 16 Oct 2025 10:53:50 GMT
+content-type: application/json
+access-control-allow-origin: *
+rndr-id: 1f8ddbc8-45a7-4ed7
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 98f703c868a8122e-CMH
+alt-svc: h3=":443"; ma=86400
+
