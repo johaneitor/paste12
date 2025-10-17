@@ -1,0 +1,27 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "- `GET /api/health` → `{\"ok\": true}` - `GET /api/notes?page=N` → lista de notas (20 por página, orden desc) - `POST /api/notes`     Cuerpos soportados:   - **JSON**: `{\"text\":\"hola\",\"hours\":24}`   - **form-data**: `text=...&hours=...`   - **x-www-form-urlencoded**: `text=...&hours=...`   - **querystring** (no recomendado en producción)",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johaneitor/paste12.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/johaneitor/paste12/issues"
+  },
+  "homepage": "https://github.com/johaneitor/paste12#readme",
+  "devDependencies": {
+    "axe-core": "^4.11.0",
+    "puppeteer": "^24.25.0"
+  }
+}

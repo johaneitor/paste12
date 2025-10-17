@@ -1,0 +1,137 @@
+Hit:1 http://archive.ubuntu.com/ubuntu plucky InRelease
+Hit:2 http://security.ubuntu.com/ubuntu plucky-security InRelease
+Hit:3 http://archive.ubuntu.com/ubuntu plucky-updates InRelease
+Hit:4 http://archive.ubuntu.com/ubuntu plucky-backports InRelease
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  apparmor fuse3 libcap2-bin libfuse3-3 liblzo2-2 libpam-cap snapd
+  squashfs-tools systemd-hwe-hwdb udev
+Suggested packages:
+  apparmor-profiles-extra apparmor-utils zenity | kdialog
+The following NEW packages will be installed:
+  apparmor chromium-browser fuse3 libcap2-bin libfuse3-3 liblzo2-2 libpam-cap
+  snapd squashfs-tools systemd-hwe-hwdb udev
+0 upgraded, 11 newly installed, 0 to remove and 1 not upgraded.
+Need to get 41.0 MB of archives.
+After this operation, 154 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu plucky-updates/main amd64 apparmor amd64 4.1.0~beta5-0ubuntu14.2 [703 kB]
+Get:2 http://archive.ubuntu.com/ubuntu plucky/main amd64 libfuse3-3 amd64 3.14.0-10 [92.0 kB]
+Get:3 http://archive.ubuntu.com/ubuntu plucky/main amd64 fuse3 amd64 3.14.0-10 [25.7 kB]
+Get:4 http://archive.ubuntu.com/ubuntu plucky/main amd64 libcap2-bin amd64 1:2.73-4ubuntu1 [34.9 kB]
+Get:5 http://archive.ubuntu.com/ubuntu plucky/main amd64 liblzo2-2 amd64 2.10-3 [54.2 kB]
+Get:6 http://archive.ubuntu.com/ubuntu plucky/main amd64 squashfs-tools amd64 1:4.6.1-1build1 [189 kB]
+Get:7 http://archive.ubuntu.com/ubuntu plucky-updates/main amd64 udev amd64 257.4-1ubuntu3.2 [1,404 kB]
+Get:8 http://archive.ubuntu.com/ubuntu plucky-updates/main amd64 snapd amd64 2.71+ubuntu25.04 [38.4 MB]
+Get:9 http://archive.ubuntu.com/ubuntu plucky/universe amd64 chromium-browser amd64 2:1snap1-0ubuntu3 [50.2 kB]
+Get:10 http://archive.ubuntu.com/ubuntu plucky/main amd64 libpam-cap amd64 1:2.73-4ubuntu1 [12.7 kB]
+Get:11 http://archive.ubuntu.com/ubuntu plucky-updates/main amd64 systemd-hwe-hwdb all 257.4.3 [3,536 B]
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+dpkg-preconfigure: unable to re-open stdin: 
+Fetched 41.0 MB in 2s (18.5 MB/s)
+Selecting previously unselected package apparmor.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 60800 files and directories currently installed.)
+Preparing to unpack .../0-apparmor_4.1.0~beta5-0ubuntu14.2_amd64.deb ...
+Unpacking apparmor (4.1.0~beta5-0ubuntu14.2) ...
+Selecting previously unselected package libfuse3-3:amd64.
+Preparing to unpack .../1-libfuse3-3_3.14.0-10_amd64.deb ...
+Unpacking libfuse3-3:amd64 (3.14.0-10) ...
+Selecting previously unselected package fuse3.
+Preparing to unpack .../2-fuse3_3.14.0-10_amd64.deb ...
+Adding 'diversion of /bin/fusermount to /bin/fusermount.usr-is-merged by fuse3'
+Adding 'diversion of /sbin/mount.fuse to /sbin/mount.fuse.usr-is-merged by fuse3'
+Unpacking fuse3 (3.14.0-10) ...
+Selecting previously unselected package libcap2-bin.
+Preparing to unpack .../3-libcap2-bin_1%3a2.73-4ubuntu1_amd64.deb ...
+Unpacking libcap2-bin (1:2.73-4ubuntu1) ...
+Selecting previously unselected package liblzo2-2:amd64.
+Preparing to unpack .../4-liblzo2-2_2.10-3_amd64.deb ...
+Unpacking liblzo2-2:amd64 (2.10-3) ...
+Selecting previously unselected package squashfs-tools.
+Preparing to unpack .../5-squashfs-tools_1%3a4.6.1-1build1_amd64.deb ...
+Unpacking squashfs-tools (1:4.6.1-1build1) ...
+Selecting previously unselected package udev.
+Preparing to unpack .../6-udev_257.4-1ubuntu3.2_amd64.deb ...
+Unpacking udev (257.4-1ubuntu3.2) ...
+Selecting previously unselected package snapd.
+Preparing to unpack .../7-snapd_2.71+ubuntu25.04_amd64.deb ...
+Unpacking snapd (2.71+ubuntu25.04) ...
+Setting up apparmor (4.1.0~beta5-0ubuntu14.2) ...
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+Created symlink '/etc/systemd/system/sysinit.target.wants/apparmor.service' → '/usr/lib/systemd/system/apparmor.service'.
+Setting up libfuse3-3:amd64 (3.14.0-10) ...
+Setting up fuse3 (3.14.0-10) ...
+Removing 'diversion of /bin/fusermount to /bin/fusermount.usr-is-merged by fuse3'
+Removing 'diversion of /sbin/mount.fuse to /sbin/mount.fuse.usr-is-merged by fuse3'
+Setting up libcap2-bin (1:2.73-4ubuntu1) ...
+Setting up liblzo2-2:amd64 (2.10-3) ...
+Setting up squashfs-tools (1:4.6.1-1build1) ...
+Setting up udev (257.4-1ubuntu3.2) ...
+Creating group 'input' with GID 994.
+Creating group 'sgx' with GID 993.
+Creating group 'kvm' with GID 992.
+Creating group 'render' with GID 991.
+Setting up snapd (2.71+ubuntu25.04) ...
+Created symlink '/etc/systemd/system/multi-user.target.wants/snapd.apparmor.service' → '/usr/lib/systemd/system/snapd.apparmor.service'.
+Created symlink '/etc/systemd/system/multi-user.target.wants/snapd.autoimport.service' → '/usr/lib/systemd/system/snapd.autoimport.service'.
+Created symlink '/etc/systemd/system/multi-user.target.wants/snapd.core-fixup.service' → '/usr/lib/systemd/system/snapd.core-fixup.service'.
+Created symlink '/etc/systemd/system/multi-user.target.wants/snapd.recovery-chooser-trigger.service' → '/usr/lib/systemd/system/snapd.recovery-chooser-trigger.service'.
+Created symlink '/etc/systemd/system/multi-user.target.wants/snapd.seeded.service' → '/usr/lib/systemd/system/snapd.seeded.service'.
+Created symlink '/etc/systemd/system/cloud-final.service.wants/snapd.seeded.service' → '/usr/lib/systemd/system/snapd.seeded.service'.
+Unit /usr/lib/systemd/system/snapd.seeded.service is added as a dependency to a non-existent unit cloud-final.service.
+Created symlink '/etc/systemd/system/multi-user.target.wants/snapd.service' → '/usr/lib/systemd/system/snapd.service'.
+Created symlink '/etc/systemd/system/timers.target.wants/snapd.snap-repair.timer' → '/usr/lib/systemd/system/snapd.snap-repair.timer'.
+Created symlink '/etc/systemd/system/sockets.target.wants/snapd.socket' → '/usr/lib/systemd/system/snapd.socket'.
+Created symlink '/etc/systemd/system/final.target.wants/snapd.system-shutdown.service' → '/usr/lib/systemd/system/snapd.system-shutdown.service'.
+Selecting previously unselected package chromium-browser.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 61447 files and directories currently installed.)
+Preparing to unpack .../chromium-browser_2%3a1snap1-0ubuntu3_amd64.deb ...
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+=> Installing the chromium snap
+==> Checking connectivity with the snap store
+===> System doesn't have a working snapd, skipping
+Unpacking chromium-browser (2:1snap1-0ubuntu3) ...
+Selecting previously unselected package libpam-cap:amd64.
+Preparing to unpack .../libpam-cap_1%3a2.73-4ubuntu1_amd64.deb ...
+Unpacking libpam-cap:amd64 (1:2.73-4ubuntu1) ...
+Selecting previously unselected package systemd-hwe-hwdb.
+Preparing to unpack .../systemd-hwe-hwdb_257.4.3_all.deb ...
+Unpacking systemd-hwe-hwdb (257.4.3) ...
+Setting up systemd-hwe-hwdb (257.4.3) ...
+Setting up chromium-browser (2:1snap1-0ubuntu3) ...
+update-alternatives: using /usr/bin/chromium-browser to provide /usr/bin/x-www-browser (x-www-browser) in auto mode
+update-alternatives: using /usr/bin/chromium-browser to provide /usr/bin/gnome-www-browser (gnome-www-browser) in auto mode
+Setting up libpam-cap:amd64 (1:2.73-4ubuntu1) ...
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+Processing triggers for libc-bin (2.41-6ubuntu1.2) ...
+Processing triggers for systemd (257.4-1ubuntu3.2) ...
+Processing triggers for man-db (2.13.0-1) ...
+Processing triggers for dbus (1.16.2-2ubuntu1) ...
+Processing triggers for udev (257.4-1ubuntu3.2) ...
+Processing triggers for procps (2:4.0.4-7ubuntu1) ...
+procps: Applying updated sysctl configuration
+sysctl: setting key "net.core.default_qdisc": No such file or directory
+sysctl: setting key "net.core.default_qdisc": No such file or directory
+Processing triggers for hicolor-icon-theme (0.18-2) ...

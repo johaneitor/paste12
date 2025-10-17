@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Paste12 – Informe de Accesibilidad (A11y)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;margin:24px;line-height:1.5}
+    h1,h2{margin:0 0 12px}
+    code{background:#f3f3f3;padding:2px 6px;border-radius:4px}
+    .low{color:#2d7}
+    .med{color:#c90}
+    .high{color:#c33}
+    ul{margin:8px 0 16px}
+    .section{margin-bottom:24px}
+  </style>
+</head>
+<body>
+  <h1>Accesibilidad – Paste12 (auditoría rápida)</h1>
+  <p>Base auditada: <code>https://paste12-rmsk.onrender.com</code></p>
+
+  <div class="section">
+    <h2>Hallazgos</h2>
+    <ul>
+      <li class="med"><strong>Semántica</strong>: Se detectan <code>&lt;header&gt;</code> y <code>&lt;main&gt;</code> correctos en la plantilla canónica. En el HTML mínimo en producción faltan metadatos, pero la estructura es usable.</li>
+      <li class="low"><strong>Navegación por teclado</strong>: Botones primarios (<em>Publicar</em>, <em>Cargar más</em>, <em>Like</em>) accesibles y con foco. Recomendación: resaltar estados <code>:focus</code>.</li>
+      <li class="low"><strong>Aria</strong>: Botón de like incluye <code>aria-label</code>; contadores con texto visible. Sugerencia: mensajes <code>aria-live</code> para feedback de acciones.</li>
+      <li class="med"><strong>Contrastes</strong>: Paleta parece adecuada; verificar contraste en variantes de temas si aplican.</li>
+      <li class="med"><strong>Alt en imágenes</strong>: Asegurar <code>alt</code> en cualquier imagen futura; no crítico ahora.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Recomendaciones</h2>
+    <ul>
+      <li>Definir estilo visible para <code>:focus</code> en enlaces/botones.</li>
+      <li>Marcar mensajes de estado con <code>role="status"</code> o <code>aria-live="polite"</code>.</li>
+      <li>Incluir <code>lang="es"</code> en <code>&lt;html&gt;</code> (ya aplicado en este reporte).</li>
+    </ul>
+  </div>
+
+  <p>Nota: Lighthouse/axe no se ejecutó automáticamente por limitaciones de navegador en el entorno. Este informe refleja verificación manual rápida basada en la UI y el código.</p>
+</body>
+</html>

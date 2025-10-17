@@ -1,0 +1,134 @@
+{
+  "base": "https://paste12-rmsk.onrender.com",
+  "url": "https://paste12-rmsk.onrender.com/",
+  "startedAt": "2025-10-17T02:59:05.786Z",
+  "timings": {
+    "type": "navigation",
+    "startTime": 0,
+    "duration": 331.6000000014901,
+    "domContentLoaded": 320,
+    "loadEventEnd": 331.6000000014901,
+    "transferSize": 469,
+    "encodedBodySize": 169,
+    "decodedBodySize": 269
+  },
+  "console": [],
+  "pageErrors": [],
+  "requests": [],
+  "responses": [
+    {
+      "url": "https://paste12-rmsk.onrender.com/",
+      "status": 200,
+      "headers": {
+        "alt-svc": "h3=\":443\"; ma=86400",
+        "cache-control": "no-store",
+        "cf-cache-status": "DYNAMIC",
+        "cf-ray": "98fc89bb5e88a9c0-CMH",
+        "content-encoding": "br",
+        "content-length": "169",
+        "content-type": "text/html; charset=utf-8",
+        "date": "Fri, 17 Oct 2025 02:59:06 GMT",
+        "rndr-id": "e27b20cd-b9b6-41fb",
+        "server": "cloudflare",
+        "vary": "Accept-Encoding",
+        "x-render-origin-server": "gunicorn"
+      },
+      "method": "GET",
+      "resourceType": "document"
+    },
+    {
+      "url": "https://paste12-rmsk.onrender.com/js/app.js",
+      "status": 200,
+      "headers": {
+        "alt-svc": "h3=\":443\"; ma=86400",
+        "cache-control": "no-cache",
+        "cf-cache-status": "DYNAMIC",
+        "cf-ray": "98fc89bc28d2a9c0-CMH",
+        "content-disposition": "inline; filename=app.js",
+        "content-encoding": "br",
+        "content-length": "3478",
+        "content-type": "text/javascript; charset=utf-8",
+        "date": "Fri, 17 Oct 2025 02:59:06 GMT",
+        "etag": "\"1760626580.0-10021-3782283996\"",
+        "last-modified": "Thu, 16 Oct 2025 14:56:20 GMT",
+        "rndr-id": "5397a2bd-1bf3-48b2",
+        "server": "cloudflare",
+        "vary": "Accept-Encoding",
+        "x-render-origin-server": "gunicorn"
+      },
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "url": "https://paste12-rmsk.onrender.com/favicon.ico",
+      "status": 200,
+      "headers": {
+        "alt-svc": "h3=\":443\"; ma=86400",
+        "cache-control": "no-cache",
+        "cf-cache-status": "DYNAMIC",
+        "cf-ray": "98fc89bd0c7777be-CMH",
+        "content-disposition": "inline; filename=favicon.ico",
+        "content-length": "0",
+        "content-type": "image/vnd.microsoft.icon",
+        "date": "Fri, 17 Oct 2025 02:59:06 GMT",
+        "etag": "\"1760626580.0-0-169677779\"",
+        "last-modified": "Thu, 16 Oct 2025 14:56:20 GMT",
+        "priority": "u=1,i",
+        "rndr-id": "f6ce5572-887b-459e",
+        "server": "cloudflare",
+        "server-timing": "cfExtPri",
+        "x-render-origin-server": "gunicorn"
+      },
+      "method": "GET",
+      "resourceType": "other"
+    },
+    {
+      "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
+      "status": 200,
+      "headers": {
+        "access-control-allow-origin": "*",
+        "alt-svc": "h3=\":443\"; ma=86400",
+        "cf-cache-status": "DYNAMIC",
+        "cf-ray": "98fc89bcec3a77be-CMH",
+        "content-encoding": "br",
+        "content-length": "818",
+        "content-type": "application/json",
+        "date": "Fri, 17 Oct 2025 02:59:06 GMT",
+        "link": "<https://paste12-rmsk.onrender.com/api/notes?limit=20&before_id=680>; rel=\"next\"",
+        "priority": "u=1,i",
+        "rndr-id": "9b2e336e-e10b-4133",
+        "server": "cloudflare",
+        "server-timing": "cfExtPri",
+        "vary": "Accept-Encoding",
+        "x-render-origin-server": "gunicorn"
+      },
+      "method": "GET",
+      "resourceType": "fetch"
+    }
+  ],
+  "failedRequests": [],
+  "mainResponseHeaders": {
+    "alt-svc": "h3=\":443\"; ma=86400",
+    "cache-control": "no-store",
+    "cf-cache-status": "DYNAMIC",
+    "cf-ray": "98fc89bb5e88a9c0-CMH",
+    "content-encoding": "br",
+    "content-length": "169",
+    "content-type": "text/html; charset=utf-8",
+    "date": "Fri, 17 Oct 2025 02:59:06 GMT",
+    "rndr-id": "e27b20cd-b9b6-41fb",
+    "server": "cloudflare",
+    "vary": "Accept-Encoding",
+    "x-render-origin-server": "gunicorn"
+  },
+  "status": "OK",
+  "statusCode": 200,
+  "elapsedMs": 1201,
+  "assets": {
+    "css": [],
+    "js": [
+      "https://paste12-rmsk.onrender.com/js/app.js"
+    ]
+  },
+  "endedAt": "2025-10-17T02:59:07.390Z"
+}
