@@ -64,6 +64,14 @@ permissions:
   id-token: write
 
 jobs:
+  # No-op guard so push events don't produce a failed 0s run
+  guard:
+    if: ${{ github.event_name != 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip extended workflow on non-manual events
+        run: echo "Skipping extended workflow on event: ${{ github.event_name }}"
+
   deploy_and_smoke:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     name: Deploy, Health, Purge, Smokes
