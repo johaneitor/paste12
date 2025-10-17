@@ -20,7 +20,8 @@
     try{
       if(document.cookie.includes('uid=')) return;
       const rnd = (crypto && crypto.getRandomValues) ? Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('') : String(Math.random()).slice(2);
-      document.cookie = "uid="+rnd+"; Max-Age="+(3600*24*365)+"; Path=/; SameSite=Lax";
+      const secureAttr = (location.protocol === 'https:') ? '; Secure' : '';
+      document.cookie = "uid="+rnd+"; Max-Age="+(3600*24*365)+"; Path=/; SameSite=Lax"+secureAttr;
     }catch(_){}
   })();
   const $status = document.getElementById('status') || { textContent: '' };
