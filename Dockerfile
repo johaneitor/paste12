@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -16,6 +16,11 @@ COPY . /app
 
 USER app
 
-EXPOSE 8000
+# Render expects the app to listen on $PORT (default 10000). Use shell form for env expansion.
+EXPOSE 10000
 
-CMD ["gunicorn","wsgi:application","-w","2","-k","gthread","--threads","4","--timeout","120","-b","0.0.0.0:8000"]
+ENV WEB_CONCURRENCY=2 \
+    THREADS=4 \
+    TIMEOUT=120
+
+CMD ["/bin/sh","-lc","exec gunicorn wsgi:application -w ${WEB_CONCURRENCY} -k gthread --threads ${THREADS} --timeout ${TIMEOUT} -b 0.0.0.0:${PORT:-10000}"]
