@@ -79,12 +79,67 @@
     const btn = wrap.querySelector('.kebab');
     const panel = wrap.querySelector('.panel');
 
+    // open/close with focus management
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (state.openPanel && state.openPanel !== panel) state.openPanel.classList.remove('show');
       panel.classList.toggle('show');
-      btn.setAttribute('aria-expanded', panel.classList.contains('show') ? 'true' : 'false');
-      state.openPanel = panel.classList.contains('show') ? panel : null;
+      const isOpen = panel.classList.contains('show');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      state.openPanel = isOpen ? panel : null;
+      if (isOpen) {
+        const first = panel.querySelector('.item');
+        if (first) first.focus();
+      }
+    });
+
+    // keyboard support for trigger
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (!panel.classList.contains('show')) {
+          if (state.openPanel && state.openPanel !== panel) state.openPanel.classList.remove('show');
+          panel.classList.add('show');
+          btn.setAttribute('aria-expanded', 'true');
+          state.openPanel = panel;
+        }
+        const first = panel.querySelector('.item');
+        if (first) first.focus();
+      } else if (e.key === 'Escape') {
+        if (panel.classList.contains('show')) {
+          panel.classList.remove('show');
+          btn.setAttribute('aria-expanded', 'false');
+          state.openPanel = null;
+        }
+      }
+    });
+
+    // keyboard support inside menu
+    panel.addEventListener('keydown', (e) => {
+      const items = Array.from(panel.querySelectorAll('.item'));
+      if (!items.length) return;
+      const currentIndex = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = items[(currentIndex + 1 + items.length) % items.length];
+        next?.focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = items[(currentIndex - 1 + items.length) % items.length];
+        prev?.focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        items[0]?.focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        items[items.length - 1]?.focus();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        panel.classList.remove('show');
+        btn.setAttribute('aria-expanded', 'false');
+        state.openPanel = null;
+        btn.focus();
+      }
     });
 
     wrap.addEventListener('click', (e) => {
