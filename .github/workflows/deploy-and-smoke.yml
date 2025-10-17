@@ -1,4 +1,4 @@
-name: Deploy and Smoke
+name: Deploy and Smoke Extended (manual)
 
 on:
   workflow_dispatch:
@@ -52,14 +52,10 @@ on:
         required: false
         default: ""
 
-  push:
-    branches:
-      - main
-      - master
-      - "release/**"
+  # Push trigger disabled for extended workflow (use manual dispatch)
 
 concurrency:
-  group: deploy-and-smoke-${{ github.ref }}
+  group: deploy-and-smoke-ext-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -74,6 +70,10 @@ jobs:
     env:
       CF_ZONE_ID: ${{ secrets.CF_ZONE_ID || '' }}
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN || '' }}
+      BASE_URL: ${{ secrets.BASE_URL }}
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+      NETLIFY_DEPLOY_HOOK: ${{ secrets.NETLIFY_DEPLOY_HOOK }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,12 +86,12 @@ jobs:
           set -euo pipefail
           in_base=$(jq -r '.inputs.base_url // ""' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "")
           base="$in_base"
-          if [ -z "$base" ]; then base="${{ secrets.BASE_URL || '' }}"; fi
+          if [ -z "$base" ]; then base="${BASE_URL:-}"; fi
           if [ -z "$base" ]; then base="https://paste12-rmsk.onrender.com"; fi
           echo "BASE_URL=$base" >> "$GITHUB_ENV"
-          echo "DEPLOY_HOOK_URL=${{ secrets.RENDER_DEPLOY_HOOK || '' }}" >> "$GITHUB_ENV"
-          echo "VERCEL_HOOK=${{ secrets.VERCEL_DEPLOY_HOOK || '' }}" >> "$GITHUB_ENV"
-          echo "NETLIFY_HOOK=${{ secrets.NETLIFY_DEPLOY_HOOK || '' }}" >> "$GITHUB_ENV"
+          echo "DEPLOY_HOOK_URL=${RENDER_DEPLOY_HOOK:-}" >> "$GITHUB_ENV"
+          echo "VERCEL_HOOK=${VERCEL_DEPLOY_HOOK:-}" >> "$GITHUB_ENV"
+          echo "NETLIFY_HOOK=${NETLIFY_DEPLOY_HOOK:-}" >> "$GITHUB_ENV"
           echo "PURGE_PATHS=/,/js/app.js,/css/styles.css" >> "$GITHUB_ENV"
 
       - name: Trigger deploy hook (Render)
