@@ -65,6 +65,7 @@ permissions:
 
 jobs:
   deploy_and_smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     name: Deploy, Health, Purge, Smokes
     runs-on: ubuntu-latest
     env:

@@ -1,0 +1,13 @@
+HTTP/2 200 
+date: Fri, 17 Oct 2025 17:13:50 GMT
+content-type: text/html; charset=utf-8
+access-control-allow-origin: *
+allow: HEAD, POST, OPTIONS, GET
+rndr-id: 21f2abe3-11d5-4311
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 99016dc86dd84770-DFW
+alt-svc: h3=":443"; ma=86400
+

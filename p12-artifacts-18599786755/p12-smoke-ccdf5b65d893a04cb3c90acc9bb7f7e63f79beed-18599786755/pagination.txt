@@ -1,0 +1,6 @@
+== /api/notes?limit=5 (cabeceras) ==
+HTTP/2 200 
+link: <https://paste12-rmsk.onrender.com/api/notes?limit=5&before_id=699>; rel="next"
+next=https://paste12-rmsk.onrender.com/api/notes?limit=5&before_id=699
+== página 2 ids ==
+curl: (6) Could not resolve host: paste12-rmsk.onrender.comhttps

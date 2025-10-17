@@ -1,0 +1,4 @@
+== FETCH index ==
+bytes: 269
+✓ cierre </html> al final
+✓ sin IIFE visible

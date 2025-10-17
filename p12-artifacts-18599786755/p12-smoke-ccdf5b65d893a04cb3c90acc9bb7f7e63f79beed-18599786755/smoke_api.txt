@@ -1,0 +1,92 @@
+== smoke_api @ https://paste12-rmsk.onrender.com ==
+
+-- GET /api/health --
+status:200
+{
+    "api": true,
+    "ok": true,
+    "status": "ok",
+    "ver": "factory-min-v1"
+}
+
+-- GET /__api_import_error (esperado 404) --
+status:404
+
+-- GET /__whoami (blueprint 'api' y rutas detalle) --
+status:404
+<!doctype html>
+<html lang=en>
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+
+WARN /__whoami no disponible (continuo)
+
+-- GET /api/_routes (debe listar endpoints de notas) --
+status:404
+{
+    "error": "not_found"
+}
+WARN /api/_routes no disponible (continuo)
+
+-- POST /api/notes (crear) --
+status:201
+{
+    "author_fp": "66784e6657bf1fdc4d25b1bc77f3badd",
+    "expires_at": "2025-10-18T17:13:52.102841",
+    "id": 703,
+    "likes": 0,
+    "reports": 0,
+    "text": "smoke 2025-10-17T17:13:51Z",
+    "timestamp": "2025-10-17T17:13:52.102841",
+    "views": 0
+}
+ID=703
+
+-- POST /api/notes/703/view --
+status:500
+<!doctype html>
+<html lang=en>
+<title>500 Internal Server Error</title>
+<h1>Internal Server Error</h1>
+<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>
+
+WARN /view !=200 (ok si silente)
+
+-- POST /api/notes/703/like --
+status:500
+<!doctype html>
+<html lang=en>
+<title>500 Internal Server Error</title>
+<h1>Internal Server Error</h1>
+<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>
+
+WARN /like !=200
+
+-- POST /api/notes/703/report --
+status:500
+<!doctype html>
+<html lang=en>
+<title>500 Internal Server Error</title>
+<h1>Internal Server Error</h1>
+<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>
+
+WARN /report !=200
+
+-- GET /api/notes/703 (ver contadores) --
+status:404
+{
+    "error": "not_found"
+}
+WARN detalle no disponible; intento verificar por listado
+status:200
+ok in list
+
+-- GET /api/dbdiag --
+status:404
+{
+    "error": "not_found"
+}
+WARN /api/dbdiag no disponible (continuo)
+
+✅ smoke_api OK (ID=703)

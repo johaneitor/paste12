@@ -1,0 +1,74 @@
+== SMOKE 20251017-171349Z ==
+BASE: https://paste12-rmsk.onrender.com
+
+-- /api/health --
+{"api":true,"ok":true,"status":"ok","ver":"factory-min-v1"}
+
+
+-- OPTIONS /api/notes --
+HTTP/2 200 
+date: Fri, 17 Oct 2025 17:13:50 GMT
+content-type: text/html; charset=utf-8
+access-control-allow-origin: *
+allow: HEAD, POST, OPTIONS, GET
+rndr-id: 21f2abe3-11d5-4311
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 99016dc86dd84770-DFW
+alt-svc: h3=":443"; ma=86400
+
+
+-- GET /api/notes (headers) --
+HTTP/2 200 
+date: Fri, 17 Oct 2025 17:13:50 GMT
+content-type: application/json
+access-control-allow-origin: *
+link: <https://paste12-rmsk.onrender.com/api/notes?limit=10&before_id=693>; rel="next"
+rndr-id: b6197ebc-1d51-4132
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 99016dcabeab6b5a-DFW
+alt-svc: h3=":443"; ma=86400
+
+
+-- GET /api/notes (body, prefix) --
+[{"author_fp":"92d3450a48550e03ceb1ddc2bacaf0da","expires_at":"2025-10-18T12:56:44.327580","id":702,"likes":0,"reports":0,"text":"<script>alert(1)</script>","timestamp":"2025-10-17T12:56:44.327580","views":0},{"author_fp":"7606db60ddea41b67a2fd17049a5bcf4"
+
+-- GET / (headers) --
+HTTP/2 200 
+date: Fri, 17 Oct 2025 17:13:50 GMT
+content-type: text/html; charset=utf-8
+cache-control: no-store
+rndr-id: ba09071a-3bc5-4701
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 99016dcc2e7c315c-DFW
+alt-svc: h3=":443"; ma=86400
+
+
+-- GET / (html, prefix) --
+<!doctype html><html><head>
+<meta name="p12-safe-shim" content="1" />
+
+<meta name="p12-commit" content="974d296f6d90354b2b3a8bae6c3981b8443bf62d" />
+</head><body>
+<ul id="notes-list"></ul> data-single="1">paste12  <script src="/js/app.js" defer></script>
+</body></html>
+-- js headers --
+
+Archivos:
+  /home/runner/work/_temp/p12-artifacts/health-20251017-171349Z.json
+  /home/runner/work/_temp/p12-artifacts/options-20251017-171349Z.txt
+  /home/runner/work/_temp/p12-artifacts/api-notes-h-20251017-171349Z.txt
+  /home/runner/work/_temp/p12-artifacts/api-notes-20251017-171349Z.json
+  /home/runner/work/_temp/p12-artifacts/index-headers-20251017-171349Z.txt
+  /home/runner/work/_temp/p12-artifacts/index-20251017-171349Z.html
+  /home/runner/work/_temp/p12-artifacts/jsapp.js.headers-20251017-171349Z.txt
+  /home/runner/work/_temp/p12-artifacts/cssstyles.css.headers-20251017-171349Z.txt
+== END ==
