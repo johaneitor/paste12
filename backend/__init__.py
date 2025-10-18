@@ -255,7 +255,8 @@ def create_app():
             pass
         return resp, 200
 
-    # Alias mínimo independiente para health checks de la plataforma
+    # --- Platform healthz (Render/ALB probes) ---
+    # Define only one /healthz endpoint with JSON body, idempotent
     @app.get("/healthz")
     @limiter.exempt
     def healthz():
@@ -265,11 +266,6 @@ def create_app():
         except Exception:
             pass
         return resp, 200
-
-    # --- Platform healthz (Render/ALB probes) ---
-    @app.get("/healthz")
-    def healthz():
-        return "ok", 200
 
     # --- Health DB (opcional) ---
     @app.get("/api/health/db")
