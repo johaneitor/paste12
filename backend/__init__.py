@@ -34,10 +34,30 @@ def create_app():
     db.init_app(app)
 
     # --- Rate limit storage config (prefer Redis in prod) ---
+    # Guard against literal "$PORT" in FLASK_LIMITER_STORAGE_URI (e.g., redis://:pwd@host:$PORT/0)
+    # which can break URL parsing in limits/flask-limiter on Render native builds.
     try:
-        app.config.setdefault("RATELIMIT_STORAGE_URI", os.environ.get("FLASK_LIMITER_STORAGE_URI") or "memory://")
-    except Exception:
-        pass
+        raw_storage_uri = os.environ.get("FLASK_LIMITER_STORAGE_URI")
+        resolved_storage_uri = "memory://"
+        if raw_storage_uri:
+            candidate = raw_storage_uri
+            if "$PORT" in candidate:
+                env_port = os.environ.get("PORT")
+                if env_port and env_port.isdigit():
+                    candidate = candidate.replace("$PORT", env_port)
+                else:
+                    app.logger.warning(
+                        "[limiter] FLASK_LIMITER_STORAGE_URI contains literal $PORT and no numeric PORT env; using memory://"
+                    )
+                    candidate = "memory://"
+            resolved_storage_uri = candidate
+        app.config.setdefault("RATELIMIT_STORAGE_URI", resolved_storage_uri)
+    except Exception as _exc:
+        # Fallback to in-memory storage if anything goes wrong during resolution
+        try:
+            app.logger.warning("[limiter] storage URI resolution failed: %r; using memory://", _exc)
+        except Exception:
+            pass
 
     # --- Ensure minimal schema (non-intrusive) ---
     try:
