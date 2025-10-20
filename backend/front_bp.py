@@ -26,6 +26,40 @@ def index():
         # Ensure safe shim meta
         if "p12-safe-shim" not in html and "<head>" in html:
             html = html.replace("<head>", "<head>\n<meta name=\"p12-safe-shim\" content=\"1\" />\n")
+        # Minimal SEO: title, description, favicon, canonical and OG if missing
+        if "<head>" in html:
+            if "<title>" not in html:
+                html = html.replace("<head>", "<head>\n<title>Paste12 — notas efímeras</title>\n")
+            if 'name="description"' not in html:
+                html = html.replace(
+                    "<head>",
+                    "<head>\n<meta name=\"description\" content=\"Comparte notas efímeras de forma simple y segura.\" />\n",
+                )
+            if 'rel="icon"' not in html and 'rel="shortcut icon"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <link rel=\"icon\" href=\"/favicon.svg\" />\n</head>",
+                )
+            if 'rel="canonical"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <link rel=\"canonical\" href=\"/\" />\n</head>",
+                )
+            if 'property="og:title"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta property=\"og:title\" content=\"Paste12\" />\n</head>",
+                )
+            if 'property="og:description"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta property=\"og:description\" content=\"Notas efímeras, simples y seguras.\" />\n</head>",
+                )
+            if 'property="og:image"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta property=\"og:image\" content=\"/img/og.png\" />\n</head>",
+                )
         # Ensure body data-single flag (preserving existing attributes)
         if "<body" in html and "data-single=" not in html:
             try:
