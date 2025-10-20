@@ -21,6 +21,8 @@ def _guess_commit() -> str:
 def _read_index_text() -> str:
     root = os.path.dirname(os.path.abspath(__file__))
     candidates = [
+        # Prefer canonical frontend index shipped with the repo
+        os.path.join(root, "backend", "frontend", "index.html"),
         os.path.join(root, "backend", "static", "index.html"),
         os.path.join(root, "public", "index.html"),
         os.path.join(root, "frontend", "index.html"),
@@ -37,29 +39,83 @@ def _read_index_text() -> str:
 
 
 def _inject_index_flags(html: str) -> str:
-    # Ensure meta commit
+    """Enforce minimal flags and SEO on index HTML while preserving content."""
+    # Ensure commit meta
     if 'name="p12-commit"' not in html and "<head>" in html:
         html = html.replace(
             "<head>",
             f"<head>\n<meta name=\"p12-commit\" content=\"{_guess_commit()}\" />\n",
         )
+
     # Ensure safe shim marker
     if "p12-safe-shim" not in html and "<head>" in html:
         html = html.replace(
             "<head>",
             "<head>\n<meta name=\"p12-safe-shim\" content=\"1\" />\n",
         )
-    # Ensure body data-single flag
+
+    # Minimal SEO (non-intrusive)
+    if "<head>" in html:
+        if "<title>" not in html:
+            html = html.replace("<head>", "<head>\n<title>Paste12 — notas efímeras</title>\n")
+        if 'name="description"' not in html:
+            html = html.replace(
+                "<head>",
+                "<head>\n<meta name=\"description\" content=\"Comparte notas efímeras de forma simple y segura.\" />\n",
+            )
+        if 'rel="icon"' not in html and 'rel="shortcut icon"' not in html:
+            html = html.replace(
+                "</head>",
+                "  <link rel=\"icon\" href=\"/favicon.svg\" />\n</head>",
+            )
+        if 'rel="canonical"' not in html:
+            # Use site-root canonical by default to avoid leaking environment
+            html = html.replace(
+                "</head>",
+                "  <link rel=\"canonical\" href=\"/\" />\n</head>",
+            )
+        if 'property="og:title"' not in html:
+            html = html.replace(
+                "</head>",
+                "  <meta property=\"og:title\" content=\"Paste12\" />\n</head>",
+            )
+        if 'property="og:description"' not in html:
+            html = html.replace(
+                "</head>",
+                "  <meta property=\"og:description\" content=\"Notas efímeras, simples y seguras.\" />\n</head>",
+            )
+        if 'property="og:image"' not in html:
+            html = html.replace(
+                "</head>",
+                "  <meta property=\"og:image\" content=\"/img/og.png\" />\n</head>",
+            )
+
+    # Ensure body data-single flag without breaking existing attributes
     if "<body" in html and "data-single=" not in html:
-        html = html.replace("<body", "<body data-single=\"1\"")
-    # Ensure notes list container exists for FE to render into
+        try:
+            idx = html.lower().find("<body")
+            if idx != -1:
+                end = html.find(">", idx)
+                if end != -1:
+                    html = html[:end] + " data-single=\"1\"" + html[end:]
+        except Exception:
+            # Conservative fallback
+            html = html.replace("<body>", "<body data-single=\"1\">")
+
+    # Ensure notes list container exists (insert right after <body...>)
     if 'id="notes-list"' not in html:
         if "</main>" in html:
             html = html.replace("</main>", "  <ul id=\"notes-list\"></ul>\n</main>")
-        elif "<body" in html:
-            html = html.replace("<body", "<body>\n<ul id=\"notes-list\"></ul>")
         else:
-            html += "\n<ul id=\"notes-list\"></ul>\n"
+            try:
+                idx = html.lower().find("<body")
+                if idx != -1:
+                    end = html.find(">", idx)
+                    if end != -1:
+                        html = html[:end+1] + "\n<ul id=\"notes-list\"></ul>\n" + html[end+1:]
+            except Exception:
+                html += "\n<ul id=\"notes-list\"></ul>\n"
+
     # Ensure app.js is loaded
     if '/js/app.js' not in html:
         if "</body>" in html:
@@ -68,6 +124,7 @@ def _inject_index_flags(html: str) -> str:
             html = html.replace("</head>", "  <script src=\"/js/app.js\" defer></script>\n</head>")
         else:
             html += "\n<script src=\"/js/app.js\" defer></script>\n"
+
     # Defensive: do not transform braces. Altering '{' or '}' can break
     # legitimate CSS/JS/template content. We never call .format() on this
     # HTML, so keep it intact to avoid introducing errors.
