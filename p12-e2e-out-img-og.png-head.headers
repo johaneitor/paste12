@@ -1,0 +1,19 @@
+HTTP/2 200 
+date: Mon, 20 Oct 2025 18:29:59 GMT
+content-type: image/png
+content-length: 3975
+cache-control: no-cache
+content-disposition: inline; filename=og.png
+etag: "1760983748.0-3975-4104852281"
+last-modified: Mon, 20 Oct 2025 18:09:08 GMT
+referrer-policy: no-referrer
+rndr-id: 154845e2-6b67-41e7
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 991a95769cd8f43c-CMH
+alt-svc: h3=":443"; ma=86400
+

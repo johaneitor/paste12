@@ -1,0 +1,19 @@
+HTTP/2 200 
+date: Mon, 20 Oct 2025 18:29:55 GMT
+content-type: text/javascript; charset=utf-8
+cache-control: no-cache
+content-disposition: inline; filename=app.js
+etag: W/"1760983748.0-11441-3782283996"
+last-modified: Mon, 20 Oct 2025 18:09:08 GMT
+referrer-policy: no-referrer
+rndr-id: 11682711-12bd-44f4
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 991a955b8c314652-CMH
+alt-svc: h3=":443"; ma=86400
+

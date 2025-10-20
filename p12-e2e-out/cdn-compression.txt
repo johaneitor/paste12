@@ -1,0 +1,15 @@
+== / ==
+cache-control: no-store
+content-encoding: br
+cf-cache-status: DYNAMIC
+== /js/app.js ==
+cache-control: no-cache
+content-encoding: br
+cf-cache-status: DYNAMIC
+== /css/styles.css ==
+cache-control: no-cache
+content-encoding: br
+cf-cache-status: DYNAMIC
+== /api/notes ==
+content-encoding: br
+cf-cache-status: DYNAMIC
