@@ -1,22 +1,22 @@
 HTTP/2 200 
-date: Tue, 21 Oct 2025 01:33:30 GMT
+date: Tue, 21 Oct 2025 10:54:14 GMT
 content-type: text/javascript; charset=utf-8
 content-length: 1
-cache-control: no-cache
+cache-control: public, max-age=604800, immutable
 content-disposition: inline; filename=app.js
 content-encoding: br
-etag: "1761009283.0-11441-3782283996"
-last-modified: Tue, 21 Oct 2025 01:14:43 GMT
+etag: "1761013030.0-11441-3782283996"
+last-modified: Tue, 21 Oct 2025 02:17:10 GMT
 referrer-policy: no-referrer
-rndr-id: 55b5acec-7138-4155
+rndr-id: 759c1c12-b7a3-49d2
 strict-transport-security: max-age=31536000; includeSubDomains; preload
 vary: Accept-Encoding
 x-content-type-options: nosniff
 x-frame-options: DENY
 x-render-origin-server: gunicorn
-x-resp-time: 0.8ms
+x-resp-time: 1.0ms
 cf-cache-status: DYNAMIC
 server: cloudflare
-cf-ray: 991d01d5fe64cb43-CMH
+cf-ray: 9920373999875751-CMH
 alt-svc: h3=":443"; ma=86400
 

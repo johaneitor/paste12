@@ -1,14 +1,14 @@
 HTTP/2 200 
-date: Tue, 21 Oct 2025 01:33:30 GMT
+date: Tue, 21 Oct 2025 10:54:14 GMT
 content-type: text/css; charset=utf-8
 content-length: 1
-cache-control: no-cache
+cache-control: public, max-age=604800, immutable
 content-disposition: inline; filename=styles.css
 content-encoding: br
-etag: "1761009283.0-3196-1212224791"
-last-modified: Tue, 21 Oct 2025 01:14:43 GMT
+etag: "1761013030.0-3196-1212224791"
+last-modified: Tue, 21 Oct 2025 02:17:10 GMT
 referrer-policy: no-referrer
-rndr-id: 7e61ce89-8b04-4bd3
+rndr-id: 36c55c71-ca99-461b
 strict-transport-security: max-age=31536000; includeSubDomains; preload
 vary: Accept-Encoding
 x-content-type-options: nosniff
@@ -17,6 +17,6 @@ x-render-origin-server: gunicorn
 x-resp-time: 0.9ms
 cf-cache-status: DYNAMIC
 server: cloudflare
-cf-ray: 991d01d6cbd4cac0-CMH
+cf-ray: 9920373ace6cbdc9-CMH
 alt-svc: h3=":443"; ma=86400
 

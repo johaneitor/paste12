@@ -1,0 +1,18 @@
+HTTP/2 302 
+date: Tue, 21 Oct 2025 10:54:13 GMT
+content-type: text/html; charset=utf-8
+content-security-policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; script-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; img-src 'self' data: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com https://www.googletagservices.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; object-src 'none'; upgrade-insecure-requests
+location: /
+referrer-policy: no-referrer
+rndr-id: 598d5ea8-0b23-443c
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+x-resp-time: 0.7ms
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 992037333b38cf75-CMH
+alt-svc: h3=":443"; ma=86400
+

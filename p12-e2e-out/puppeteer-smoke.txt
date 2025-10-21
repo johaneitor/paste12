@@ -1,6 +1,6 @@
 # home https://paste12-rmsk.onrender.com/
-- DCL: 615 ms, Load: 852 ms
-- Errors: 85, Requests: 23, Failures: 80
+- DCL: 685 ms, Load: 1343 ms
+- Errors: 131, Requests: 27, Failures: 120
 # notes https://paste12-rmsk.onrender.com/notes
-- DCL: 108 ms, Load: 109 ms
-- Errors: 1, Requests: 2, Failures: 0
+- DCL: 361 ms, Load: 1023 ms
+- Errors: 131, Requests: 27, Failures: 120
