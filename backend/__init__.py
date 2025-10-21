@@ -462,4 +462,26 @@ def create_app():
                 pass
             return resp
 
+    # --- Content-Security-Policy via header for HTML responses ---
+    @app.after_request
+    def _csp_header(resp):
+        try:
+            ct = (resp.headers.get("Content-Type") or "").lower()
+            if "text/html" in ct:
+                # Align with frontend meta policy; header takes precedence and enables frame-ancestors
+                csp = (
+                    "default-src 'self'; "
+                    "base-uri 'self'; form-action 'self'; frame-ancestors 'self'; "
+                    "script-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; "
+                    "img-src 'self' data: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com https://www.googletagservices.com; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "connect-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; "
+                    "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; "
+                    "object-src 'none'; upgrade-insecure-requests"
+                )
+                resp.headers.setdefault("Content-Security-Policy", csp)
+        except Exception:
+            pass
+        return resp
+
     return app
