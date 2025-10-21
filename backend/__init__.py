@@ -1,10 +1,15 @@
 import os
 import logging
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from time import perf_counter
+import sqlite3
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError
 
 db = SQLAlchemy()
 
@@ -21,10 +26,19 @@ def create_app():
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url or "sqlite:////tmp/paste12.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
-        "pool_pre_ping": True,
-        "pool_recycle": 280,
-    })
+
+    # Engine options tuned for SQLite/Postgres; safe defaults for others
+    engine_opts = {"pool_pre_ping": True, "pool_recycle": 280}
+    try:
+        if db_url and db_url.startswith("postgresql"):
+            # Conservative pool for small apps
+            engine_opts.update({"pool_size": 10, "max_overflow": 20})
+        elif (db_url or "").startswith("sqlite") or (not db_url):
+            # Busy timeout helps reduce "database is locked" under write contention
+            engine_opts.update({"connect_args": {"timeout": 5.0}})
+    except Exception:
+        pass
+    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", engine_opts)
 
     # --- CORS sólo para /api/* ---
     # Expose permissive CORS for API endpoints and allow custom headers like X-FP
@@ -32,6 +46,48 @@ def create_app():
 
     # --- SQLAlchemy init ---
     db.init_app(app)
+
+    # Apply SQLite pragmas globally on connect (affects all SQLAlchemy engines in-process)
+    @event.listens_for(Engine, "connect")
+    def _set_sqlite_pragmas(dbapi_conn, _):  # type: ignore[override]
+        try:
+            if isinstance(dbapi_conn, sqlite3.Connection):
+                cur = dbapi_conn.cursor()
+                try:
+                    cur.execute("PRAGMA journal_mode=WAL")
+                except Exception:
+                    pass
+                try:
+                    cur.execute("PRAGMA busy_timeout=5000")
+                except Exception:
+                    pass
+                try:
+                    cur.execute("PRAGMA synchronous=NORMAL")
+                except Exception:
+                    pass
+                cur.close()
+        except Exception:
+            # Never break connection setup because of PRAGMA attempts
+            pass
+
+    # Simple response-time header for observability
+    @app.before_request
+    def _p12_t0():
+        try:
+            g._p12_t0 = perf_counter()
+        except Exception:
+            pass
+
+    @app.after_request
+    def _p12_resp_time(resp):
+        try:
+            t0 = getattr(g, "_p12_t0", None)
+            if t0 is not None:
+                dt_ms = (perf_counter() - t0) * 1000.0
+                resp.headers.setdefault("X-Resp-Time", f"{dt_ms:.1f}ms")
+        except Exception:
+            pass
+        return resp
 
     # --- Rate limit storage config (prefer Redis in prod) ---
     try:
@@ -217,6 +273,9 @@ def create_app():
                 return jsonify(ok=True, id=row.id, likes=row.likes), 200
             except Exception as exc:
                 db.session.rollback()
+                msg = str(exc).lower()
+                if "database is locked" in msg or "deadlock" in msg or "timeout" in msg:
+                    return jsonify(ok=False, error="db_busy"), 503
                 return jsonify(ok=False, error="server_error"), 500
 
         @app.post("/api/notes/<int:note_id>/report")
@@ -229,8 +288,11 @@ def create_app():
                 if not row:
                     return jsonify(ok=False, error="not_found"), 404
                 return jsonify(ok=True, id=row.id, reports=row.reports), 200
-            except Exception:
+            except Exception as exc:
                 db.session.rollback()
+                msg = str(exc).lower()
+                if "database is locked" in msg or "deadlock" in msg or "timeout" in msg:
+                    return jsonify(ok=False, error="db_busy"), 503
                 return jsonify(ok=False, error="server_error"), 500
 
     # --- Frontend blueprint (sirve /, /terms, /privacy) ---
@@ -353,6 +415,18 @@ def create_app():
             # Fall through to default HTML error page
             pass
         # For non-API routes, delegate to Flask's default 405 page
+        return err
+
+    # Map DB lock/timeouts to 503 for API calls so clients can retry gracefully
+    @app.errorhandler(OperationalError)
+    def _db_operational_to_503(err):
+        try:
+            if request.path.startswith("/api/"):
+                msg = str(getattr(err, "orig", err)).lower()
+                if "database is locked" in msg or "deadlock" in msg or "timeout" in msg:
+                    return jsonify(ok=False, error="db_busy"), 503
+        except Exception:
+            pass
         return err
 
     # --- Optional secure headers (enable with P12_SECURE_HEADERS=1) ---
