@@ -77,6 +77,27 @@ def index():
                     "</head>",
                     f"  <meta property=\\\"og:url\\\" content=\\\"{root}/\\\" />\n</head>",
                 )
+            # Twitter cards (si faltan)
+            if 'name="twitter:card"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:card\" content=\"summary_large_image\" />\n</head>",
+                )
+            if 'name="twitter:title"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:title\" content=\"Paste12\" />\n</head>",
+                )
+            if 'name="twitter:description"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:description\" content=\"Notas efímeras, simples y seguras.\" />\n</head>",
+                )
+            if 'name="twitter:image"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:image\" content=\"/img/og.png\" />\n</head>",
+                )
         # Ensure body data-single flag (preserving existing attributes)
         if "<body" in html and "data-single=" not in html:
             try:
