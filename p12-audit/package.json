@@ -1,0 +1,16 @@
+{
+  "name": "p12-audit",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "smoke": "node smoke.mjs",
+    "a11y": "lighthouse \"$BASE_URL\" --chrome-flags=--headless --only-categories=accessibility --output html --output-path ../p12-e2e-out/a11y-report.html",
+    "perf": "lighthouse \"$BASE_URL\" --chrome-flags=--headless --only-categories=performance,seo,best-practices --output json --output html --output-path ../p12-e2e-out/lh-report.html"
+  },
+  "devDependencies": {
+    "@axe-core/cli": "^4.7.3",
+    "lighthouse": "^12.0.0",
+    "puppeteer": "^22.9.0"
+  }
+}
