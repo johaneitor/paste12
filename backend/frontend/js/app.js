@@ -129,6 +129,8 @@
   }
 
   async function loadAndRender() {
+    // Microtask defer para no bloquear DCL
+    await Promise.resolve();
     const list = await fetchNotes();
     render(list);
   }
@@ -181,8 +183,19 @@
   }
 
   window.addEventListener('error', ev => uiError('JS: ' + (ev?.message || 'error')));
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  // Defer a requestIdleCallback cuando esté disponible para minimizar TBT
+  const start = () => {
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => boot(), { timeout: 1200 });
+    } else if ('requestAnimationFrame' in window) {
+      requestAnimationFrame(() => setTimeout(boot, 0));
+    } else if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  };
+  start();
 })();
 
 /* === paste12: Unified Pagination (BEGIN) ============================ */

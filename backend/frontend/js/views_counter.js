@@ -1,6 +1,13 @@
 (function(){
   const SEEN_KEY = (id)=>`p12:viewed:${id}`;
+  const ATTEMPT_KEY = (id)=>`p12:viewAttempted:${id}`;
   const NOTES_SEL = '#notes, [data-notes], #list, main, body';
+
+  // Global guard to avoid duplicate view POSTs across modules
+  const globalGuard = (function(){
+    if (!window.__p12ViewOnceGuard) window.__p12ViewOnceGuard = new Set();
+    return window.__p12ViewOnceGuard;
+  })();
 
   // map de id -> {views,...} del listado actual
   const cache = new Map();
@@ -51,10 +58,17 @@
 
   async function addViewOnce(id, card){
     try{
-      if (sessionStorage.getItem(SEEN_KEY(id))) return; // ya sumado en esta sesión
+      if (!id) return;
+      if (globalGuard.has(id)) return;
+      if (sessionStorage.getItem(SEEN_KEY(id))) { globalGuard.add(id); return; }
+      if (sessionStorage.getItem(ATTEMPT_KEY(id))) return; // evitar tormenta en fallos
+      // Marca el intento antes del fetch para no reintentar en bucles/errores
+      sessionStorage.setItem(ATTEMPT_KEY(id), '1');
+      globalGuard.add(id);
       const res = await fetch(`/api/notes/${id}/view`, {method:'POST'});
-      const j = await res.json();
-      setViews(card, j.views ?? '?');
+      const j = await res.json().catch(()=>({}));
+      if (j && typeof j.views !== 'undefined') setViews(card, j.views ?? '?');
+      // Marca como visto independientemente del conteo para evitar reintentos agresivos
       sessionStorage.setItem(SEEN_KEY(id), '1');
     }catch(e){
       console.warn('[views] fallo al sumar', e);
@@ -77,7 +91,8 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', ()=>{
+  // Defer hasta 'load' para no competir con el render inicial
+  window.addEventListener('load', ()=>{
     const container = document.querySelector(NOTES_SEL);
     if(!container) return;
     process(container);
