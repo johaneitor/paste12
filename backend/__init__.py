@@ -41,8 +41,25 @@ def create_app():
     app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", engine_opts)
 
     # --- CORS sólo para /api/* ---
-    # Expose permissive CORS for API endpoints and allow custom headers like X-FP
-    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
+    # Afinar CORS: allowlist configurable por env (coma-separada) y default a URL pública
+    try:
+        allowlist = os.environ.get("P12_CORS_ALLOWLIST", "").strip()
+        if allowlist:
+            origins = [o.strip() for o in allowlist.split(",") if o.strip()]
+        else:
+            origins = [os.environ.get("PUBLIC_BASE_URL", "https://paste12-rmsk.onrender.com").rstrip("/")]
+        CORS(
+            app,
+            resources={r"/api/*": {
+                "origins": origins,
+                "allow_headers": ["Content-Type", "X-Requested-With", "X-FP"],
+                "methods": ["GET", "POST", "OPTIONS"],
+                "supports_credentials": False,
+            }},
+        )
+    except Exception:
+        # Fallback a CORS abierto en caso de error de config, pero sin credenciales
+        CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
 
     # --- SQLAlchemy init ---
     db.init_app(app)
@@ -468,15 +485,40 @@ def create_app():
         try:
             ct = (resp.headers.get("Content-Type") or "").lower()
             if "text/html" in ct:
-                # Align with frontend meta policy; header takes precedence and enables frame-ancestors
+                # Endurecer CSP progresivamente: permitir ads sólo si están habilitados
+                allow_ads = os.environ.get("P12_ENABLE_ADS", "1") == "1"
+                script_src = ["'self'"]
+                img_src = ["'self'", "data:"]
+                connect_src = ["'self'"]
+                frame_src = []
+                if allow_ads:
+                    script_src += [
+                        "https://pagead2.googlesyndication.com",
+                        "https://googleads.g.doubleclick.net",
+                    ]
+                    img_src += [
+                        "https://pagead2.googlesyndication.com",
+                        "https://googleads.g.doubleclick.net",
+                        "https://www.google.com",
+                        "https://www.googletagservices.com",
+                    ]
+                    connect_src += [
+                        "https://pagead2.googlesyndication.com",
+                        "https://googleads.g.doubleclick.net",
+                    ]
+                    frame_src += [
+                        "https://googleads.g.doubleclick.net",
+                        "https://tpc.googlesyndication.com",
+                    ]
+
                 csp = (
                     "default-src 'self'; "
                     "base-uri 'self'; form-action 'self'; frame-ancestors 'self'; "
-                    "script-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; "
-                    "img-src 'self' data: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com https://www.googletagservices.com; "
+                    f"script-src {' '.join(script_src)}; "
+                    f"img-src {' '.join(img_src)}; "
                     "style-src 'self' 'unsafe-inline'; "
-                    "connect-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; "
-                    "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; "
+                    f"connect-src {' '.join(connect_src)}; "
+                    f"frame-src {' '.join(frame_src) if frame_src else "'none'"}; "
                     "object-src 'none'; upgrade-insecure-requests"
                 )
                 resp.headers.setdefault("Content-Security-Policy", csp)
