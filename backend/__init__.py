@@ -9,6 +9,7 @@ from time import perf_counter
 import sqlite3
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError
 
 db = SQLAlchemy()
 
@@ -414,6 +415,18 @@ def create_app():
             # Fall through to default HTML error page
             pass
         # For non-API routes, delegate to Flask's default 405 page
+        return err
+
+    # Map DB lock/timeouts to 503 for API calls so clients can retry gracefully
+    @app.errorhandler(OperationalError)
+    def _db_operational_to_503(err):
+        try:
+            if request.path.startswith("/api/"):
+                msg = str(getattr(err, "orig", err)).lower()
+                if "database is locked" in msg or "deadlock" in msg or "timeout" in msg:
+                    return jsonify(ok=False, error="db_busy"), 503
+        except Exception:
+            pass
         return err
 
     # --- Optional secure headers (enable with P12_SECURE_HEADERS=1) ---
