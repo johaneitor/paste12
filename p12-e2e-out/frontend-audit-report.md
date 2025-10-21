@@ -120,8 +120,13 @@ Objetivo: Auditoría visual, accesibilidad, rendimiento, seguridad y consistenci
 
 ## 6) SEO/meta (home)
 
+- Título/descripción/OG/canonical: presentes.
+- CSP ahora recomendado por header (no por meta) para habilitar frame-ancestors.
+
 
 ## 7) A11y semántica (rápida)
+
+- Reporte generado en ./p12-e2e-out/a11y-report.html
 
 
 ## 8) XSS pasivo (contenido)
@@ -129,3 +134,10 @@ Objetivo: Auditoría visual, accesibilidad, rendimiento, seguridad y consistenci
 
 ## 9) Compresión/CDN
 - Brotli activo en HTML; CF DYNAMIC; JS/CSS no-cache; ETag presente.
+
+## 10) Cambios propuestos (FE/BE)
+
+- front_bp: Cache-Control public, max-age=604800, immutable para /css, /js, /img.
+- front_bp: redirect 302 de /notes a /.
+- backend/__init__.py: emitir CSP por header para HTML.
+- frontend/index.html: reducir CSP en meta (informativo); header manda.

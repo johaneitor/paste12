@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, send_from_directory, current_app, make_response, request
+from flask import Blueprint, send_from_directory, current_app, make_response, request, redirect
 
 front_bp = Blueprint("front_bp", __name__)
 # Servir UI desde backend/frontend (canónico)
@@ -129,7 +129,8 @@ def _static_cache(resp):
         path = request.path or ''
         if any(seg in path for seg in ("/css/", "/js/", "/img/")):
             if 'text/css' in p or 'javascript' in p or 'image/' in p:
-                resp.headers.setdefault('Cache-Control', 'public, max-age=604800')
+                # Override cache policy for static assets to enable CDN/browser caching
+                resp.headers['Cache-Control'] = 'public, max-age=604800, immutable'
     except Exception:
         pass
     return resp
@@ -169,3 +170,12 @@ def robots_txt():
 @front_bp.route('/ads.txt')
 def ads_txt():
     return send_from_directory(FRONT_DIR, 'ads.txt')
+
+
+# Graceful alias: /notes -> redirect to home (UI lives at /)
+@front_bp.route('/notes', methods=['GET'])
+def notes_redirect():
+    try:
+        return redirect('/', code=302)
+    except Exception:
+        return redirect('/')

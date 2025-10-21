@@ -1,0 +1,20 @@
+HTTP/2 200 
+date: Tue, 21 Oct 2025 01:33:28 GMT
+content-type: text/javascript; charset=utf-8
+cache-control: no-cache
+content-disposition: inline; filename=actions.js
+etag: W/"1761009283.0-14579-836375692"
+last-modified: Tue, 21 Oct 2025 01:14:43 GMT
+referrer-policy: no-referrer
+rndr-id: a2e5e13f-5a92-4dfa
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+x-resp-time: 0.8ms
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 991d01cf0a9dd287-CMH
+alt-svc: h3=":443"; ma=86400
+

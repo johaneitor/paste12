@@ -1,0 +1,1451 @@
+{
+  "baseUrl": "https://paste12-rmsk.onrender.com",
+  "ts": "2025-10-21T01:25:58.219Z",
+  "pages": {
+    "home": {
+      "url": "https://paste12-rmsk.onrender.com/",
+      "nav": {
+        "url": "https://paste12-rmsk.onrender.com/",
+        "domContentLoadedMs": 615,
+        "loadMs": 852
+      },
+      "console": [
+        {
+          "type": "error",
+          "text": "The Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element."
+        },
+        {
+          "type": "log",
+          "text": "[client_fp] token listo"
+        },
+        {
+          "type": "log",
+          "text": "[actions_menu] listo (⋯ → Compartir/Reportar sin popups)"
+        },
+        {
+          "type": "log",
+          "text": "[share_enhancer] activo (sin popups; share sheet en móvil; copia en escritorio)"
+        },
+        {
+          "type": "log",
+          "text": "[views_counter] activo"
+        },
+        {
+          "type": "error",
+          "text": "The Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element."
+        },
+        {
+          "type": "error",
+          "text": "The Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element."
+        },
+        {
+          "type": "error",
+          "text": "The Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element."
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251020&st=env&sjk=816291463534773' because it violates the following Content Security Policy directive: \"connect-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net\".\n"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "log",
+          "text": "[hotfix] lista no vacía: no se aplica"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "warn",
+          "text": "[views] fallo al sumar JSHandle@error"
+        }
+      ],
+      "errors": [],
+      "network": [
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/html; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/views_counter.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/app.js?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/client_fp.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/stability_patch.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/css/styles.css?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/css; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/actions_menu.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/css/actions.css?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/css; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/hotfix.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=UTF-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510150101/show_ads_impl.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=UTF-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/json"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/709/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/708/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/707/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/706/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/705/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/704/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/703/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/702/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/701/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/700/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/699/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/698/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/697/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/696/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/695/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/694/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/693/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/692/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/691/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/690/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/709/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/708/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/707/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/706/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/705/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/704/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/703/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/702/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/701/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/700/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/699/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/698/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/697/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "resp",
+          "url": "https://googleads.g.doubleclick.net/pagead/html/r20251020/r20190131/zrt_lookup.html",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/html; charset=UTF-8"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/696/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/695/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/694/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/693/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/692/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/691/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/690/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=0",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/json"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=50",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/json"
+        },
+        {
+          "type": "resp",
+          "url": "https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-9479870293204581&output=html&adk=1812271804&adf=3025194257&lmt=1761009959&plat=1%3A8%2C2%3A8%2C3%3A2162688%2C4%3A2162688%2C9%3A32776%2C16%3A8388608%2C17%3A32%2C24%3A32%2C25%3A32%2C30%3A1048576%2C32%3A32%2C41%3A32%2C42%3A32&format=0x0&url=https%3A%2F%2Fpaste12-rmsk.onrender.com%2F&pra=5&wgl=1&aihb=0&asro=0&aifxl=29_18~30_19&aiapm=0.1542&aiapmd=0.1423&aiapmi=0.16&aiapmid=1&aiact=0.5423&aiactd=0.7&aicct=0.7&aicctd=0.5799&ailct=0.5849&ailctd=0.65&aimart=4&aimartd=4&uach=WyJMaW51eCIsIjYuMS4xNDciLCJ4ODYiLCIiLCIxMjcuMC42NTMzLjg4IixudWxsLDAsbnVsbCwiNjQiLFtbIkNocm9taXVtIiwiMTI3LjAuNjUzMy44OCJdLFsiTm90KUE7QnJhbmQiLCI5OS4wLjAuMCJdXSwwXQ..&abgtt=6&dt=1761009959157&bpp=12&bdt=214&idt=88&shv=r20251020&mjsv=m202510150101&ptt=9&saldr=aa&abxe=1&cookie_enabled=1&eoidce=1&nras=1&correlator=4443809280808&frm=20&pv=2&u_tz=0&u_his=2&u_h=600&u_w=800&u_ah=600&u_aw=800&u_cd=24&u_sd=1&dmc=8&adx=-12245933&ady=-12245933&biw=800&bih=600&scr_x=0&scr_y=0&eid=31084128%2C31095143%2C95373013%2C95374047%2C95374744&oid=2&pvsid=816291463534773&tmod=1799531557&uas=0&nvt=1&fsapi=1&fc=1920&brdim=10%2C10%2C10%2C10%2C800%2C0%2C780%2C580%2C800%2C600&vis=1&rsz=%7C%7Cs%7C&abl=NS&fu=32768&bc=31&bz=0.98&td=1&tdf=0&psd=W251bGwsW251bGwsbnVsbCxudWxsLCJkZXByZWNhdGVkX2thbm9uIl0sbnVsbCwxXQ..&nt=1&ifi=1&uci=a!1&fsb=1&dtd=123",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/html; charset=UTF-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-9479870293204581&output=html&h=280&slotname=0000000000&adk=1169502337&adf=4134526204&pi=t.ma~as.0000000000&w=800&fwrn=4&fwrnh=100&lmt=1761009959&rafmt=1&format=800x280&url=https%3A%2F%2Fpaste12-rmsk.onrender.com%2F&fwr=0&fwrattr=true&rpe=1&resp_fmts=3&wgl=1&uach=WyJMaW51eCIsIjYuMS4xNDciLCJ4ODYiLCIiLCIxMjcuMC42NTMzLjg4IixudWxsLDAsbnVsbCwiNjQiLFtbIkNocm9taXVtIiwiMTI3LjAuNjUzMy44OCJdLFsiTm90KUE7QnJhbmQiLCI5OS4wLjAuMCJdXSwwXQ..&abgtt=6&dt=1761009959210&bpp=5&bdt=267&idt=77&shv=r20251020&mjsv=m202510150101&ptt=9&saldr=aa&abxe=1&cookie_enabled=1&eoidce=1&prev_fmts=0x0&nras=1&correlator=4443809280808&frm=20&pv=1&u_tz=0&u_his=2&u_h=600&u_w=800&u_ah=600&u_aw=800&u_cd=24&u_sd=1&dmc=8&adx=0&ady=350&biw=800&bih=600&scr_x=0&scr_y=0&eid=31084128%2C31095143%2C95373013%2C95374047%2C95374744&oid=2&pvsid=816291463534773&tmod=1799531557&uas=0&nvt=1&fc=1920&brdim=10%2C10%2C10%2C10%2C800%2C0%2C780%2C580%2C800%2C600&vis=1&rsz=%7C%7CeE%7C&abl=CS&pfx=0&fu=128&bc=31&bz=0.98&td=1&tdf=0&psd=W251bGwsW251bGwsbnVsbCxudWxsLCJkZXByZWNhdGVkX2thbm9uIl0sbnVsbCwxXQ..&nt=1&ifi=2&uci=a!2&fsb=1&dtd=85",
+          "status": 400,
+          "fromServiceWorker": false,
+          "ct": "text/html; charset=UTF-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?page=1",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/json"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/709/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/708/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/707/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/706/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/705/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/704/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/703/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/702/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/701/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/700/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/699/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/698/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/697/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/696/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/695/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/694/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/693/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/692/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/691/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/690/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/favicon.svg",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "image/svg+xml; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/json"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/709/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/708/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/707/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/706/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/705/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/704/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/703/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/702/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/701/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/700/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/699/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/698/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/697/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/696/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/695/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/694/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/693/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/692/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/691/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "fail",
+          "url": "https://paste12-rmsk.onrender.com/api/notes/690/view",
+          "method": "POST",
+          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        }
+      ],
+      "dom": {
+        "hasMain": true,
+        "hasHeader": true,
+        "hasFooter": true,
+        "title": "paste12",
+        "metas": [
+          {
+            "name": "description",
+            "content": "Comparte notas efímeras de forma simple y segura."
+          },
+          {
+            "name": "p12-safe-shim",
+            "content": "1"
+          },
+          {
+            "name": "p12-commit",
+            "content": "a9dafec9fefb50a75fd1a43fde2c05015885413c"
+          },
+          {
+            "name": "viewport",
+            "content": "width=device-width, initial-scale=1"
+          },
+          {
+            "name": "google-adsense-account",
+            "content": "ca-pub-9479870293204581"
+          },
+          {
+            "name": "og:title",
+            "content": "Paste12"
+          },
+          {
+            "name": "og:description",
+            "content": "Notas efímeras, simples y seguras."
+          },
+          {
+            "name": "og:image",
+            "content": "/img/og.png"
+          }
+        ],
+        "links": [
+          {
+            "rel": "stylesheet",
+            "href": "https://paste12-rmsk.onrender.com/css/styles.css?v=7"
+          },
+          {
+            "rel": "stylesheet",
+            "href": "https://paste12-rmsk.onrender.com/css/actions.css?v=7"
+          },
+          {
+            "rel": "icon",
+            "href": "https://paste12-rmsk.onrender.com/favicon.svg"
+          },
+          {
+            "rel": "canonical",
+            "href": "https://paste12-rmsk.onrender.com/"
+          }
+        ],
+        "scripts": [
+          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510150101/show_ads_impl.js",
+          "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
+          "https://paste12-rmsk.onrender.com/js/client_fp.js",
+          "https://paste12-rmsk.onrender.com/js/app.js?v=7",
+          "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
+          "https://paste12-rmsk.onrender.com/js/stability_patch.js",
+          "https://paste12-rmsk.onrender.com/js/hotfix.js",
+          "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
+          "https://paste12-rmsk.onrender.com/js/actions_menu.js",
+          "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
+          "https://paste12-rmsk.onrender.com/js/views_counter.js"
+        ]
+      }
+    },
+    "notes": {
+      "url": "https://paste12-rmsk.onrender.com/notes",
+      "nav": {
+        "url": "https://paste12-rmsk.onrender.com/notes",
+        "domContentLoadedMs": 108,
+        "loadMs": 109
+      },
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 ()"
+        }
+      ],
+      "errors": [],
+      "network": [
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/notes",
+          "status": 404,
+          "fromServiceWorker": false,
+          "ct": "text/html; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/favicon.ico",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "image/vnd.microsoft.icon"
+        }
+      ],
+      "dom": {
+        "hasMain": false,
+        "hasHeader": false,
+        "hasFooter": false,
+        "title": "404 Not Found",
+        "metas": [],
+        "links": [],
+        "scripts": []
+      }
+    }
+  }
+}
