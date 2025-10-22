@@ -511,6 +511,8 @@ def create_app():
                         "https://tpc.googlesyndication.com",
                     ]
 
+                # Style policy: allow inline styles for now to avoid breaking ads/widgets.
+                # Consider migrating to hashes/nonces and removing 'unsafe-inline'.
                 csp = (
                     "default-src 'self'; "
                     "base-uri 'self'; form-action 'self'; frame-ancestors 'self'; "
@@ -521,7 +523,8 @@ def create_app():
                     f"frame-src {' '.join(frame_src) if frame_src else "'none'"}; "
                     "object-src 'none'; upgrade-insecure-requests"
                 )
-                resp.headers.setdefault("Content-Security-Policy", csp)
+                # Enforce a single unified CSP header for all HTML responses
+                resp.headers["Content-Security-Policy"] = csp
         except Exception:
             pass
         return resp
