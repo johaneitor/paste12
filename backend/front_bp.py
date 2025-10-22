@@ -124,30 +124,51 @@ def index():
                     html = html.replace("<body>", "<body>\n<ul id=\"notes-list\"></ul>")
             else:
                 html += "\n<ul id=\"notes-list\"></ul>\n"
+        # Compute asset base (optional static site CDN/prefix)
+        try:
+            ASSETS_BASE = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+        except Exception:
+            ASSETS_BASE = ''
+        def aurl(p: str) -> str:
+            return (ASSETS_BASE + p) if ASSETS_BASE else p
+
+        # Optionally rewrite existing asset URLs to ASSETS_BASE_URL for CSS/JS/IMG
+        if ASSETS_BASE:
+            try:
+                # Rewrite href/src attributes for /css/, /js/, /img/ and favicon
+                def _rewr(m):
+                    pre = m.group('pre')
+                    path = m.group('path')  # starts with leading slash
+                    return f"{pre}{ASSETS_BASE}{path}"
+                html = re.sub(r"(?P<pre>(?:href|src)=[\"'])(?P<path>/(?:css|js|img)/[\w./?=&%-]+)", _rewr, html)
+                html = re.sub(r"(?P<pre>(?:href|src)=[\"'])(?P<path>/favicon(?:\.svg|\.ico)?)", _rewr, html)
+            except Exception:
+                pass
+
         # Ensure core assets are loaded
         if '/css/actions.css' not in html and "</head>" in html:
-            html = html.replace("</head>", "  <link rel=\"stylesheet\" href=\"/css/actions.css\">\n</head>")
+            html = html.replace("</head>", f"  <link rel=\\\"stylesheet\\\" href=\\\"{aurl('/css/actions.css')}\\\">\n</head>")
         if '/js/app.js' not in html:
             if "</body>" in html:
-                html = html.replace("</body>", "  <script src=\"/js/app.js\" defer></script>\n</body>")
+                html = html.replace("</body>", f"  <script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n</body>")
             elif "</head>" in html:
-                html = html.replace("</head>", "  <script src=\"/js/app.js\" defer></script>\n</head>")
+                html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n</head>")
             else:
-                html += "\n<script src=\"/js/app.js\" defer></script>\n"
+                html += f"\n<script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n"
         if '/js/actions.js' not in html:
             if "</body>" in html:
-                html = html.replace("</body>", "  <script src=\"/js/actions.js\"></script>\n</body>")
+                html = html.replace("</body>", f"  <script src=\\\"{aurl('/js/actions.js')}\\\"></script>\n</body>")
             elif "</head>" in html:
-                html = html.replace("</head>", "  <script src=\"/js/actions.js\"></script>\n</head>")
+                html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/actions.js')}\\\"></script>\n</head>")
             else:
-                html += "\n<script src=\"/js/actions.js\"></script>\n"
+                html += f"\n<script src=\\\"{aurl('/js/actions.js')}\\\"></script>\n"
         if '/js/ads_lazy.js' not in html:
             if "</body>" in html:
-                html = html.replace("</body>", "  <script src=\"/js/ads_lazy.js\" defer></script>\n</body>")
+                html = html.replace("</body>", f"  <script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n</body>")
             elif "</head>" in html:
-                html = html.replace("</head>", "  <script src=\"/js/ads_lazy.js\" defer></script>\n</head>")
+                html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n</head>")
             else:
-                html += "\n<script src=\"/js/ads_lazy.js\" defer></script>\n"
+                html += f"\n<script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n"
         resp = make_response(html)
         resp.headers["Content-Type"] = "text/html; charset=utf-8"
     else:
@@ -196,16 +217,26 @@ def _static_cache(resp):
 # Serve static assets (css/js/img)
 @front_bp.route('/css/<path:fname>')
 def css(fname: str):
+    # Si tenemos ASSETS_BASE_URL configurado, redirigimos permanente a ese host para cache CDN
+    assets_base = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+    if assets_base:
+        return redirect(f"{assets_base}/css/{fname}", code=301)
     return send_from_directory(os.path.join(FRONT_DIR, 'css'), fname, conditional=True)
 
 
 @front_bp.route('/js/<path:fname>')
 def js(fname: str):
+    assets_base = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+    if assets_base:
+        return redirect(f"{assets_base}/js/{fname}", code=301)
     return send_from_directory(os.path.join(FRONT_DIR, 'js'), fname, conditional=True)
 
 
 @front_bp.route('/img/<path:fname>')
 def img(fname: str):
+    assets_base = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+    if assets_base:
+        return redirect(f"{assets_base}/img/{fname}", code=301)
     return send_from_directory(os.path.join(FRONT_DIR, 'img'), fname, conditional=True)
 
 
