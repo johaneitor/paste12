@@ -1,13 +1,13 @@
 {
   "baseUrl": "https://paste12-rmsk.onrender.com",
-  "ts": "2025-10-21T18:28:23.789Z",
+  "ts": "2025-10-21T14:39:13.832Z",
   "pages": {
     "home": {
       "url": "https://paste12-rmsk.onrender.com/",
       "nav": {
         "url": "https://paste12-rmsk.onrender.com/",
-        "domContentLoadedMs": 868,
-        "loadMs": 1350
+        "domContentLoadedMs": 740,
+        "loadMs": 1181
       },
       "console": [
         {
@@ -17,6 +17,22 @@
         {
           "type": "log",
           "text": "[client_fp] token listo"
+        },
+        {
+          "type": "error",
+          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-6TZFIyhxoSVCJxRbTCtnf97ioNIG4pTAPa8o4avTkWU='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
+        },
+        {
+          "type": "error",
+          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-nMxMqdZhkHxz5vAuW/PAoLvECzzsmeAxD/BNwG15HuA='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
+        },
+        {
+          "type": "error",
+          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-zYuuJ+K5Y/3w9HH68eB2PW4Tj1ztuSmDUYTtVDLFvPc='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
+        },
+        {
+          "type": "error",
+          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-acGptrci0klVwmLmy+1d3i028rcggWW3H+YbecddgKo='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
         },
         {
           "type": "log",
@@ -56,23 +72,7 @@
         },
         {
           "type": "error",
-          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251020&st=env&sjk=871333047235055' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
-        },
-        {
-          "type": "error",
-          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-6TZFIyhxoSVCJxRbTCtnf97ioNIG4pTAPa8o4avTkWU='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
-        },
-        {
-          "type": "error",
-          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-nMxMqdZhkHxz5vAuW/PAoLvECzzsmeAxD/BNwG15HuA='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
-        },
-        {
-          "type": "error",
-          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-zYuuJ+K5Y/3w9HH68eB2PW4Tj1ztuSmDUYTtVDLFvPc='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
-        },
-        {
-          "type": "error",
-          "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-acGptrci0klVwmLmy+1d3i028rcggWW3H+YbecddgKo='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
+          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251020&st=env&sjk=5530850461849805' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
         },
         {
           "type": "error",
@@ -246,49 +246,7 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/css/styles.css?v=7",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/css; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/app.js?v=7",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=UTF-8"
-        },
-        {
-          "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/stability_patch.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/actions_menu.js",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=utf-8"
@@ -302,7 +260,56 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
+          "url": "https://paste12-rmsk.onrender.com/css/styles.css?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/css; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/views_counter.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=UTF-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/client_fp.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/stability_patch.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/app.js?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/actions_menu.js",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=utf-8"
@@ -316,21 +323,14 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/client_fp.js",
+          "url": "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=utf-8"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/views_counter.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
+          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=UTF-8"
@@ -345,6 +345,13 @@
         {
           "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/api/notes?limit=50",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/json"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "application/json"
@@ -401,13 +408,6 @@
         {
           "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/api/notes?page=1",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "application/json"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "application/json"
@@ -598,7 +598,7 @@
           }
         ],
         "scripts": [
-          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
+          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
           "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
           "https://paste12-rmsk.onrender.com/js/client_fp.js",
           "https://paste12-rmsk.onrender.com/js/app.js?v=7",
@@ -616,8 +616,8 @@
       "url": "https://paste12-rmsk.onrender.com/notes",
       "nav": {
         "url": "https://paste12-rmsk.onrender.com/notes",
-        "domContentLoadedMs": 351,
-        "loadMs": 1091
+        "domContentLoadedMs": 304,
+        "loadMs": 595
       },
       "console": [
         {
@@ -669,10 +669,6 @@
           "text": "Refused to frame 'https://googleads.g.doubleclick.net/' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
         },
         {
-          "type": "log",
-          "text": "[hotfix] lista no vacía: no se aplica"
-        },
-        {
           "type": "error",
           "text": "Refused to frame 'https://googleads.g.doubleclick.net/' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
         },
@@ -682,7 +678,7 @@
         },
         {
           "type": "error",
-          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251020&st=env&sjk=3239998739444793' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
+          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251020&st=env&sjk=2156675035348640' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
         },
         {
           "type": "error",
@@ -843,6 +839,10 @@
         {
           "type": "warn",
           "text": "[views] fallo al sumar JSHandle@error"
+        },
+        {
+          "type": "log",
+          "text": "[hotfix] lista no vacía: no se aplica"
         }
       ],
       "errors": [],
@@ -891,14 +891,14 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/stability_patch.js",
+          "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=utf-8"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
+          "url": "https://paste12-rmsk.onrender.com/js/stability_patch.js",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=utf-8"
@@ -909,13 +909,6 @@
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=UTF-8"
         },
         {
           "type": "resp",
@@ -947,6 +940,13 @@
         },
         {
           "type": "resp",
+          "url": "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=UTF-8"
+        },
+        {
+          "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/api/notes?limit=50",
           "status": 200,
           "fromServiceWorker": false,
@@ -954,24 +954,17 @@
         },
         {
           "type": "resp",
+          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=UTF-8"
+        },
+        {
+          "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/api/notes?limit=0",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "application/json"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "application/json"
-        },
-        {
-          "type": "resp",
-          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=UTF-8"
         },
         {
           "type": "resp",
@@ -1024,7 +1017,7 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?page=1",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "application/json"
@@ -1148,6 +1141,13 @@
           "url": "https://paste12-rmsk.onrender.com/api/notes/690/view",
           "method": "POST",
           "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?page=1",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/json"
         }
       ],
       "dom": {
@@ -1208,7 +1208,7 @@
           }
         ],
         "scripts": [
-          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
+          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
           "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
           "https://paste12-rmsk.onrender.com/js/client_fp.js",
           "https://paste12-rmsk.onrender.com/js/app.js?v=7",

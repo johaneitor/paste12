@@ -65,6 +65,8 @@
       // Marca el intento antes del fetch para no reintentar en bucles/errores
       sessionStorage.setItem(ATTEMPT_KEY(id), '1');
       globalGuard.add(id);
+      // Defer al próximo idle para no competir con el render y evitar ráfagas
+      await new Promise(res=> (window.requestIdleCallback? requestIdleCallback(res, {timeout: 1200}) : setTimeout(res, 0)) );
       const res = await fetch(`/api/notes/${id}/view`, {method:'POST'});
       const j = await res.json().catch(()=>({}));
       if (j && typeof j.views !== 'undefined') setViews(card, j.views ?? '?');
@@ -74,6 +76,8 @@
       console.warn('[views] fallo al sumar', e);
     }
   }
+
+  const USE_IO = typeof IntersectionObserver !== 'undefined';
 
   async function process(container){
     // hidratar cache una sola vez por corrida
@@ -86,21 +90,35 @@
       ensureMetrics(card);
       // si sabemos la cifra desde cache del listado, muéstrala
       if (cache.has(String(id))) setViews(card, cache.get(String(id)).views ?? 0);
-      // suma 1 vez por sesión en primera visualización
-      addViewOnce(id, card);
+      // Si no hay IntersectionObserver disponible, hacemos fallback inmediato
+      if (!USE_IO) addViewOnce(id, card);
     });
   }
 
-  // Defer hasta 'load' para no competir con el render inicial
+  // Defer hasta 'load' para no competir con el render inicial y observar visibilidad
   window.addEventListener('load', ()=>{
     const container = document.querySelector(NOTES_SEL);
     if(!container) return;
+    // Solo contar cuando los elementos son visibles en viewport (si IO existe)
+    var io = null;
+    if (USE_IO) {
+      io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if (!e.isIntersecting) return;
+          var card = e.target;
+          var id = getIdFromCard(card);
+          if (id) addViewOnce(id, card);
+          io.unobserve(card);
+        });
+      }, {root: null, rootMargin: '0px', threshold: 0.4});
+    }
+
+    // Inicializar render/hidratación y observar tarjetas
     process(container);
+    if (io) container.querySelectorAll('[data-note], [data-note-id], .note-card, article, li').forEach(el=> io.observe(el));
 
     // Observa cambios (paginación, nuevas notas)
-    const mo = new MutationObserver(()=>{
-      process(container);
-    });
+    const mo = new MutationObserver(()=>{ process(container); if (io) container.querySelectorAll('[data-note], [data-note-id], .note-card, article, li').forEach(el=> io.observe(el)); });
     mo.observe(container, {childList:true, subtree:true});
     console.log('[views_counter] activo');
   });

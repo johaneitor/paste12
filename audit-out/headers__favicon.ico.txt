@@ -1,0 +1,20 @@
+HTTP/2 200 
+date: Tue, 21 Oct 2025 14:39:28 GMT
+content-type: image/vnd.microsoft.icon
+content-length: 0
+cache-control: no-cache
+content-disposition: inline; filename=favicon.ico
+etag: "1761045734.0-0-169677779"
+last-modified: Tue, 21 Oct 2025 11:22:14 GMT
+referrer-policy: no-referrer
+rndr-id: 450e5edb-0c11-48c4
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+x-resp-time: 1.0ms
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 9921812bd9e63f27-CMH
+alt-svc: h3=":443"; ma=86400
+

@@ -1,9 +1,16 @@
 import os
+import re
+import glob
+import mimetypes
 from flask import Blueprint, send_from_directory, current_app, make_response, request, redirect
 
 front_bp = Blueprint("front_bp", __name__)
 # Servir UI desde backend/frontend (canónico)
 FRONT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "frontend"))
+
+# Asegurar MIME correcto para JS/SVG en algunos entornos
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('image/svg+xml', '.svg')
 
 @front_bp.route("/", methods=["GET"])
 def index():
@@ -40,10 +47,15 @@ def index():
                     "</head>",
                     "  <link rel=\"icon\" href=\"/favicon.svg\" />\n</head>",
                 )
+            # Canonical absoluto y og:url
+            try:
+                root = (request.url_root or '').rstrip('/')
+            except Exception:
+                root = ''
             if 'rel="canonical"' not in html:
                 html = html.replace(
                     "</head>",
-                    "  <link rel=\"canonical\" href=\"/\" />\n</head>",
+                    f"  <link rel=\\\"canonical\\\" href=\\\"{root}/\\\" />\n</head>",
                 )
             if 'property="og:title"' not in html:
                 html = html.replace(
@@ -59,6 +71,32 @@ def index():
                 html = html.replace(
                     "</head>",
                     "  <meta property=\"og:image\" content=\"/img/og.png\" />\n</head>",
+                )
+            if 'property="og:url"' not in html and root:
+                html = html.replace(
+                    "</head>",
+                    f"  <meta property=\\\"og:url\\\" content=\\\"{root}/\\\" />\n</head>",
+                )
+            # Twitter cards (si faltan)
+            if 'name="twitter:card"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:card\" content=\"summary_large_image\" />\n</head>",
+                )
+            if 'name="twitter:title"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:title\" content=\"Paste12\" />\n</head>",
+                )
+            if 'name="twitter:description"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:description\" content=\"Notas efímeras, simples y seguras.\" />\n</head>",
+                )
+            if 'name="twitter:image"' not in html:
+                html = html.replace(
+                    "</head>",
+                    "  <meta name=\"twitter:image\" content=\"/img/og.png\" />\n</head>",
                 )
         # Ensure body data-single flag (preserving existing attributes)
         if "<body" in html and "data-single=" not in html:
@@ -86,27 +124,55 @@ def index():
                     html = html.replace("<body>", "<body>\n<ul id=\"notes-list\"></ul>")
             else:
                 html += "\n<ul id=\"notes-list\"></ul>\n"
+        # Compute asset base (optional static site CDN/prefix)
+        try:
+            ASSETS_BASE = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+        except Exception:
+            ASSETS_BASE = ''
+        def aurl(p: str) -> str:
+            return (ASSETS_BASE + p) if ASSETS_BASE else p
+
+        # Optionally rewrite existing asset URLs to ASSETS_BASE_URL for CSS/JS/IMG
+        if ASSETS_BASE:
+            try:
+                # Rewrite href/src attributes for /css/, /js/, /img/ and favicon
+                def _rewr(m):
+                    pre = m.group('pre')
+                    path = m.group('path')  # starts with leading slash
+                    return f"{pre}{ASSETS_BASE}{path}"
+                html = re.sub(r"(?P<pre>(?:href|src)=[\"'])(?P<path>/(?:css|js|img)/[\w./?=&%-]+)", _rewr, html)
+                html = re.sub(r"(?P<pre>(?:href|src)=[\"'])(?P<path>/favicon(?:\.svg|\.ico)?)", _rewr, html)
+            except Exception:
+                pass
+
         # Ensure core assets are loaded
         if '/css/actions.css' not in html and "</head>" in html:
-            html = html.replace("</head>", "  <link rel=\"stylesheet\" href=\"/css/actions.css\">\n</head>")
+            html = html.replace("</head>", f"  <link rel=\\\"stylesheet\\\" href=\\\"{aurl('/css/actions.css')}\\\">\n</head>")
         if '/js/app.js' not in html:
             if "</body>" in html:
-                html = html.replace("</body>", "  <script src=\"/js/app.js\" defer></script>\n</body>")
+                html = html.replace("</body>", f"  <script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n</body>")
             elif "</head>" in html:
-                html = html.replace("</head>", "  <script src=\"/js/app.js\" defer></script>\n</head>")
+                html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n</head>")
             else:
-                html += "\n<script src=\"/js/app.js\" defer></script>\n"
+                html += f"\n<script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n"
         if '/js/actions.js' not in html:
             if "</body>" in html:
-                html = html.replace("</body>", "  <script src=\"/js/actions.js\"></script>\n</body>")
+                html = html.replace("</body>", f"  <script src=\\\"{aurl('/js/actions.js')}\\\"></script>\n</body>")
             elif "</head>" in html:
-                html = html.replace("</head>", "  <script src=\"/js/actions.js\"></script>\n</head>")
+                html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/actions.js')}\\\"></script>\n</head>")
             else:
-                html += "\n<script src=\"/js/actions.js\"></script>\n"
+                html += f"\n<script src=\\\"{aurl('/js/actions.js')}\\\"></script>\n"
+        if '/js/ads_lazy.js' not in html:
+            if "</body>" in html:
+                html = html.replace("</body>", f"  <script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n</body>")
+            elif "</head>" in html:
+                html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n</head>")
+            else:
+                html += f"\n<script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n"
         resp = make_response(html)
         resp.headers["Content-Type"] = "text/html; charset=utf-8"
     else:
-        resp = make_response(send_from_directory(FRONT_DIR, "index.html"))
+        resp = make_response(send_from_directory(FRONT_DIR, "index.html", conditional=True))
     resp.headers["Cache-Control"] = "no-store, max-age=0"
     return resp
 
@@ -125,12 +191,24 @@ def privacy():
 @front_bp.after_request
 def _static_cache(resp):
     try:
-        p = (resp.headers.get('Content-Type') or '').lower()
-        path = request.path or ''
-        if any(seg in path for seg in ("/css/", "/js/", "/img/")):
-            if 'text/css' in p or 'javascript' in p or 'image/' in p:
-                # Override cache policy for static assets to enable CDN/browser caching
-                resp.headers['Cache-Control'] = 'public, max-age=604800, immutable'
+        content_type = (resp.headers.get('Content-Type') or '').lower()
+        path = (request.path or '')
+
+        def is_asset_path(p: str) -> bool:
+            return any(seg in p for seg in ("/css/", "/js/", "/img/", "/assets/", "/favicon."))
+
+        def is_fingerprinted(p: str) -> bool:
+            try:
+                base = os.path.basename(p.split('?', 1)[0])
+                return '-' in base or re.search(r"\.[a-f0-9]{8,}\.", base or '') is not None
+            except Exception:
+                return False
+
+        if is_asset_path(path) and (('text/css' in content_type) or ('javascript' in content_type) or content_type.startswith('image/')):
+            if is_fingerprinted(path) or any(path.endswith(ext) for ext in ('.js', '.css', '.svg', '.woff2')):
+                resp.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+            else:
+                resp.headers['Cache-Control'] = 'public, max-age=604800'
     except Exception:
         pass
     return resp
@@ -139,27 +217,70 @@ def _static_cache(resp):
 # Serve static assets (css/js/img)
 @front_bp.route('/css/<path:fname>')
 def css(fname: str):
-    return send_from_directory(os.path.join(FRONT_DIR, 'css'), fname)
+    # Si tenemos ASSETS_BASE_URL configurado, redirigimos permanente a ese host para cache CDN
+    assets_base = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+    if assets_base:
+        return redirect(f"{assets_base}/css/{fname}", code=301)
+    return send_from_directory(os.path.join(FRONT_DIR, 'css'), fname, conditional=True)
 
 
 @front_bp.route('/js/<path:fname>')
 def js(fname: str):
-    return send_from_directory(os.path.join(FRONT_DIR, 'js'), fname)
+    assets_base = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+    if assets_base:
+        return redirect(f"{assets_base}/js/{fname}", code=301)
+    return send_from_directory(os.path.join(FRONT_DIR, 'js'), fname, conditional=True)
 
 
 @front_bp.route('/img/<path:fname>')
 def img(fname: str):
-    return send_from_directory(os.path.join(FRONT_DIR, 'img'), fname)
+    assets_base = (os.environ.get('ASSETS_BASE_URL') or '').rstrip('/')
+    if assets_base:
+        return redirect(f"{assets_base}/img/{fname}", code=301)
+    return send_from_directory(os.path.join(FRONT_DIR, 'img'), fname, conditional=True)
+
+
+# Compat: servir rutas /assets/* con MIME correcto; intenta mapear a css/js/img
+@front_bp.route('/assets/<path:fname>')
+def assets(fname: str):
+    # Primero, si existe un directorio 'assets', servimos desde ahí
+    assets_dir = os.path.join(FRONT_DIR, 'assets')
+    target_dir = None
+    if os.path.isdir(assets_dir):
+        target_dir = assets_dir
+    else:
+        # Inferir por extensión
+        ext = os.path.splitext(fname)[1].lower()
+        if ext == '.js':
+            target_dir = os.path.join(FRONT_DIR, 'js')
+        elif ext == '.css':
+            target_dir = os.path.join(FRONT_DIR, 'css')
+        elif ext in ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'):
+            target_dir = os.path.join(FRONT_DIR, 'img')
+        else:
+            target_dir = FRONT_DIR
+
+    # Resolver comodines simples tipo index-*.js
+    if any(ch in fname for ch in ('*', '?', '[')):
+        pattern = os.path.join(target_dir, fname)
+        candidates = sorted(glob.glob(pattern))
+        if candidates:
+            base = os.path.basename(candidates[-1])
+            return send_from_directory(target_dir, base, conditional=True)
+        # Si no hay match, devolver 404 explícito
+        return ("not found", 404)
+
+    return send_from_directory(target_dir, fname, conditional=True)
 
 
 @front_bp.route('/favicon.ico')
 def favicon_ico():
-    return send_from_directory(FRONT_DIR, 'favicon.ico')
+    return send_from_directory(FRONT_DIR, 'favicon.ico', conditional=True)
 
 
 @front_bp.route('/favicon.svg')
 def favicon_svg():
-    return send_from_directory(FRONT_DIR, 'favicon.svg')
+    return send_from_directory(FRONT_DIR, 'favicon.svg', conditional=True)
 
 
 @front_bp.route('/robots.txt')

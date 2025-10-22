@@ -1,6 +1,12 @@
 <!doctype html>
 <html>
 <head>
+<meta name="description" content="Comparte notas efímeras de forma simple y segura." />
+
+<meta name="p12-safe-shim" content="1" />
+
+<meta name="p12-commit" content="5d783588af3044adb917fd0b32d37a75ce111399" />
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>paste12</title>
@@ -12,17 +18,13 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; object-src 'none'">
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=()">
-  <link rel="canonical" href="/">
-  <meta name="description" content="Comparte notas efímeras de forma simple y segura.">
-  <meta property="og:title" content="Paste12">
-  <meta property="og:description" content="Notas efímeras, simples y seguras.">
-  <meta property="og:image" content="/img/og.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Paste12">
-  <meta name="twitter:description" content="Notas efímeras, simples y seguras.">
-  <meta name="twitter:image" content="/img/og.png">
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="canonical" href="/" />
+  <meta property="og:title" content="Paste12" />
+  <meta property="og:description" content="Notas efímeras, simples y seguras." />
+  <meta property="og:image" content="/img/og.png" />
 </head>
-<body>
+<body data-single="1">
   <header>
     <h1>paste12</h1>
   </header>
@@ -49,7 +51,6 @@
   <script src="/js/stability_patch.js" defer></script>
   <script src="/js/hotfix.js" defer></script>
   <script src="/js/debug_overlay.js" defer></script>
-  <script src="/js/ads_lazy.js" defer></script>
   <noscript>Necesitás habilitar JavaScript.</noscript>
   <footer class="site-footer">
     <a href="/terms">Términos y condiciones</a> · <a href="/privacy">Política de privacidad</a>
