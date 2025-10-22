@@ -1,0 +1,20 @@
+HTTP/2 200 
+date: Wed, 22 Oct 2025 18:56:50 GMT
+content-type: text/css; charset=utf-8
+cache-control: public, max-age=31536000, immutable
+content-disposition: inline; filename=styles.css
+etag: W/"1761153330.0-3196-1212224791"
+last-modified: Wed, 22 Oct 2025 17:15:30 GMT
+referrer-policy: no-referrer
+rndr-id: 388934f2-2e77-4841
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+x-resp-time: 1.0ms
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 992b378ae82aefe9-CMH
+alt-svc: h3=":443"; ma=86400
+
