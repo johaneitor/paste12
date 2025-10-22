@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "@axe-core/cli": "^4.11.0",
+    "lighthouse": "^13.0.1",
+    "puppeteer": "^24.26.0"
+  }
+}

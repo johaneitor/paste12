@@ -19,6 +19,9 @@ const result = {
 
 async function auditPage(browser, url, name){
   const page = await browser.newPage();
+  // Tighten per-page default timeouts to avoid hanging on slow resources
+  page.setDefaultTimeout(60000);
+  page.setDefaultNavigationTimeout(60000);
   const consoleMsgs = [];
   const errors = [];
   const network = [];
@@ -45,7 +48,9 @@ async function auditPage(browser, url, name){
 
   const nav = { url, domContentLoadedMs: null, loadMs: null };
   const t0 = Date.now();
-  await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 }).catch(e => errors.push('goto_error:' + e.message));
+  // Wait for DOM content; avoid networkidle which can hang on long-polling
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(e => errors.push('goto_error:' + e.message));
+  await page.waitForSelector('body', { timeout: 10000 }).catch(() => {});
   try {
     const perf = await page.evaluate(() => {
       const nav = performance.getEntriesByType('navigation')[0];
@@ -86,7 +91,9 @@ async function auditPage(browser, url, name){
   await page.close();
 }
 
-const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox','--disable-setuid-sandbox'] });
+// Allow raising DevTools protocol timeout via env
+const PROTOCOL_TIMEOUT = Number.parseInt(process.env.P2_PROTOCOL_TIMEOUT || '120000', 10);
+const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox','--disable-setuid-sandbox'], protocolTimeout: PROTOCOL_TIMEOUT });
 try {
   await auditPage(browser, BASE_URL + '/', 'home');
   await auditPage(browser, BASE_URL + '/notes', 'notes');

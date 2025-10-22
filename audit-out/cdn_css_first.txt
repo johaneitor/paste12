@@ -1,0 +1,15 @@
+HTTP/2 200 
+date: Wed, 22 Oct 2025 18:56:56 GMT
+content-type: text/css; charset=utf-8
+cache-control: public, max-age=0, s-maxage=300
+etag: W/"0e50724a5843c06f0366cfd0f730c8fb"
+last-modified: Wed, 22 Oct 2025 17:16:27 UTC
+strict-transport-security: max-age=315360000; includeSubdomains; preload
+vary: Accept-Encoding
+vary: Accept-Encoding
+x-content-type-options: nosniff
+cf-cache-status: MISS
+server: cloudflare
+cf-ray: 992b37af7f0acf4f-CMH
+alt-svc: h3=":443"; ma=86400
+

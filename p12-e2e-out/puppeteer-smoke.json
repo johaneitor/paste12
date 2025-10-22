@@ -1,13 +1,13 @@
 {
   "baseUrl": "https://paste12-rmsk.onrender.com",
-  "ts": "2025-10-21T18:28:23.789Z",
+  "ts": "2025-10-22T18:55:11.658Z",
   "pages": {
     "home": {
       "url": "https://paste12-rmsk.onrender.com/",
       "nav": {
         "url": "https://paste12-rmsk.onrender.com/",
-        "domContentLoadedMs": 868,
-        "loadMs": 1350
+        "domContentLoadedMs": 761,
+        "loadMs": 1345
       },
       "console": [
         {
@@ -56,7 +56,7 @@
         },
         {
           "type": "error",
-          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251020&st=env&sjk=871333047235055' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
+          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251021&st=env&sjk=6944874604238524' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
         },
         {
           "type": "error",
@@ -73,166 +73,6 @@
         {
           "type": "error",
           "text": "Refused to apply inline style because it violates the following Content Security Policy directive: \"default-src 'self'\". Either the 'unsafe-inline' keyword, a hash ('sha256-acGptrci0klVwmLmy+1d3i028rcggWW3H+YbecddgKo='), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present. Note also that 'style-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
         }
       ],
       "errors": [],
@@ -253,10 +93,10 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/app.js?v=7",
+          "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
@@ -267,45 +107,31 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/js/stability_patch.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/actions_menu.js",
+          "url": "https://paste12-rmsk.onrender.com/js/views_counter.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/js/hotfix.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
+          "url": "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
@@ -319,32 +145,53 @@
           "url": "https://paste12-rmsk.onrender.com/js/client_fp.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/views_counter.js",
+          "url": "https://paste12-rmsk.onrender.com/js/ads_lazy.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
-          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
+          "url": "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/actions_menu.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/app.js?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=UTF-8"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=0",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=50",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "application/json"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=50",
+          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=0",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "application/json"
@@ -397,147 +244,6 @@
           "status": 200,
           "fromServiceWorker": false,
           "ct": "image/png"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?page=1",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "application/json"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "application/json"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/favicon.svg",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "image/svg+xml; charset=utf-8"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/709/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/708/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/707/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/706/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/705/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/704/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/703/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/702/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/701/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/700/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/699/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/698/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/697/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/696/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/695/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/694/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/693/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/692/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/691/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/690/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
         }
       ],
       "dom": {
@@ -547,16 +253,12 @@
         "title": "paste12",
         "metas": [
           {
-            "name": "description",
-            "content": "Comparte notas efímeras de forma simple y segura."
-          },
-          {
             "name": "p12-safe-shim",
             "content": "1"
           },
           {
             "name": "p12-commit",
-            "content": "5d783588af3044adb917fd0b32d37a75ce111399"
+            "content": "78f59ea242c81622ebb8fd3f443f9cff7fdb4887"
           },
           {
             "name": "viewport",
@@ -565,6 +267,10 @@
           {
             "name": "google-adsense-account",
             "content": "ca-pub-9479870293204581"
+          },
+          {
+            "name": "description",
+            "content": "Comparte notas efímeras de forma simple y segura."
           },
           {
             "name": "og:title",
@@ -576,6 +282,22 @@
           },
           {
             "name": "og:image",
+            "content": "/img/og.png"
+          },
+          {
+            "name": "twitter:card",
+            "content": "summary_large_image"
+          },
+          {
+            "name": "twitter:title",
+            "content": "Paste12"
+          },
+          {
+            "name": "twitter:description",
+            "content": "Notas efímeras, simples y seguras."
+          },
+          {
+            "name": "twitter:image",
             "content": "/img/og.png"
           }
         ],
@@ -589,16 +311,16 @@
             "href": "https://paste12-rmsk.onrender.com/css/actions.css?v=7"
           },
           {
-            "rel": "icon",
-            "href": "https://paste12-rmsk.onrender.com/favicon.svg"
-          },
-          {
             "rel": "canonical",
             "href": "https://paste12-rmsk.onrender.com/"
+          },
+          {
+            "rel": "icon",
+            "href": "https://paste12-rmsk.onrender.com/favicon.svg"
           }
         ],
         "scripts": [
-          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
+          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
           "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
           "https://paste12-rmsk.onrender.com/js/client_fp.js",
           "https://paste12-rmsk.onrender.com/js/app.js?v=7",
@@ -606,6 +328,7 @@
           "https://paste12-rmsk.onrender.com/js/stability_patch.js",
           "https://paste12-rmsk.onrender.com/js/hotfix.js",
           "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
+          "https://paste12-rmsk.onrender.com/js/ads_lazy.js",
           "https://paste12-rmsk.onrender.com/js/actions_menu.js",
           "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
           "https://paste12-rmsk.onrender.com/js/views_counter.js"
@@ -616,8 +339,8 @@
       "url": "https://paste12-rmsk.onrender.com/notes",
       "nav": {
         "url": "https://paste12-rmsk.onrender.com/notes",
-        "domContentLoadedMs": 351,
-        "loadMs": 1091
+        "domContentLoadedMs": 414,
+        "loadMs": 0
       },
       "console": [
         {
@@ -682,167 +405,7 @@
         },
         {
           "type": "error",
-          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251020&st=env&sjk=3239998739444793' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
-        },
-        {
-          "type": "error",
-          "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "warn",
-          "text": "[views] fallo al sumar JSHandle@error"
+          "text": "Refused to connect to 'https://ep1.adtrafficquality.google/getconfig/sodar?sv=200&tid=gda&tv=r20251021&st=env&sjk=8301130188239122' because it violates the following Content Security Policy directive: \"default-src 'self'\". Note that 'connect-src' was not explicitly set, so 'default-src' is used as a fallback.\n"
         }
       ],
       "errors": [],
@@ -877,38 +440,73 @@
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/client_fp.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/js/app.js?v=7",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/js/stability_patch.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
+          "url": "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/ads_lazy.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/actions_menu.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/views_counter.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/client_fp.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/js/hotfix.js",
           "status": 200,
           "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
+          "ct": "application/javascript; charset=utf-8"
+        },
+        {
+          "type": "resp",
+          "url": "https://paste12-rmsk.onrender.com/js/actions.js?v=7",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "application/javascript; charset=utf-8"
         },
         {
           "type": "resp",
@@ -916,34 +514,6 @@
           "status": 200,
           "fromServiceWorker": false,
           "ct": "text/javascript; charset=UTF-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/actions_menu.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/js/views_counter.js",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=utf-8"
         },
         {
           "type": "resp",
@@ -961,17 +531,17 @@
         },
         {
           "type": "resp",
+          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
+          "status": 200,
+          "fromServiceWorker": false,
+          "ct": "text/javascript; charset=UTF-8"
+        },
+        {
+          "type": "resp",
           "url": "https://paste12-rmsk.onrender.com/api/notes?limit=20",
           "status": 200,
           "fromServiceWorker": false,
           "ct": "application/json"
-        },
-        {
-          "type": "resp",
-          "url": "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "text/javascript; charset=UTF-8"
         },
         {
           "type": "resp",
@@ -1021,133 +591,6 @@
           "status": 200,
           "fromServiceWorker": false,
           "ct": "image/png"
-        },
-        {
-          "type": "resp",
-          "url": "https://paste12-rmsk.onrender.com/api/notes?page=1",
-          "status": 200,
-          "fromServiceWorker": false,
-          "ct": "application/json"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/709/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/708/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/707/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/706/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/705/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/704/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/703/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/702/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/701/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/700/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/699/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/698/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/697/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/696/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/695/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/694/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/693/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/692/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/691/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        },
-        {
-          "type": "fail",
-          "url": "https://paste12-rmsk.onrender.com/api/notes/690/view",
-          "method": "POST",
-          "failure": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
         }
       ],
       "dom": {
@@ -1157,16 +600,12 @@
         "title": "paste12",
         "metas": [
           {
-            "name": "description",
-            "content": "Comparte notas efímeras de forma simple y segura."
-          },
-          {
             "name": "p12-safe-shim",
             "content": "1"
           },
           {
             "name": "p12-commit",
-            "content": "5d783588af3044adb917fd0b32d37a75ce111399"
+            "content": "78f59ea242c81622ebb8fd3f443f9cff7fdb4887"
           },
           {
             "name": "viewport",
@@ -1175,6 +614,10 @@
           {
             "name": "google-adsense-account",
             "content": "ca-pub-9479870293204581"
+          },
+          {
+            "name": "description",
+            "content": "Comparte notas efímeras de forma simple y segura."
           },
           {
             "name": "og:title",
@@ -1186,6 +629,22 @@
           },
           {
             "name": "og:image",
+            "content": "/img/og.png"
+          },
+          {
+            "name": "twitter:card",
+            "content": "summary_large_image"
+          },
+          {
+            "name": "twitter:title",
+            "content": "Paste12"
+          },
+          {
+            "name": "twitter:description",
+            "content": "Notas efímeras, simples y seguras."
+          },
+          {
+            "name": "twitter:image",
             "content": "/img/og.png"
           }
         ],
@@ -1199,16 +658,16 @@
             "href": "https://paste12-rmsk.onrender.com/css/actions.css?v=7"
           },
           {
-            "rel": "icon",
-            "href": "https://paste12-rmsk.onrender.com/favicon.svg"
-          },
-          {
             "rel": "canonical",
             "href": "https://paste12-rmsk.onrender.com/"
+          },
+          {
+            "rel": "icon",
+            "href": "https://paste12-rmsk.onrender.com/favicon.svg"
           }
         ],
         "scripts": [
-          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js?bust=31095335",
+          "https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202510160101/show_ads_impl.js",
           "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9479870293204581",
           "https://paste12-rmsk.onrender.com/js/client_fp.js",
           "https://paste12-rmsk.onrender.com/js/app.js?v=7",
@@ -1216,6 +675,7 @@
           "https://paste12-rmsk.onrender.com/js/stability_patch.js",
           "https://paste12-rmsk.onrender.com/js/hotfix.js",
           "https://paste12-rmsk.onrender.com/js/debug_overlay.js",
+          "https://paste12-rmsk.onrender.com/js/ads_lazy.js",
           "https://paste12-rmsk.onrender.com/js/actions_menu.js",
           "https://paste12-rmsk.onrender.com/js/share_enhancer.js",
           "https://paste12-rmsk.onrender.com/js/views_counter.js"
