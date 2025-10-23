@@ -1,0 +1,18 @@
+HTTP/2 200 
+date: Thu, 23 Oct 2025 02:57:51 GMT
+content-type: application/json
+access-control-allow-origin: https://paste12-rmsk.onrender.com
+cache-control: no-store
+referrer-policy: no-referrer
+rndr-id: 358baf44-31a4-4c94
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+x-resp-time: 0.3ms
+cf-cache-status: DYNAMIC
+server: cloudflare
+cf-ray: 992df826cbc064c2-CMH
+alt-svc: h3=":443"; ma=86400
+
