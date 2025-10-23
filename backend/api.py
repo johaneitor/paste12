@@ -8,10 +8,9 @@ api = Blueprint("api", __name__)
 try:
     from backend import db
     from backend.models import Note
-except Exception as e:
+except Exception:
     db = None
     Note = None
-    print("~ backend.api: no pude importar db/Note:", e)
 
 def _now() -> datetime: return datetime.utcnow()
 
@@ -66,6 +65,9 @@ def create_note():
             "author_fp": getattr(n, "author_fp", None),
             "now": now.isoformat(),
         }), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify(error="create_failed", detail=str(e)), 500
+    except Exception as exc:
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify(error="create_failed"), 500
