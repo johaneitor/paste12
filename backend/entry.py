@@ -24,7 +24,9 @@ try:
     if "api" not in app.blueprints:
         app.register_blueprint(_api_bp, url_prefix="/api")  # type: ignore[attr-defined]
 except Exception as e:
-    # Si fallara el import, exponer el motivo
+    # Capturar el detalle en una variable local para evitar fugas del binding de 'e'
+    _api_import_error_detail = str(e)
+    # Si fallara el import, exponer el motivo sin depender del nombre 'e'
     @app.get("/__api_import_error")
     def __api_import_error():
-        return jsonify({"ok": False, "where": "import backend.routes", "error": str(e)}), 500
+        return jsonify({"ok": False, "where": "import backend.routes", "error": _api_import_error_detail}), 500
