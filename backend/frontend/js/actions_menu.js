@@ -77,19 +77,16 @@
     // contenedor absoluto arriba-dcha
     const wrap = document.createElement('div');
     wrap.className = 'p12-menu-wrap';
-    wrap.innerHTML = `
-      <button type="button" class="p12-menu-btn" aria-label="Opciones">⋯</button>
-      <div class="p12-menu" hidden>
-        <button type="button" class="p12-share">Compartir</button>
-        <button type="button" class="p12-report">Reportar</button>
-      </div>`;
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'p12-menu-btn'; btn.setAttribute('aria-label','Opciones'); btn.textContent = '⋯';
+    const panel = document.createElement('div'); panel.className = 'p12-menu'; panel.setAttribute('hidden','');
+    const share = document.createElement('button'); share.type='button'; share.className='p12-share'; share.textContent='Compartir';
+    const report = document.createElement('button'); report.type='button'; report.className='p12-report'; report.textContent='Reportar';
+    panel.appendChild(share); panel.appendChild(report); wrap.appendChild(btn); wrap.appendChild(panel);
     card.style.position = card.style.position || 'relative';
     card.appendChild(wrap);
 
-    const btn = wrap.querySelector('.p12-menu-btn');
-    const menu = wrap.querySelector('.p12-menu');
-    const share = wrap.querySelector('.p12-share');
-    const report = wrap.querySelector('.p12-report');
+    const menu = panel;
 
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();

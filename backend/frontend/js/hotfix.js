@@ -33,12 +33,18 @@
     return r.json();
   }
 
+  function escapeHtml(s){
+    return (s??'').toString().replace(/[&<>"]|'/g, m => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    })[m]);
+  }
+
   function buildCard(n){
     const art = document.createElement('article');
     art.className = 'note-card';
     art.setAttribute('data-note', n.id);
     art.innerHTML = `
-      <div class="note-body">${(n.text||"").replace(/</g,"&lt;")}</div>
+      <div class="note-body">${escapeHtml(n.text)}</div>
       <div class="note-meta">
         <span class="countdown" data-expires-at="${n.expires_at||""}"></span>
         <div class="spacer"></div>
@@ -59,8 +65,9 @@
 
   async function loadAndRender(page=1){
     try{
-      const data = await api(`/api/notes?page=${page}`);
-      const items = Array.isArray(data.items)? data.items : (Array.isArray(data.notes)? data.notes : []);
+      const limit = Math.max(1, 20);
+      const data = await api(`/api/notes?wrap=1&active_only=1&limit=${limit}`);
+      const items = Array.isArray(data?.items)? data.items : (Array.isArray(data?.notes)? data.notes : (Array.isArray(data)? data : []));
       const list = document.getElementById('notes') || document.querySelector('[data-notes], #list, main');
       if(!list) return;
       list.innerHTML = '';

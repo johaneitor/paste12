@@ -45,7 +45,11 @@
     if (!m){
       m = document.createElement('div');
       m.className = 'p12-metrics';
-      m.innerHTML = `<span class="p12-views" title="Vistas">👁 0</span>`;
+      const span = document.createElement('span');
+      span.className = 'p12-views';
+      span.title = 'Vistas';
+      span.textContent = '👁 0';
+      m.appendChild(span);
       card.appendChild(m);
     }
     return m;
