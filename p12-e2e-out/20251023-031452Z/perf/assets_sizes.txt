@@ -1,0 +1,10 @@
+8.0K	/workspace/frontend/js/actions_menu.js
+12K	/workspace/frontend/js/app.js
+4.0K	/workspace/frontend/js/client_fp.js
+4.0K	/workspace/frontend/js/debug_overlay.js
+8.0K	/workspace/frontend/js/hotfix.js
+8.0K	/workspace/frontend/js/share_enhancer.js
+4.0K	/workspace/frontend/js/stability_patch.js
+4.0K	/workspace/frontend/js/views_counter.js
+8.0K	/workspace/frontend/css/styles.css
+60K	total

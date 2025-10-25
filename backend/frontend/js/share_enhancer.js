@@ -1,52 +1,6 @@
 (function(){
-  function noteUrl(id){ return `${location.origin}/#n-${id}`; }
-
-  async function copyToClipboard(text){
-    try{
-      await navigator.clipboard.writeText(text);
-      return true;
-    }catch(_){
-      // Fallback execCommand
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.top = '-1000px';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    }
-  }
-
-  function toast(msg){
-    let t = document.getElementById('toast-share');
-    if(!t){
-      t = document.createElement('div');
-      t.id = 'toast-share';
-      Object.assign(t.style, {
-        position:'fixed', left:'50%', bottom:'16px', transform:'translateX(-50%) translateY(10px)',
-        background:'#111a', color:'#fff', padding:'10px 14px', borderRadius:'10px',
-        backdropFilter:'blur(6px)', zIndex:'9999', fontSize:'14px', opacity:'0',
-        transition:'opacity .2s, transform .2s'
-      });
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.style.opacity = '1';
-    t.style.transform = 'translateX(-50%) translateY(0)';
-    setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(10px)'; }, 1500);
-  }
-
-  async function doShare(id){
-    const url = noteUrl(id);
-    if (navigator.share && (!navigator.canShare || navigator.canShare({url}))){
-      try { await navigator.share({title:'Paste12', text:'Mira esta nota', url}); return; }
-      catch(e){ /* cancelado por el usuario → fallback a copiar */ }
-    }
-    const ok = await copyToClipboard(url);
-    toast(ok ? 'Enlace copiado' : `Copia manual: ${url}`);
-  }
+  const { shareNoteId } = window.P12Shared || {};
+  if (!shareNoteId) return;
 
   function findContainer(){
     return document.getElementById('notes')
@@ -106,7 +60,7 @@
         || target.dataset?.note
         || target.dataset?.id
         || getCardId(target.closest('[data-note], [data-note-id], .note-card, article')) ;
-      if (id) doShare(id);
+      if (id) shareNoteId(id);
     });
   }
 
