@@ -76,12 +76,13 @@
 
   async function fetchNotes() {
     try {
-      const r = await fetch('/api/notes?limit=20', { headers: { 'Accept':'application/json' }});
+      const limit = Math.max(1, 20);
+      const r = await fetch(`/api/notes?wrap=1&active_only=1&limit=${limit}`, { headers: { 'Accept':'application/json' }});
       if (!r.ok) throw new Error('HTTP '+r.status);
       const j = await r.json();
-      if (Array.isArray(j)) return j;
-      if (j && Array.isArray(j.notes)) return j.notes;
+      if (Array.isArray(j)) return j; // compat
       if (j && Array.isArray(j.items)) return j.items;
+      if (j && Array.isArray(j.notes)) return j.notes; // legacy compat
       return [];
     } catch (e) {
       console.error('notes fetch failed', e);
@@ -102,7 +103,9 @@
     ul.innerHTML = '';
     if (!list.length) {
       const li = document.createElement('li');
-      li.innerHTML = '<em>No hay notas todavía.</em>';
+      const em = document.createElement('em');
+      em.textContent = 'No hay notas todavía.';
+      li.appendChild(em);
       ul.appendChild(li);
       return;
     }
@@ -111,19 +114,28 @@
       li.className = 'note';
       li.dataset.noteId = String(n.id);
       li.id = 'note-' + n.id;
-      li.innerHTML = `
-        <div class="note-text">${esc(n.text)}</div>
-        <div class="meta">
-          <span class="sep">#${n.id}</span>
-          <button class="like-btn" data-act="like" aria-label="Me gusta">
-            <span class="heart" aria-hidden="true">♥</span>
-            <span class="count">${n.likes}</span>
-          </button>
-          <span class="sep">·</span>
-          <span class="views">👁 <span class="count">${n.views}</span></span>
-          <span class="sep">·</span>
-          <span class="reports">🚩 <span class="count">${n.reports}</span></span>
-        </div>`;
+      // Build note DOM without injecting raw HTML
+      const textDiv = document.createElement('div');
+      textDiv.className = 'note-text';
+      textDiv.innerHTML = esc(n.text);
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const sep1 = document.createElement('span'); sep1.className = 'sep'; sep1.textContent = `#${n.id}`;
+      const btn = document.createElement('button');
+      btn.className = 'like-btn'; btn.setAttribute('data-act','like'); btn.setAttribute('aria-label','Me gusta');
+      const heart = document.createElement('span'); heart.className='heart'; heart.setAttribute('aria-hidden','true'); heart.textContent = '♥';
+      const count = document.createElement('span'); count.className='count'; count.textContent = String(n.likes);
+      btn.appendChild(heart); btn.appendChild(count);
+      const sep2 = document.createElement('span'); sep2.className='sep'; sep2.textContent='·';
+      const views = document.createElement('span'); views.className='views';
+      const viewsCount = document.createElement('span'); viewsCount.className='count'; viewsCount.textContent = String(n.views);
+      views.textContent = '👁 '; views.appendChild(viewsCount);
+      const sep3 = document.createElement('span'); sep3.className='sep'; sep3.textContent='·';
+      const reports = document.createElement('span'); reports.className='reports';
+      const reportsCount = document.createElement('span'); reportsCount.className='count'; reportsCount.textContent = String(n.reports);
+      reports.textContent = '🚩 '; reports.appendChild(reportsCount);
+      meta.appendChild(sep1); meta.appendChild(btn); meta.appendChild(sep2); meta.appendChild(views); meta.appendChild(sep3); meta.appendChild(reports);
+      li.appendChild(textDiv); li.appendChild(meta);
       ul.appendChild(li);
     }
   }
@@ -232,7 +244,10 @@
       wrap = document.createElement('div');
       wrap.id = 'p12-more';
       wrap.className = 'load-more';
-      wrap.innerHTML = `<button type="button" class="btn-more" aria-live="polite">Cargar más</button><span class="hint" aria-live="polite" style="margin-left:8px;"></span>`;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'btn-more'; btn.setAttribute('aria-live','polite'); btn.textContent = 'Cargar más';
+      const hint = document.createElement('span'); hint.className = 'hint'; hint.setAttribute('aria-live','polite'); hint.style.marginLeft = '8px';
+      wrap.appendChild(btn); wrap.appendChild(hint);
       (listRoot()?.parentElement || document.body).appendChild(wrap);
     }
     return wrap;
@@ -254,7 +269,9 @@
     for (let i=0; i<count; i++){
       const li = document.createElement('li');
       li.className = 'note skeleton';
-      li.innerHTML = `<div class="s1"></div><div class="s2"></div>`;
+      const s1 = document.createElement('div'); s1.className = 's1';
+      const s2 = document.createElement('div'); s2.className = 's2';
+      li.appendChild(s1); li.appendChild(s2);
       root.appendChild(li); nodes.push(li);
     }
     return nodes;
