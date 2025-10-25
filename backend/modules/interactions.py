@@ -110,6 +110,15 @@ def register_into(app):
                       UNIQUE(note_id, fingerprint)
                     )
                 """))
+                # En algunos despliegues antiguos la tabla pudo existir sin la
+                # restricción única requerida por ON CONFLICT. Creamos un índice
+                # único compatible para que Postgres acepte el ON CONFLICT.
+                try:
+                    cx.execute(sa.text(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS like_log_note_id_fingerprint_key ON like_log(note_id, fingerprint)"
+                    ))
+                except Exception:
+                    pass
                 # Log idempotente
                 inserted = _insert_ignore(
                     cx,
@@ -146,6 +155,13 @@ def register_into(app):
                       UNIQUE(note_id, fingerprint, day)
                     )
                 """))
+                # Asegurar índice único para ON CONFLICT (despliegues legados)
+                try:
+                    cx.execute(sa.text(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS view_log_note_id_fingerprint_day_key ON view_log(note_id, fingerprint, day)"
+                    ))
+                except Exception:
+                    pass
                 # Intento idempotente por (note_id, fp, day)
                 inserted = _insert_ignore(
                     cx,
@@ -182,6 +198,13 @@ def register_into(app):
                       UNIQUE(note_id, fingerprint)
                     )
                 """))
+                # Asegurar índice único para ON CONFLICT (despliegues legados)
+                try:
+                    cx.execute(sa.text(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS report_log_note_id_fingerprint_key ON report_log(note_id, fingerprint)"
+                    ))
+                except Exception:
+                    pass
                 inserted = _insert_ignore(
                     cx,
                     "report_log",
