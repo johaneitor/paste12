@@ -110,14 +110,23 @@ def register_into(app):
                       UNIQUE(note_id, fingerprint)
                     )
                 """))
-                # En algunos despliegues antiguos la tabla pudo existir sin la
-                # restricción única requerida por ON CONFLICT. Creamos un índice
-                # único compatible para que Postgres acepte el ON CONFLICT.
+                # Evitar deadlocks: no crear índices dentro del mismo flujo en
+                # alta concurrencia. Los índices únicos fueron añadidos vía
+                # migración previa. Aquí solo validamos existencia de nota.
                 try:
-                    cx.execute(sa.text(
-                        "CREATE UNIQUE INDEX IF NOT EXISTS like_log_note_id_fingerprint_key ON like_log(note_id, fingerprint)"
-                    ))
+                    exists = False
+                    for _tbl in ("notes", "note"):
+                        try:
+                            row = cx.execute(sa.text(f"SELECT 1 FROM {_tbl} WHERE id=:id"), {"id": note_id}).first()
+                            exists = bool(row)
+                            if exists:
+                                break
+                        except Exception:
+                            continue
+                    if not exists:
+                        return jsonify(ok=False, error="not_found"), 404
                 except Exception:
+                    # Si falla la verificación no bloquea; se manejará por FK
                     pass
                 # Log idempotente
                 inserted = _insert_ignore(
@@ -155,11 +164,19 @@ def register_into(app):
                       UNIQUE(note_id, fingerprint, day)
                     )
                 """))
-                # Asegurar índice único para ON CONFLICT (despliegues legados)
+                # Verificar que la nota existe para evitar FK violado
                 try:
-                    cx.execute(sa.text(
-                        "CREATE UNIQUE INDEX IF NOT EXISTS view_log_note_id_fingerprint_day_key ON view_log(note_id, fingerprint, day)"
-                    ))
+                    exists = False
+                    for _tbl in ("notes", "note"):
+                        try:
+                            row = cx.execute(sa.text(f"SELECT 1 FROM {_tbl} WHERE id=:id"), {"id": note_id}).first()
+                            exists = bool(row)
+                            if exists:
+                                break
+                        except Exception:
+                            continue
+                    if not exists:
+                        return jsonify(ok=False, error="not_found"), 404
                 except Exception:
                     pass
                 # Intento idempotente por (note_id, fp, day)
@@ -198,11 +215,19 @@ def register_into(app):
                       UNIQUE(note_id, fingerprint)
                     )
                 """))
-                # Asegurar índice único para ON CONFLICT (despliegues legados)
+                # Verificar existencia de la nota
                 try:
-                    cx.execute(sa.text(
-                        "CREATE UNIQUE INDEX IF NOT EXISTS report_log_note_id_fingerprint_key ON report_log(note_id, fingerprint)"
-                    ))
+                    exists = False
+                    for _tbl in ("notes", "note"):
+                        try:
+                            row = cx.execute(sa.text(f"SELECT 1 FROM {_tbl} WHERE id=:id"), {"id": note_id}).first()
+                            exists = bool(row)
+                            if exists:
+                                break
+                        except Exception:
+                            continue
+                    if not exists:
+                        return jsonify(ok=False, error="not_found"), 404
                 except Exception:
                     pass
                 inserted = _insert_ignore(
