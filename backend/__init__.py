@@ -202,6 +202,82 @@ def create_app():
                     except Exception:
                         pass
 
+            # --- Guard triggers to avoid FK violations on log tables (Postgres) ---
+            try:
+                # Only run on Postgres; SQLite ignores DDL and has no triggers here
+                import sqlalchemy as _sa  # lazy import
+                dialect = db.engine.dialect.name
+                if dialect.startswith("postgres"):
+                    # Ensure log tables exist (compat with interactions module)
+                    db.session.execute(_text(
+                        """
+                        CREATE TABLE IF NOT EXISTS like_log(
+                          note_id INTEGER NOT NULL,
+                          fingerprint VARCHAR(128) NOT NULL,
+                          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """
+                    ))
+                    db.session.execute(_text(
+                        """
+                        CREATE TABLE IF NOT EXISTS view_log(
+                          note_id INTEGER NOT NULL,
+                          fingerprint VARCHAR(128) NOT NULL,
+                          day TEXT NOT NULL,
+                          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """
+                    ))
+                    db.session.execute(_text(
+                        """
+                        CREATE TABLE IF NOT EXISTS report_log(
+                          note_id INTEGER NOT NULL,
+                          fingerprint VARCHAR(128) NOT NULL,
+                          reason TEXT,
+                          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """
+                    ))
+
+                    # Create guard function
+                    db.session.execute(_text(
+                        """
+                        CREATE OR REPLACE FUNCTION ensure_parent_note_exists() RETURNS trigger
+                        LANGUAGE plpgsql AS $$
+                        BEGIN
+                          IF NOT EXISTS (SELECT 1 FROM note WHERE id = NEW.note_id) THEN
+                            RETURN NULL; -- skip insert if parent note missing
+                          END IF;
+                          RETURN NEW;
+                        END
+                        $$;
+                        """
+                    ))
+
+                    # Triggers for each log table
+                    for _tbl, _trg in (
+                        ("view_log",   "trg_view_log_guard"),
+                        ("like_log",   "trg_like_log_guard"),
+                        ("report_log", "trg_report_log_guard"),
+                    ):
+                        try:
+                            db.session.execute(_text(f"DROP TRIGGER IF EXISTS {_trg} ON {_tbl}"))
+                        except Exception:
+                            pass
+                        db.session.execute(_text(
+                            f"""
+                            CREATE TRIGGER {_trg}
+                            BEFORE INSERT ON {_tbl}
+                            FOR EACH ROW EXECUTE FUNCTION ensure_parent_note_exists()
+                            """
+                        ))
+            except Exception as _e:
+                # Do not block app startup on DDL failures
+                try:
+                    logging.getLogger(__name__).warning("[schema] trigger guards setup skipped: %r", _e)
+                except Exception:
+                    pass
+
             db.session.commit()
     except Exception as _exc:
         logging.getLogger(__name__).warning("[schema] ensure note_report skipped: %r", _exc)
