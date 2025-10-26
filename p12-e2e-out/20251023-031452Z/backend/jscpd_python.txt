@@ -1,0 +1,45 @@
+Clone found (python):
+ - backend/modules/interactions.py [162:6 - 169:34] (7 lines, 97 tokens)
+   backend/modules/interactions.py [126:6 - 133:32]
+
+Clone found (python):
+ - backend/modules/interactions.py [200:8 - 207:4] (7 lines, 92 tokens)
+   backend/modules/interactions.py [126:6 - 133:5]
+
+Clone found (python):
+ - backend/routes_notes.py [165:2 - 173:4] (8 lines, 80 tokens)
+   backend/routes_notes.py [77:4 - 84:4]
+
+Clone found (python):
+ - backend/routes.py [78:6 - 83:7] (5 lines, 81 tokens)
+   backend/modules/interactions.py [159:5 - 164:4]
+
+Clone found (python):
+ - backend/api.py [34:2 - 40:6] (6 lines, 97 tokens)
+   backend/routes_notes.py [142:2 - 151:2]
+
+Clone found (python):
+ - backend/api.py [60:2 - 68:2] (8 lines, 122 tokens)
+   backend/routes_notes.py [141:9 - 41:4]
+
+Clone found (python):
+ - backend/__init__.py [69:20 - 87:58] (18 lines, 116 tokens)
+   backend/modules/interactions.py [32:27 - 44:5]
+
+Clone found (python):
+ - backend/__init__.py [313:17 - 319:17] (6 lines, 87 tokens)
+   backend/modules/interactions.py [128:13 - 170:12]
+
+Clone found (python):
+ - backend/__init__.py [327:8 - 335:57] (8 lines, 102 tokens)
+   backend/__init__.py [310:6 - 318:5]
+
+┌────────┬────────────────┬─────────────┬──────────────┬──────────────┬──────────────────┬───────────────────┐
+│ Format │ Files analyzed │ Total lines │ Total tokens │ Clones found │ Duplicated lines │ Duplicated tokens │
+├────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤
+│ python │ 28             │ 2100        │ 19132        │ 9            │ 73 (3.48%)       │ 874 (4.57%)       │
+├────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤
+│ Total: │ 28             │ 2100        │ 19132        │ 9            │ 73 (3.48%)       │ 874 (4.57%)       │
+└────────┴────────────────┴─────────────┴──────────────┴──────────────┴──────────────────┴───────────────────┘
+Found 9 clones.
+Detection time:: 700.568ms

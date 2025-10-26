@@ -155,6 +155,9 @@ def index():
                 html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n</head>")
             else:
                 html += f"\n<script src=\\\"{aurl('/js/app.js')}\\\" defer></script>\n"
+        else:
+            # Garantizar defer si ya existe la etiqueta app.js
+            html = html.replace("/js/app.js\"", "/js/app.js\" defer")
         if '/js/actions.js' not in html:
             if "</body>" in html:
                 html = html.replace("</body>", f"  <script src=\\\"{aurl('/js/actions.js')}\\\"></script>\n</body>")
@@ -169,6 +172,8 @@ def index():
                 html = html.replace("</head>", f"  <script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n</head>")
             else:
                 html += f"\n<script src=\\\"{aurl('/js/ads_lazy.js')}\\\" defer></script>\n"
+        # Retirar debug_overlay del HTML generado por el inyectable; se carga sólo con ?debug=1
+        html = html.replace('<script src=\"/js/debug_overlay.js\" defer></script>', '')
         resp = make_response(html)
         resp.headers["Content-Type"] = "text/html; charset=utf-8"
     else:

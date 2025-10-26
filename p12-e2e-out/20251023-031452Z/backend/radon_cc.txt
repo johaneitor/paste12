@@ -1,0 +1,128 @@
+/workspace/backend/errors.py
+    C 1:0 DomainError - A (1)
+    C 4:0 NotFound - A (1)
+    C 7:0 BadInput - A (1)
+/workspace/backend/tasks.py
+    F 4:0 enforce_global_cap - B (7)
+    F 32:0 purge_expired - A (3)
+/workspace/backend/pooling_guard.py
+    F 4:0 attach_pooling - A (1)
+/workspace/backend/debug_runtime.py
+    F 8:0 dbg_routes - B (6)
+    F 34:0 dbg_fs - A (4)
+/workspace/backend/models.py
+    C 6:0 Note - A (3)
+    M 19:4 Note.to_dict - A (3)
+    M 32:4 Note.default_ttl_hours - A (1)
+    M 37:4 Note.compute_expiry - A (1)
+    C 41:0 NoteReport - A (1)
+/workspace/backend/safeguards.py
+    F 4:0 register_api_safeguards - B (9)
+/workspace/backend/webui.py
+    F 41:0 ensure_webui - B (7)
+    F 4:0 _discover_front_dir - A (3)
+    F 32:0 robots - A (2)
+    F 37:0 favicon - A (2)
+    F 69:4 terms - A (2)
+    F 74:4 privacy - A (2)
+    F 20:0 index - A (1)
+    F 24:0 js - A (1)
+    F 28:0 css - A (1)
+/workspace/backend/routes.py
+    F 35:0 view_alias - B (7)
+    F 17:0 _fingerprint - A (5)
+    F 11:0 _today_iso - A (1)
+    F 14:0 _now - A (1)
+/workspace/backend/static_routes.py
+    F 19:0 static_proxy - A (3)
+    F 7:0 favicon - A (1)
+    F 11:0 ads_txt - A (1)
+    F 15:0 index - A (1)
+/workspace/backend/routes_notes.py
+    F 16:0 _has_rule - A (5)
+    F 10:0 _fp - A (4)
+    F 25:0 register_api - A (4)
+    F 7:0 _now - A (1)
+/workspace/backend/remote_compat.py
+    F 69:0 create_report - B (6)
+    F 55:0 _fp - A (3)
+    F 10:0 _patch_schema - A (2)
+    F 49:0 _on_load - A (2)
+    F 59:0 like_note - A (2)
+    F 88:0 report_alias - A (1)
+/workspace/backend/routes_api_min.py
+    F 7:0 api_health - A (1)
+    F 11:0 api_notes_options - A (1)
+    F 22:0 api_notes_get - A (1)
+/workspace/backend/entry.py
+    F 29:4 __api_import_error - A (1)
+/workspace/backend/force_api.py
+    F 2:0 install - B (7)
+/workspace/backend/debug_routes.py
+    F 5:0 list_routes - A (4)
+/workspace/backend/front_bp.py
+    F 16:0 index - F (51)
+    F 192:0 _static_cache - C (11)
+    F 245:0 assets - B (8)
+    F 219:0 css - A (3)
+    F 228:0 js - A (3)
+    F 236:0 img - A (3)
+    F 180:0 terms - A (2)
+    F 185:0 privacy - A (2)
+    F 298:0 notes_redirect - A (2)
+    F 277:0 favicon_ico - A (1)
+    F 282:0 favicon_svg - A (1)
+    F 287:0 robots_txt - A (1)
+    F 292:0 ads_txt - A (1)
+/workspace/backend/api.py
+    F 44:0 create_note - B (9)
+    F 27:0 list_notes - B (6)
+    F 18:0 _fp - A (5)
+    F 16:0 _now - A (1)
+/workspace/backend/web.py
+    F 12:0 root_index - A (2)
+    F 21:0 privacy - A (2)
+    F 27:0 terms - A (2)
+    F 9:0 _ok - A (1)
+    F 33:0 css - A (1)
+    F 37:0 js - A (1)
+    F 41:0 front_js - A (1)
+    F 45:0 favicon_svg - A (1)
+    F 49:0 favicon_ico - A (1)
+    F 53:0 robots_txt - A (1)
+    F 57:0 ads_txt - A (1)
+/workspace/backend/front_serve.py
+    F 10:0 _serve - A (1)
+    F 17:0 index - A (1)
+    F 21:0 terms - A (1)
+    F 25:0 privacy - A (1)
+/workspace/backend/models_hooks.py
+    F 30:0 _fp - A (5)
+    F 44:4 note_before_insert - A (3)
+    F 7:0 _log - A (2)
+/workspace/backend/__init__.py
+    F 20:0 create_app - E (33)
+/workspace/backend/wsgi.py
+    F 1:0 _inject_index_flags - A (2)
+/workspace/backend/db_resilience.py
+    F 5:0 attach - A (1)
+/workspace/backend/repos/notes_repo.py
+    F 3:0 create_note - A (1)
+    F 9:0 list_notes - A (1)
+/workspace/backend/schemas/notes.py
+    F 1:0 validate_create_note - A (4)
+/workspace/backend/modules/interactions.py
+    F 5:0 _engine - B (7)
+    F 55:0 _get_fp - A (4)
+    F 67:0 register_into - A (2)
+    F 48:0 _dialect - A (1)
+    F 52:0 _now - A (1)
+    F 207:0 register_alias_into - A (1)
+/workspace/backend/services/notes_service.py
+    F 6:0 create - A (2)
+    F 13:0 list_ - A (1)
+/workspace/backend/utils/fingerprint.py
+    F 3:0 client_fingerprint - A (5)
+
+97 blocks (classes, functions, methods) analyzed.
+Average complexity: A (3.422680412371134)

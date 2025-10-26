@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,7 +11,7 @@
   <!-- CSP is set via HTTP response header by the backend; meta tag removed to avoid conflicts -->
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=()">
-  <link rel="canonical" href="/">
+  <link rel="canonical" href="https://paste12-rmsk.onrender.com/">
   <meta name="description" content="Comparte notas efímeras de forma simple y segura.">
   <meta property="og:title" content="Paste12">
   <meta property="og:description" content="Notas efímeras, simples y seguras.">
@@ -42,12 +42,13 @@
   </main>
 
   <!-- Functional enhancements -->
+  <script src="/js/p12_shared.js" defer></script>
   <script src="/js/client_fp.js" defer></script>
   <script src="/js/app.js?v=7" defer></script>
   <script src="/js/actions.js?v=7" defer></script>
   <script src="/js/stability_patch.js" defer></script>
   <script src="/js/hotfix.js" defer></script>
-  <script src="/js/debug_overlay.js" defer></script>
+  <!-- debug_overlay se carga sólo con ?debug=1 -->
   <script src="/js/ads_lazy.js" defer></script>
   <noscript>Necesitás habilitar JavaScript.</noscript>
   <footer class="site-footer">

@@ -1,0 +1,179 @@
+/workspace/backend/__init__.py:18:89: W291 trailing whitespace
+/workspace/backend/__init__.py:20:1: E302 expected 2 blank lines, found 1
+/workspace/backend/__init__.py:123:121: E501 line too long (125 > 120 characters)
+/workspace/backend/__init__.py:237:13: F841 local variable 'nid_int' is assigned to but never used
+/workspace/backend/__init__.py:305:121: E501 line too long (123 > 120 characters)
+/workspace/backend/__init__.py:306:121: E501 line too long (141 > 120 characters)
+/workspace/backend/__init__.py:322:121: E501 line too long (127 > 120 characters)
+/workspace/backend/__init__.py:323:121: E501 line too long (145 > 120 characters)
+/workspace/backend/__init__.py:405:121: E501 line too long (121 > 120 characters)
+/workspace/backend/api.py:4:10: E401 multiple imports on one line
+/workspace/backend/api.py:16:1: E302 expected 2 blank lines, found 1
+/workspace/backend/api.py:18:1: E302 expected 2 blank lines, found 1
+/workspace/backend/api.py:20:51: E231 missing whitespace after ','
+/workspace/backend/api.py:20:97: E231 missing whitespace after ','
+/workspace/backend/api.py:20:121: E501 line too long (131 > 120 characters)
+/workspace/backend/api.py:21:46: E231 missing whitespace after ','
+/workspace/backend/api.py:22:21: E701 multiple statements on one line (colon)
+/workspace/backend/api.py:23:36: E231 missing whitespace after ','
+/workspace/backend/api.py:26:1: E302 expected 2 blank lines, found 1
+/workspace/backend/api.py:43:1: E302 expected 2 blank lines, found 1
+/workspace/backend/api.py:49:16: E701 multiple statements on one line (colon)
+/workspace/backend/api.py:50:8: E701 multiple statements on one line (colon)
+/workspace/backend/api.py:51:21: E701 multiple statements on one line (colon)
+/workspace/backend/api.py:60:26: E702 multiple statements on one line (semicolon)
+/workspace/backend/db_resilience.py:5:1: E302 expected 2 blank lines, found 1
+/workspace/backend/debug_routes.py:4:1: E302 expected 2 blank lines, found 1
+/workspace/backend/debug_runtime.py:3:11: E401 multiple imports on one line
+/workspace/backend/debug_runtime.py:7:1: E302 expected 2 blank lines, found 1
+/workspace/backend/debug_runtime.py:11:67: E231 missing whitespace after ','
+/workspace/backend/debug_runtime.py:33:1: E302 expected 2 blank lines, found 1
+/workspace/backend/debug_runtime.py:35:37: E231 missing whitespace after ','
+/workspace/backend/entry.py:26:1: F841 local variable 'e' is assigned to but never used
+/workspace/backend/entry.py:30:85: F821 undefined name 'e'
+/workspace/backend/errors.py:4:1: E302 expected 2 blank lines, found 1
+/workspace/backend/errors.py:7:1: E302 expected 2 blank lines, found 1
+/workspace/backend/force_api.py:2:1: E302 expected 2 blank lines, found 0
+/workspace/backend/force_api.py:5:18: E221 multiple spaces before operator
+/workspace/backend/force_api.py:5:60: E272 multiple spaces before keyword
+/workspace/backend/force_api.py:13:21: E225 missing whitespace around operator
+/workspace/backend/force_api.py:16:92: E231 missing whitespace after ','
+/workspace/backend/front_bp.py:15:1: E302 expected 2 blank lines, found 1
+/workspace/backend/front_bp.py:43:121: E501 line too long (124 > 120 characters)
+/workspace/backend/front_bp.py:132:9: E306 expected 1 blank line before a nested definition, found 0
+/workspace/backend/front_bp.py:150:121: E501 line too long (127 > 120 characters)
+/workspace/backend/front_bp.py:167:121: E501 line too long (123 > 120 characters)
+/workspace/backend/front_bp.py:169:121: E501 line too long (123 > 120 characters)
+/workspace/backend/front_bp.py:179:1: E302 expected 2 blank lines, found 1
+/workspace/backend/front_bp.py:182:121: E501 line too long (122 > 120 characters)
+/workspace/backend/front_bp.py:184:1: E302 expected 2 blank lines, found 1
+/workspace/backend/front_bp.py:187:121: E501 line too long (124 > 120 characters)
+/workspace/backend/front_bp.py:207:121: E501 line too long (137 > 120 characters)
+/workspace/backend/front_serve.py:3:1: F401 'flask.current_app' imported but unused
+/workspace/backend/front_serve.py:10:1: E302 expected 2 blank lines, found 1
+/workspace/backend/front_serve.py:16:1: E302 expected 2 blank lines, found 1
+/workspace/backend/front_serve.py:20:1: E302 expected 2 blank lines, found 1
+/workspace/backend/front_serve.py:24:1: E302 expected 2 blank lines, found 1
+/workspace/backend/models.py:6:1: E302 expected 2 blank lines, found 1
+/workspace/backend/models_hooks.py:1:1: F401 'datetime' imported but unused
+/workspace/backend/models_hooks.py:1:10: E401 multiple imports on one line
+/workspace/backend/models_hooks.py:7:1: E302 expected 2 blank lines, found 1
+/workspace/backend/models_hooks.py:13:1: E305 expected 2 blank lines after class or function definition, found 1
+/workspace/backend/models_hooks.py:30:1: E302 expected 2 blank lines, found 1
+/workspace/backend/models_hooks.py:40:1: E305 expected 2 blank lines after class or function definition, found 1
+/workspace/backend/models_hooks.py:43:5: E301 expected 1 blank line, found 0
+/workspace/backend/modules/interactions.py:3:15: E401 multiple imports on one line
+/workspace/backend/modules/interactions.py:5:1: E302 expected 2 blank lines, found 1
+/workspace/backend/modules/interactions.py:36:20: E701 multiple statements on one line (colon)
+/workspace/backend/modules/interactions.py:37:33: E701 multiple statements on one line (colon)
+/workspace/backend/modules/interactions.py:38:20: E701 multiple statements on one line (colon)
+/workspace/backend/modules/interactions.py:39:33: E701 multiple statements on one line (colon)
+/workspace/backend/modules/interactions.py:40:20: E701 multiple statements on one line (colon)
+/workspace/backend/modules/interactions.py:41:33: E701 multiple statements on one line (colon)
+/workspace/backend/modules/interactions.py:48:1: E302 expected 2 blank lines, found 1
+/workspace/backend/modules/interactions.py:52:1: E302 expected 2 blank lines, found 1
+/workspace/backend/modules/interactions.py:55:1: E302 expected 2 blank lines, found 1
+/workspace/backend/modules/interactions.py:67:1: E302 expected 2 blank lines, found 1
+/workspace/backend/modules/interactions.py:117:31: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:117:45: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:119:40: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:123:121: E501 line too long (131 > 120 characters)
+/workspace/backend/modules/interactions.py:153:31: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:153:45: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:153:51: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:155:40: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:155:54: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:159:121: E501 line too long (131 > 120 characters)
+/workspace/backend/modules/interactions.py:172:121: E501 line too long (130 > 120 characters)
+/workspace/backend/modules/interactions.py:188:31: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:188:45: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:188:54: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:190:40: E231 missing whitespace after ','
+/workspace/backend/modules/interactions.py:193:121: E501 line too long (123 > 120 characters)
+/workspace/backend/modules/interactions.py:195:121: E501 line too long (128 > 120 characters)
+/workspace/backend/modules/interactions.py:207:1: E302 expected 2 blank lines, found 1
+/workspace/backend/pooling_guard.py:2:1: F401 'sqlalchemy.exc.OperationalError' imported but unused
+/workspace/backend/pooling_guard.py:4:1: E302 expected 2 blank lines, found 1
+/workspace/backend/remote_compat.py:10:1: E302 expected 2 blank lines, found 1
+/workspace/backend/remote_compat.py:11:18: E701 multiple statements on one line (colon)
+/workspace/backend/remote_compat.py:48:1: E302 expected 2 blank lines, found 1
+/workspace/backend/remote_compat.py:55:1: E302 expected 2 blank lines, found 1
+/workspace/backend/remote_compat.py:58:1: E302 expected 2 blank lines, found 1
+/workspace/backend/remote_compat.py:60:18: E701 multiple statements on one line (colon)
+/workspace/backend/remote_compat.py:60:43: E231 missing whitespace after ':'
+/workspace/backend/remote_compat.py:68:1: E302 expected 2 blank lines, found 1
+/workspace/backend/remote_compat.py:70:18: E701 multiple statements on one line (colon)
+/workspace/backend/remote_compat.py:70:43: E231 missing whitespace after ':'
+/workspace/backend/remote_compat.py:73:16: E701 multiple statements on one line (colon)
+/workspace/backend/remote_compat.py:73:41: E231 missing whitespace after ':'
+/workspace/backend/remote_compat.py:87:1: E302 expected 2 blank lines, found 1
+/workspace/backend/repos/notes_repo.py:3:1: E302 expected 2 blank lines, found 1
+/workspace/backend/repos/notes_repo.py:9:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes.py:11:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes.py:14:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes.py:17:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes.py:33:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes.py:78:121: E501 line too long (125 > 120 characters)
+/workspace/backend/routes.py:82:5: F841 local variable 'exc' is assigned to but never used
+/workspace/backend/routes_api_min.py:2:1: F401 'flask.request' imported but unused
+/workspace/backend/routes_api_min.py:6:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes_api_min.py:10:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes_api_min.py:21:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes_notes.py:2:15: E401 multiple imports on one line
+/workspace/backend/routes_notes.py:7:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes_notes.py:7:12: W291 trailing whitespace
+/workspace/backend/routes_notes.py:10:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes_notes.py:11:43: E231 missing whitespace after ','
+/workspace/backend/routes_notes.py:11:85: E231 missing whitespace after ','
+/workspace/backend/routes_notes.py:12:38: E231 missing whitespace after ','
+/workspace/backend/routes_notes.py:13:36: E231 missing whitespace after ','
+/workspace/backend/routes_notes.py:16:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes_notes.py:25:1: E302 expected 2 blank lines, found 1
+/workspace/backend/routes_notes.py:90:26: E201 whitespace after '('
+/workspace/backend/routes_notes.py:90:118: E202 whitespace before ')'
+/workspace/backend/routes_notes.py:102:9: F841 local variable 'exc' is assigned to but never used
+/workspace/backend/routes_notes.py:159:9: F811 redefinition of unused 'Note' from line 33
+/workspace/backend/safeguards.py:4:1: E302 expected 2 blank lines, found 1
+/workspace/backend/services/notes_service.py:6:1: E302 expected 2 blank lines, found 1
+/workspace/backend/services/notes_service.py:13:1: E302 expected 2 blank lines, found 1
+/workspace/backend/static_routes.py:6:1: E302 expected 2 blank lines, found 1
+/workspace/backend/static_routes.py:10:1: E302 expected 2 blank lines, found 1
+/workspace/backend/static_routes.py:14:1: E302 expected 2 blank lines, found 1
+/workspace/backend/static_routes.py:18:1: E302 expected 2 blank lines, found 1
+/workspace/backend/tasks.py:4:1: E302 expected 2 blank lines, found 1
+/workspace/backend/tasks.py:30:1: E305 expected 2 blank lines after class or function definition, found 1
+/workspace/backend/tasks.py:30:1: E402 module level import not at top of file
+/workspace/backend/tasks.py:32:1: E302 expected 2 blank lines, found 1
+/workspace/backend/tasks.py:33:1: W293 blank line contains whitespace
+/workspace/backend/utils/fingerprint.py:1:10: E401 multiple imports on one line
+/workspace/backend/utils/fingerprint.py:3:1: E302 expected 2 blank lines, found 0
+/workspace/backend/utils/fingerprint.py:4:33: E701 multiple statements on one line (colon)
+/workspace/backend/utils/fingerprint.py:5:47: E231 missing whitespace after ','
+/workspace/backend/utils/fingerprint.py:5:93: E231 missing whitespace after ','
+/workspace/backend/utils/fingerprint.py:5:121: E501 line too long (127 > 120 characters)
+/workspace/backend/utils/fingerprint.py:6:42: E231 missing whitespace after ','
+/workspace/backend/utils/fingerprint.py:6:46: E702 multiple statements on one line (semicolon)
+/workspace/backend/utils/fingerprint.py:6:79: E231 missing whitespace after ','
+/workspace/backend/web.py:4:9: E221 multiple spaces before operator
+/workspace/backend/web.py:9:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:11:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:20:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:23:14: E701 multiple statements on one line (colon)
+/workspace/backend/web.py:26:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:29:14: E701 multiple statements on one line (colon)
+/workspace/backend/web.py:32:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:36:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:40:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:44:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:48:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:52:1: E302 expected 2 blank lines, found 1
+/workspace/backend/web.py:56:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:4:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:16:1: E305 expected 2 blank lines after class or function definition, found 1
+/workspace/backend/webui.py:19:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:23:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:27:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:31:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:36:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:41:1: E302 expected 2 blank lines, found 1
+/workspace/backend/webui.py:64:5: F811 redefinition of unused 'send_from_directory' from line 1

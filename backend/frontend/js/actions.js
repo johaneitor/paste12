@@ -183,6 +183,8 @@
       if (!r.ok) return;
       const list = await r.json();
       const cards = [...document.querySelectorAll('[data-note-id], .note-card, .note, ul li, ol li')];
+      // Evitar llamadas con limit=0 cuando no hay elementos en el DOM
+      if (!cards.length) return;
       let idx = 0;
       for (const el of cards) {
         if (!el.dataset.noteId && list[idx]) {

@@ -1,6 +1,6 @@
 (()=>{ 
   const on = /\bdebug=1\b/.test(location.search) || location.hash==="#debug";
-  if(!on) return;
+  if(!on) return; // no cargar UI si no se solicitó explícitamente
 
   function el(tag,attrs={},html=""){const e=document.createElement(tag);Object.assign(e,attrs);e.innerHTML=html;return e;}
   async function getPageData(){
