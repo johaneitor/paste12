@@ -1,8 +1,18 @@
 from __future__ import annotations
 from datetime import datetime, timezone, date
 import hashlib, os, sqlite3
+from typing import Optional
+
+_ENGINE_SINGLETON: Optional["Engine"] = None
 
 def _engine():
+    """Create (once) a dedicated SQLAlchemy Engine (fallback only).
+    Prefer using Flask's db.engine when available to avoid extra pools.
+    """
+    global _ENGINE_SINGLETON
+    if _ENGINE_SINGLETON is not None:
+        return _ENGINE_SINGLETON
+
     from sqlalchemy import create_engine, event
     from sqlalchemy.engine import Engine
     # Align default with backend factory (sqlite under /tmp)
@@ -18,7 +28,8 @@ def _engine():
     opts = {"pool_pre_ping": True}
     try:
         if url.startswith("postgresql"):
-            opts.update({"pool_size": 10, "max_overflow": 20, "pool_recycle": 280})
+            # Keep this pool small to avoid exhausting server connections
+            opts.update({"pool_size": 3, "max_overflow": 5, "pool_recycle": 280})
         elif url.startswith("sqlite"):
             # Reduce lock errors under light concurrency
             opts.update({"connect_args": {"timeout": 5.0}})
@@ -28,7 +39,8 @@ def _engine():
     eng = create_engine(url, **opts)
 
     # Ensure SQLite pragmas on this engine (idempotent; safe no-op for others)
-    @event.listens_for(Engine, "connect")
+    from sqlalchemy.engine import Engine as _Eng
+    @event.listens_for(_Eng, "connect")
     def _sqlite_pragmas_on_connect(dbapi_conn, _):  # type: ignore[override]
         try:
             if isinstance(dbapi_conn, sqlite3.Connection):
@@ -43,7 +55,20 @@ def _engine():
         except Exception:
             pass
 
+    _ENGINE_SINGLETON = eng
     return eng
+
+def _get_engine():
+    """Return the primary Engine (Flask db.engine) or fallback singleton."""
+    try:
+        # Import here to avoid circular imports at module load time
+        from backend import db  # type: ignore
+        eng = getattr(db, "engine", None)
+        if eng is not None:
+            return eng
+    except Exception:
+        pass
+    return _engine()
 
 def _dialect(conn):
     # SQLAlchemy 2.0 Connection exposes .engine
@@ -100,7 +125,7 @@ def register_into(app):
         fp = _get_fp(request)
         now = _now()
         try:
-            with _engine().begin() as cx:
+            with _get_engine().begin() as cx:
                 # Asegura tablas mínimas si faltan (dialecto-agnóstico)
                 cx.execute(sa.text("""
                     CREATE TABLE IF NOT EXISTS like_log(
@@ -145,7 +170,7 @@ def register_into(app):
         today = date.today().isoformat()
         now = _now()
         try:
-            with _engine().begin() as cx:
+            with _get_engine().begin() as cx:
                 cx.execute(sa.text("""
                     CREATE TABLE IF NOT EXISTS view_log(
                       note_id INTEGER NOT NULL,
@@ -188,7 +213,7 @@ def register_into(app):
         reason = (request.json or {}).get("reason") if request.is_json else (request.form.get("reason") if request.form else None)
         now = _now()
         try:
-            with _engine().begin() as cx:
+            with _get_engine().begin() as cx:
                 cx.execute(sa.text("""
                     CREATE TABLE IF NOT EXISTS report_log(
                       note_id INTEGER NOT NULL,
