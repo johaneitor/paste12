@@ -1,7 +1,11 @@
 from __future__ import annotations
 from datetime import datetime, timezone, date
-import hashlib, os, sqlite3
-from typing import Optional
+import hashlib
+import os
+import random
+import sqlite3
+import time
+from typing import Optional, Callable, Any
 
 _ENGINE_SINGLETON: Optional["Engine"] = None
 
@@ -89,6 +93,44 @@ def _get_fp(request):
         fp = hashlib.sha256(base.encode("utf-8")).hexdigest()[:32]
     return fp
 
+def _is_transient_db_error(exc: Exception) -> bool:
+    """Classify errors that are safe to retry (deadlocks, serialization, busy/locked).
+
+    Works across SQLite and Postgres by matching on common substrings.
+    """
+    msg = (str(getattr(exc, "orig", exc)) or "").lower()
+    return (
+        "deadlock" in msg
+        or "could not serialize" in msg
+        or "serialization failure" in msg
+        or "database is locked" in msg
+        or "lock timeout" in msg
+        or "timeout" in msg and "statement" in msg
+    )
+
+def _retry_on_transient_errors(func: Callable[[], Any], *, attempts: int = 5, base_delay: float = 0.05) -> Any:
+    """Execute callable with exponential backoff on transient DB errors.
+
+    - Retries up to `attempts` times
+    - Backoff: base_delay * 2^(n-1) + jitter
+    """
+    last_exc: Optional[Exception] = None
+    for i in range(1, max(1, attempts) + 1):
+        try:
+            return func()
+        except Exception as exc:  # broad by design; we classify below
+            last_exc = exc
+            if not _is_transient_db_error(exc) or i >= attempts:
+                break
+            # Exponential backoff with jitter (cap small to keep API responsive)
+            sleep_s = min(1.0, base_delay * (2 ** (i - 1)) + random.uniform(0, base_delay))
+            time.sleep(sleep_s)
+            continue
+    if last_exc is not None:
+        raise last_exc
+    # Should never reach here
+    return None
+
 def register_into(app):
     """
     Registra:
@@ -164,48 +206,79 @@ def register_into(app):
                 return jsonify(ok=False, error="db_busy"), 503
             return jsonify(ok=False, error="server_error"), 500
 
-    @app.post("/api/notes/<int:note_id>/view")
-    def view_note(note_id: int):
+    # Rate-limit: one view write per IP+note per minute (plus a coarse global cap)
+    try:
+        from backend import limiter  # late import to avoid circular import issues
+        from flask import request as _rq
+
+        def _rate_key_view():
+            try:
+                return f"{_rq.remote_addr}:{_rq.view_args.get('note_id')}"
+            except Exception:
+                return (_rq.remote_addr or "anon")
+    except Exception:  # pragma: no cover - if limiter not available, continue without per-endpoint limits
+        limiter = None  # type: ignore
+        _rate_key_view = None  # type: ignore
+
+    decorator = (limiter.limit("30 per minute", key_func=_rate_key_view) if limiter else (lambda f: f))
+
+    @decorator
+    def _view_note_impl(note_id: int):
         fp = _get_fp(request)
         today = date.today().isoformat()
         now = _now()
         try:
-            with _get_engine().begin() as cx:
-                cx.execute(sa.text("""
-                    CREATE TABLE IF NOT EXISTS view_log(
-                      note_id INTEGER NOT NULL,
-                      fingerprint VARCHAR(128) NOT NULL,
-                      day TEXT NOT NULL,
-                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                      UNIQUE(note_id, fingerprint, day)
-                    )
-                """))
-                # Asegurar índice único para ON CONFLICT (despliegues legados)
-                try:
+            def _tx_call():
+                with _get_engine().begin() as cx:
+                    # Minimal DDL safety; harmless if table already exists
                     cx.execute(sa.text(
-                        "CREATE UNIQUE INDEX IF NOT EXISTS view_log_note_id_fingerprint_day_key ON view_log(note_id, fingerprint, day)"
+                        """
+                        CREATE TABLE IF NOT EXISTS view_log(
+                          note_id INTEGER NOT NULL,
+                          fingerprint VARCHAR(128) NOT NULL,
+                          day TEXT NOT NULL,
+                          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          UNIQUE(note_id, fingerprint, day)
+                        )
+                        """
                     ))
-                except Exception:
-                    pass
-                # Intento idempotente por (note_id, fp, day)
-                inserted = _insert_ignore(
-                    cx,
-                    "view_log",
-                    ["note_id","fingerprint","day","created_at"],
-                    {"note_id": note_id, "fingerprint": fp, "day": today, "created_at": now},
-                    conflict=["note_id","fingerprint","day"],
-                )
-                if inserted:
-                    cx.execute(sa.text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
-                row = cx.execute(sa.text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
-                if not row:
-                    return jsonify(ok=False, error="not_found"), 404
-                return jsonify(ok=True, id=row.id, views=row.views), 200
+                    # Ensure unique index for Postgres ON CONFLICT acceptance (legacy deployments)
+                    try:
+                        cx.execute(sa.text(
+                            "CREATE UNIQUE INDEX IF NOT EXISTS view_log_note_id_fingerprint_day_key ON view_log(note_id, fingerprint, day)"
+                        ))
+                    except Exception:
+                        pass
+
+                    # Idempotent attempt per (note_id, fp, day)
+                    inserted = _insert_ignore(
+                        cx,
+                        "view_log",
+                        ["note_id", "fingerprint", "day", "created_at"],
+                        {"note_id": note_id, "fingerprint": fp, "day": today, "created_at": now},
+                        conflict=["note_id", "fingerprint", "day"],
+                    )
+                    if inserted:
+                        cx.execute(sa.text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
+                    row = cx.execute(sa.text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
+                    if not row:
+                        # Surface as 404 outside the retry loop
+                        raise LookupError("not_found")
+                    return jsonify(ok=True, id=row.id, views=row.views), 200
+
+            return _retry_on_transient_errors(_tx_call, attempts=5, base_delay=0.05)
+        except LookupError:
+            return jsonify(ok=False, error="not_found"), 404
         except Exception as exc:
-            msg = str(exc).lower()
-            if "database is locked" in msg or "deadlock" in msg or "timeout" in msg:
+            msg = str(getattr(exc, "orig", exc)).lower()
+            if "database is locked" in msg or "deadlock" in msg or "timeout" in msg or "could not serialize" in msg:
                 return jsonify(ok=False, error="db_busy"), 503
             return jsonify(ok=False, error="server_error"), 500
+
+    # Register the actual route (decorate only at registration time)
+    @app.post("/api/notes/<int:note_id>/view")
+    def view_note(note_id: int):
+        return _view_note_impl(note_id)
 
     @app.post("/api/notes/<int:note_id>/report")
     def report_note(note_id: int):
