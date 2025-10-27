@@ -448,9 +448,21 @@ def create_app():
         try:
             from sqlalchemy import text as _text
             with app.app_context():
-                # simple round-trip (sqlite/pg compatible)
+                # Simple round-trip and basic metrics
                 db.session.execute(_text("SELECT 1"))
-            return jsonify(ok=True, db=True), 200
+                metrics = {"ok": True, "db": True}
+                try:
+                    dname = db.engine.dialect.name
+                    metrics["dialect"] = dname
+                    if dname.startswith("postgres"):
+                        used = db.session.execute(_text("SELECT count(*) FROM pg_stat_activity"))
+                        maxc = db.session.execute(_text("SHOW max_connections"))
+                        used_n = int(list(used)[0][0]) if used else None
+                        max_n = int(list(maxc)[0][0]) if maxc else None
+                        metrics.update({"connections": used_n, "max_connections": max_n})
+                except Exception:
+                    pass
+            return jsonify(**metrics), 200
         except Exception as exc:
             return jsonify(ok=False, db=False, error=str(exc)), 500
 
