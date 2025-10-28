@@ -79,7 +79,7 @@ def _insert_ignore(conn, table, cols, values, conflict=None) -> bool:
     return res.rowcount > 0
 
 @api_bp.route("/view", methods=["GET", "POST"])
-@limiter.limit("10 per minute")
+@limiter.limit("60 per minute")
 def view_alias():
     """
     Alias de compatibilidad para clientes antiguos: /api/view?id=<id>

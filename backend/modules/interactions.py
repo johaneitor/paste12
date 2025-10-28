@@ -220,7 +220,7 @@ def register_into(app):
         limiter = None  # type: ignore
         _rate_key_view = None  # type: ignore
 
-    decorator = (limiter.limit("30 per minute", key_func=_rate_key_view) if limiter else (lambda f: f))
+    decorator = (limiter.limit("60 per minute", key_func=_rate_key_view) if limiter else (lambda f: f))
 
     @decorator
     def _view_note_impl(note_id: int):
