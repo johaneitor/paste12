@@ -230,6 +230,18 @@ def register_into(app):
         try:
             def _tx_call():
                 with _get_engine().begin() as cx:
+                    # Optional: per-note advisory lock to serialize view writes on Postgres
+                    # Enabled when P12_ENABLE_ADVISORY_LOCKS=1. We use a short lock_timeout
+                    # so that contention yields a transient error and triggers backoff/retry.
+                    try:
+                        import os as _os
+                        if _dialect(cx).startswith("postgres") and _os.getenv("P12_ENABLE_ADVISORY_LOCKS", "0") == "1":
+                            cx.execute(sa.text("SET LOCAL lock_timeout = '250ms'"))
+                            # Two-key variant to avoid collisions with other app locks
+                            cx.execute(sa.text("SELECT pg_advisory_xact_lock(42, :k)"), {"k": note_id})
+                    except Exception:
+                        # Do not fail the transaction just because advisory lock setup failed
+                        pass
                     # Minimal DDL safety; harmless if table already exists
                     cx.execute(sa.text(
                         """

@@ -79,7 +79,8 @@ def _insert_ignore(conn, table, cols, values, conflict=None) -> bool:
     return res.rowcount > 0
 
 @api_bp.route("/view", methods=["GET", "POST"])
-@limiter.limit("10 per minute")
+# Stricter limit for legacy alias to protect DB under load; real endpoint also limits
+@limiter.limit("5 per minute")
 def view_alias():
     """
     Alias de compatibilidad para clientes antiguos: /api/view?id=<id>
@@ -102,6 +103,15 @@ def view_alias():
     try:
         def _tx():
             with db.engine.begin() as cx:  # type: ignore[attr-defined]
+                # Optional per-note advisory lock (env-gated) on Postgres
+                try:
+                    import os as _os
+                    if (_dialect_name(cx).startswith("postgres") and
+                        _os.getenv("P12_ENABLE_ADVISORY_LOCKS", "0") == "1"):
+                        cx.execute(_text("SET LOCAL lock_timeout = '250ms'"))
+                        cx.execute(_text("SELECT pg_advisory_xact_lock(42, :k)"), {"k": note_id})
+                except Exception:
+                    pass
                 inserted = _insert_ignore(
                     cx,
                     "view_log",
