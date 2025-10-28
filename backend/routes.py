@@ -1,6 +1,9 @@
 from flask import Blueprint, jsonify, request
 from datetime import date, datetime, timezone
 from sqlalchemy import text as _text
+import sqlalchemy as sa
+import random
+import time
 from . import limiter
 from . import db
 
@@ -30,8 +33,53 @@ def _fingerprint(req) -> str:
     except Exception:
         return "anon"
 
+def _is_transient_db_error(exc: Exception) -> bool:
+    msg = (str(getattr(exc, "orig", exc)) or "").lower()
+    return (
+        "deadlock" in msg
+        or "could not serialize" in msg
+        or "serialization failure" in msg
+        or "database is locked" in msg
+        or "lock timeout" in msg
+        or ("timeout" in msg and "statement" in msg)
+    )
+
+def _retry_on_transient_errors(fn, attempts: int = 5, base_delay: float = 0.05):
+    last = None
+    for i in range(1, attempts + 1):
+        try:
+            return fn()
+        except Exception as exc:
+            last = exc
+            if not _is_transient_db_error(exc) or i >= attempts:
+                break
+            time.sleep(min(1.0, base_delay * (2 ** (i - 1)) + random.uniform(0, base_delay)))
+    if last:
+        raise last
+
+def _dialect_name(conn) -> str:
+    try:
+        return getattr(conn, "engine").dialect.name
+    except Exception:
+        return "unknown"
+
+def _insert_ignore(conn, table, cols, values, conflict=None) -> bool:
+    cols_list = ", ".join(cols)
+    ph = ", ".join(f":{c}" for c in cols)
+    dname = _dialect_name(conn)
+    if dname.startswith("sqlite"):
+        sql = f"INSERT OR IGNORE INTO {table}({cols_list}) VALUES({ph})"
+    else:
+        if conflict:
+            conflict_cols = ", ".join(conflict)
+            sql = f"INSERT INTO {table}({cols_list}) VALUES({ph}) ON CONFLICT({conflict_cols}) DO NOTHING"
+        else:
+            sql = f"INSERT INTO {table}({cols_list}) VALUES({ph})"
+    res = conn.execute(sa.text(sql), values)
+    return res.rowcount > 0
+
 @api_bp.route("/view", methods=["GET", "POST"])
-@limiter.limit("60 per hour")
+@limiter.limit("10 per minute")
 def view_alias():
     """
     Alias de compatibilidad para clientes antiguos: /api/view?id=<id>
@@ -52,32 +100,27 @@ def view_alias():
     now = _now()
 
     try:
-        with db.engine.begin() as cx:  # type: ignore[attr-defined]
-            cx.execute(_text(
-                """
-                CREATE TABLE IF NOT EXISTS view_log(
-                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  note_id INTEGER NOT NULL,
-                  fingerprint VARCHAR(128) NOT NULL,
-                  day TEXT NOT NULL,
-                  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                  UNIQUE(note_id, fingerprint, day)
+        def _tx():
+            with db.engine.begin() as cx:  # type: ignore[attr-defined]
+                inserted = _insert_ignore(
+                    cx,
+                    "view_log",
+                    ["note_id", "fingerprint", "day", "created_at"],
+                    {"note_id": note_id, "fingerprint": fp, "day": day, "created_at": now},
+                    conflict=["note_id", "fingerprint", "day"],
                 )
-                """
-            ))
-            inserted = cx.execute(_text(
-                """
-                INSERT OR IGNORE INTO view_log(note_id,fingerprint,day,created_at)
-                VALUES(:note_id,:fp,:day,:now)
-                """
-            ), {"note_id": note_id, "fp": fp, "day": day, "now": now}).rowcount > 0
+                if inserted:
+                    cx.execute(_text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
+                row = cx.execute(_text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
+                if not row:
+                    raise LookupError("not_found")
+                return jsonify(ok=True, id=row.id, views=row.views), 200
 
-            if inserted:
-                cx.execute(_text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
-
-            row = cx.execute(_text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
-            if not row:
-                return jsonify(ok=False, error="not_found"), 404
-            return jsonify(ok=True, id=row.id, views=row.views), 200
+        return _retry_on_transient_errors(_tx, attempts=5, base_delay=0.05)
+    except LookupError:
+        return jsonify(ok=False, error="not_found"), 404
     except Exception as exc:
+        msg = (str(getattr(exc, "orig", exc)) or "").lower()
+        if "database is locked" in msg or "deadlock" in msg or "timeout" in msg or "could not serialize" in msg:
+            return jsonify(ok=False, error="db_busy"), 503
         return jsonify(ok=False, error="server_error"), 500

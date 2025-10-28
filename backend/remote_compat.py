@@ -2,8 +2,15 @@ import os
 from flask import Blueprint, request, jsonify
 from sqlalchemy import create_engine, text
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-engine = create_engine(DATABASE_URL) if DATABASE_URL else None
+# Prefer the primary Flask-SQLAlchemy engine to avoid extra pools
+try:
+    from backend import db  # type: ignore
+    engine = getattr(db, "engine", None)
+except Exception:
+    engine = None
+if engine is None:
+    DATABASE_URL = os.environ.get("DATABASE_URL")
+    engine = create_engine(DATABASE_URL) if DATABASE_URL else None
 
 bp = Blueprint("compat", __name__, url_prefix="/api")
 
