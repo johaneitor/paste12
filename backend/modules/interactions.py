@@ -6,6 +6,7 @@ import random
 import sqlite3
 import time
 from typing import Optional, Callable, Any
+from backend.utils.db import retry_with_backoff, advisory_lock_for
 
 _ENGINE_SINGLETON: Optional["Engine"] = None
 
@@ -250,23 +251,25 @@ def register_into(app):
                     except Exception:
                         pass
 
-                    # Idempotent attempt per (note_id, fp, day)
-                    inserted = _insert_ignore(
-                        cx,
-                        "view_log",
-                        ["note_id", "fingerprint", "day", "created_at"],
-                        {"note_id": note_id, "fingerprint": fp, "day": today, "created_at": now},
-                        conflict=["note_id", "fingerprint", "day"],
-                    )
-                    if inserted:
-                        cx.execute(sa.text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
-                    row = cx.execute(sa.text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
-                    if not row:
-                        # Surface as 404 outside the retry loop
-                        raise LookupError("not_found")
-                    return jsonify(ok=True, id=row.id, views=row.views), 200
+                    # Optional per-note advisory lock (Postgres only; env-gated)
+                    with advisory_lock_for(cx, note_id):
+                        # Idempotent attempt per (note_id, fp, day)
+                        inserted = _insert_ignore(
+                            cx,
+                            "view_log",
+                            ["note_id", "fingerprint", "day", "created_at"],
+                            {"note_id": note_id, "fingerprint": fp, "day": today, "created_at": now},
+                            conflict=["note_id", "fingerprint", "day"],
+                        )
+                        if inserted:
+                            cx.execute(sa.text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
+                        row = cx.execute(sa.text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
+                        if not row:
+                            # Surface as 404 outside the retry loop
+                            raise LookupError("not_found")
+                        return jsonify(ok=True, id=row.id, views=row.views), 200
 
-            return _retry_on_transient_errors(_tx_call, attempts=5, base_delay=0.05)
+            return retry_with_backoff(_tx_call, attempts=5, base_delay=0.05)
         except LookupError:
             return jsonify(ok=False, error="not_found"), 404
         except Exception as exc:

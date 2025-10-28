@@ -31,8 +31,21 @@ def create_app():
     engine_opts = {"pool_pre_ping": True, "pool_recycle": 280}
     try:
         if db_url and db_url.startswith("postgresql"):
-            # Conservative pool for small apps
+            # Conservative pool for small apps (overridable via env)
             engine_opts.update({"pool_size": 10, "max_overflow": 20})
+            # Optional overrides for pool sizing in constrained environments or with PgBouncer
+            try:
+                ps = os.environ.get("P12_DB_POOL_SIZE")
+                if ps and ps.isdigit():
+                    engine_opts["pool_size"] = int(ps)
+                mo = os.environ.get("P12_DB_MAX_OVERFLOW")
+                if mo and mo.isdigit():
+                    engine_opts["max_overflow"] = int(mo)
+                pt = os.environ.get("P12_DB_POOL_TIMEOUT")
+                if pt and pt.isdigit():
+                    engine_opts["pool_timeout"] = int(pt)
+            except Exception:
+                pass
         elif (db_url or "").startswith("sqlite") or (not db_url):
             # Busy timeout helps reduce "database is locked" under write contention
             engine_opts.update({"connect_args": {"timeout": 5.0}})
@@ -125,6 +138,11 @@ def create_app():
                     candidate = "memory://"
             resolved_storage_uri = candidate
         app.config.setdefault("RATELIMIT_STORAGE_URI", resolved_storage_uri)
+        if (resolved_storage_uri or "").startswith("memory://"):
+            try:
+                app.logger.warning("[limiter] Using in-memory storage; configure FLASK_LIMITER_STORAGE_URI (e.g., redis://) for multi-instance deployments")
+            except Exception:
+                pass
     except Exception as _exc:
         # Fallback to in-memory storage if anything goes wrong during resolution
         try:

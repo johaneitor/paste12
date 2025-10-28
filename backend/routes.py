@@ -5,6 +5,7 @@ import sqlalchemy as sa
 import random
 import time
 from . import limiter
+from .utils.db import retry_with_backoff, advisory_lock_for
 from . import db
 
 # Nota: Este blueprint se registra con url_prefix="/api" en create_app().
@@ -102,21 +103,23 @@ def view_alias():
     try:
         def _tx():
             with db.engine.begin() as cx:  # type: ignore[attr-defined]
-                inserted = _insert_ignore(
-                    cx,
-                    "view_log",
-                    ["note_id", "fingerprint", "day", "created_at"],
-                    {"note_id": note_id, "fingerprint": fp, "day": day, "created_at": now},
-                    conflict=["note_id", "fingerprint", "day"],
-                )
-                if inserted:
-                    cx.execute(_text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
-                row = cx.execute(_text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
-                if not row:
-                    raise LookupError("not_found")
-                return jsonify(ok=True, id=row.id, views=row.views), 200
+                # Optional per-note advisory lock (Postgres only; env-gated)
+                with advisory_lock_for(cx, note_id):
+                    inserted = _insert_ignore(
+                        cx,
+                        "view_log",
+                        ["note_id", "fingerprint", "day", "created_at"],
+                        {"note_id": note_id, "fingerprint": fp, "day": day, "created_at": now},
+                        conflict=["note_id", "fingerprint", "day"],
+                    )
+                    if inserted:
+                        cx.execute(_text("UPDATE notes SET views = COALESCE(views,0) + 1 WHERE id=:id"), {"id": note_id})
+                    row = cx.execute(_text("SELECT id, COALESCE(views,0) AS views FROM notes WHERE id=:id"), {"id": note_id}).first()
+                    if not row:
+                        raise LookupError("not_found")
+                    return jsonify(ok=True, id=row.id, views=row.views), 200
 
-        return _retry_on_transient_errors(_tx, attempts=5, base_delay=0.05)
+        return retry_with_backoff(_tx, attempts=5, base_delay=0.05)
     except LookupError:
         return jsonify(ok=False, error="not_found"), 404
     except Exception as exc:
