@@ -31,8 +31,16 @@ def create_app():
     engine_opts = {"pool_pre_ping": True, "pool_recycle": 280}
     try:
         if db_url and db_url.startswith("postgresql"):
-            # Conservative pool for small apps
-            engine_opts.update({"pool_size": 10, "max_overflow": 20})
+            # Conservative pool for small apps; allow env override for production tuning
+            import os as _os
+            pool_size = int(_os.getenv("P12_DB_POOL_SIZE", "8") or "8")
+            max_over = int(_os.getenv("P12_DB_MAX_OVERFLOW", "8") or "8")
+            pool_timeout = float(_os.getenv("P12_DB_POOL_TIMEOUT", "10") or "10")
+            engine_opts.update({
+                "pool_size": pool_size,
+                "max_overflow": max_over,
+                "pool_timeout": pool_timeout,
+            })
         elif (db_url or "").startswith("sqlite") or (not db_url):
             # Busy timeout helps reduce "database is locked" under write contention
             engine_opts.update({"connect_args": {"timeout": 5.0}})
