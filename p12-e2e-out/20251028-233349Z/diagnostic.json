@@ -1,0 +1,13 @@
+{
+  "ts": "20251028-233349Z",
+  "deadlock_count": 0,
+  "avg_tx_duration_sec": null,
+  "connections_used": null,
+  "max_connections": null,
+  "probable_root_causes": [
+    "Concurrent inserts into view_log with ON CONFLICT causing deadlocks under high contention",
+    "Per-request DDL (CREATE TABLE/INDEX IF NOT EXISTS) in view endpoint increases lock pressure",
+    "In-memory rate limiter storage in multi-instance deployments can be ineffective; use Redis",
+    "Long transactions or slow queries competing with insert/update of views counter"
+  ]
+}
