@@ -3,6 +3,7 @@ import hashlib, os
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
 from backend import limiter
+from sqlalchemy import or_
 
 def _now(): 
     return datetime.utcnow()
@@ -58,10 +59,14 @@ def register_api(app):
             wrap = (request.args.get("wrap") or "").lower() in ("1", "true", "yes", "on")
             active_only = (request.args.get("active_only") or "").lower() in ("1", "true", "yes", "on")
 
+            now = _now()
             q = Note.query
             if active_only:
                 try:
-                    q = q.filter((Note.deleted_at.is_(None)))
+                    q = q.filter(
+                        Note.deleted_at.is_(None),
+                        or_(Note.expires_at.is_(None), Note.expires_at > now),
+                    )
                 except Exception:
                     pass
             if before_id:
@@ -69,7 +74,6 @@ def register_api(app):
             q = q.order_by(Note.id.desc())
             rows = q.limit(limit).all()
 
-            now = _now()
             items = [
                 {
                     "id": n.id,

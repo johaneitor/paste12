@@ -6,6 +6,7 @@ import random
 import sqlite3
 import time
 from typing import Optional, Callable, Any
+from backend.db_config import resolve_sqlite_uri
 
 _ENGINE_SINGLETON: Optional["Engine"] = None
 
@@ -19,11 +20,11 @@ def _engine():
 
     from sqlalchemy import create_engine, event
     from sqlalchemy.engine import Engine
-    # Align default with backend factory (sqlite under /tmp)
+    # Align default with backend factory (persistent sqlite path)
     url = (
         os.environ.get("SQLALCHEMY_DATABASE_URI")
         or os.environ.get("DATABASE_URL")
-        or "sqlite:////tmp/paste12.db"
+        or resolve_sqlite_uri()
     )
     # Normalize legacy postgres://
     if url.startswith("postgres://"):

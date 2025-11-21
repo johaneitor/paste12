@@ -79,6 +79,18 @@
     }
   }
 
+  function parseTtl(value){
+    if (value == null) return null;
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const raw = String(value).trim().toLowerCase();
+    if (!raw) return null;
+    const match = raw.match(/^(\d+)\s*([hd])?$/);
+    if (!match) return null;
+    let hours = parseInt(match[1], 10);
+    if (match[2] === 'd') hours *= 24;
+    return Math.max(1, Math.min(720, hours));
+  }
+
   function wireForm(){
     const form = document.getElementById('form') || document.querySelector('form[data-note-form]');
     if(!form) return;
@@ -87,13 +99,14 @@
         const t = (form.querySelector('textarea, [name="text"]')||{}).value?.trim() || '';
         if(!t) return;
         ev.preventDefault();
-        const hoursSel = form.querySelector('[name="duration"], [name="hours"]');
-        let body = { text: t };
-        if (hoursSel) {
-          const v = hoursSel.value || hoursSel.getAttribute('value') || '';
-          body.duration = v; // el backend acepta "12h","1d","7d"
-        }
-        await api('/api/notes', {method:'POST', body: JSON.stringify(body)});
+          const hoursSel = form.querySelector('[name="ttl_hours"], [name="hours"], [name="duration"]');
+          const payload = { text: t };
+          if (hoursSel) {
+            const val = hoursSel.value || hoursSel.getAttribute('value') || hoursSel.dataset?.value || '';
+            const parsed = parseTtl(val);
+            if (parsed) payload.ttl_hours = parsed;
+          }
+          await api('/api/notes', {method:'POST', body: JSON.stringify(payload)});
         (form.querySelector('textarea, [name="text"]')||{}).value = '';
         await loadAndRender(1);
       }catch(e){ console.warn('[hotfix] submit fallo', e); }
