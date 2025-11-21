@@ -16,11 +16,11 @@ COPY . /app
 
 USER app
 
-# Render expects the app to listen on $PORT (default 10000). Use shell form for env expansion.
-EXPOSE 10000
+# Render expects the app to listen on $PORT (Render injects it). Locally we default to 8000.
+EXPOSE 8000
 
 ENV WEB_CONCURRENCY=2 \
     THREADS=4 \
     TIMEOUT=120
 
-CMD ["/bin/sh","-lc","exec gunicorn wsgi:application -w ${WEB_CONCURRENCY} -k gthread --threads ${THREADS} --timeout ${TIMEOUT} -b 0.0.0.0:${PORT:-10000}"]
+CMD ["/bin/sh","-lc","exec gunicorn wsgi:application -w ${WEB_CONCURRENCY} -k gthread --threads ${THREADS} --timeout ${TIMEOUT} -b 0.0.0.0:${PORT:-8000}"]

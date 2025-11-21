@@ -7,9 +7,10 @@ services:
     volumes:
       - ./data:/data
     environment:
+      - PORT=8000
       - FLASK_ENV=production
       - SECRET_KEY=changeme
-      - SQLALCHEMY_DATABASE_URI=sqlite:////data/paste12.db
+      - P12_SQLITE_PATH=/data/paste12.db
 
   # postgres:
   #   image: postgres:16

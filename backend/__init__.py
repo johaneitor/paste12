@@ -10,6 +10,7 @@ import sqlite3
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
+from .db_config import resolve_sqlite_uri
 
 db = SQLAlchemy()
 
@@ -24,7 +25,8 @@ def create_app():
     db_url = os.environ.get("DATABASE_URL") or os.environ.get("SQLALCHEMY_DATABASE_URI")
     if db_url and db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_url or "sqlite:////tmp/paste12.db"
+    default_sqlite_uri = resolve_sqlite_uri()
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url or default_sqlite_uri
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Engine options tuned for SQLite/Postgres; safe defaults for others

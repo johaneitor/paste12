@@ -88,18 +88,8 @@
 
     const menu = panel;
 
-    btn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const v = menu.hasAttribute('hidden');
-      document.querySelectorAll('.p12-menu').forEach(m=>m.setAttribute('hidden',''));
-      if (v) menu.removeAttribute('hidden'); else menu.setAttribute('hidden','');
-    });
-
-    share.addEventListener('click', (e)=>{ e.stopPropagation(); menu.setAttribute('hidden',''); shareNote(id); });
-    report.addEventListener('click', (e)=>{ e.stopPropagation(); menu.setAttribute('hidden',''); reportNote(id, card); });
-
-    // cerrar al clicar fuera
-    document.addEventListener('click', ()=> menu.setAttribute('hidden',''));
+    share.dataset.noteId = id;
+    report.dataset.noteId = id;
   }
 
   function process(container){
@@ -109,6 +99,50 @@
       ensureAnchorId(card, id);
       ensureMenu(card, id);
     });
+  }
+
+  function closeAllMenus(except){
+    document.querySelectorAll('.p12-menu').forEach(menu=>{
+      if (menu !== except) menu.setAttribute('hidden','');
+    });
+  }
+
+  function handleGlobalClick(event){
+    const btn = event.target.closest('.p12-menu-btn');
+    if (btn){
+      const wrap = btn.closest('.p12-menu-wrap');
+      const menu = wrap?.querySelector('.p12-menu');
+      if (!menu) return;
+      const willOpen = menu.hasAttribute('hidden');
+      closeAllMenus(menu);
+      if (willOpen) menu.removeAttribute('hidden'); else menu.setAttribute('hidden','');
+      event.stopPropagation();
+      return;
+    }
+
+    const share = event.target.closest('.p12-share');
+    if (share){
+      const card = share.closest('[data-note], [data-note-id], .note-card, article, li');
+      const id = share.dataset.noteId || getIdFromCard(card);
+      closeAllMenus();
+      if (id) shareNote(id);
+      event.stopPropagation();
+      return;
+    }
+
+    const report = event.target.closest('.p12-report');
+    if (report){
+      const card = report.closest('[data-note], [data-note-id], .note-card, article, li');
+      const id = report.dataset.noteId || getIdFromCard(card);
+      closeAllMenus();
+      if (id) reportNote(id, card);
+      event.stopPropagation();
+      return;
+    }
+
+    if (!event.target.closest('.p12-menu')){
+      closeAllMenus();
+    }
   }
 
   document.addEventListener('DOMContentLoaded', ()=>{
@@ -122,5 +156,6 @@
     const mo = new MutationObserver(()=>process(container));
     mo.observe(container, {childList:true, subtree:true});
     console.log('[actions_menu] listo (⋯ → Compartir/Reportar sin popups)');
+    document.addEventListener('click', handleGlobalClick);
   });
 })();

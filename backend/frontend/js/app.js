@@ -13,6 +13,9 @@
     wrap.textContent = msg;
   }
   const esc = (s)=> (s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  if (!globalThis.p12Escape) {
+    globalThis.p12Escape = esc;
+  }
 
   // Crea el compositor si no lo trajo el HTML
   function ensureComposer() {
@@ -212,22 +215,24 @@
 
 /* === paste12: Unified Pagination (BEGIN) ============================ */
 (() => {
-  const state = { nextUrl: null, loading: false, limit: 20 };
-  const seenIds = new Set();
+    const state = { nextUrl: null, loading: false, limit: 20 };
+    const seenIds = new Set();
 
-  function q(sel, r=document){ return r.querySelector(sel); }
-  function qa(sel, r=document){ return [...r.querySelectorAll(sel)]; }
+    function q(sel, r=document){ return r.querySelector(sel); }
+    function qa(sel, r=document){ return [...r.querySelectorAll(sel)]; }
 
-  function listRoot(){
-    return q('#notes-list') || q('ul.notes') || q('main ul') || q('section ul') || q('ol') || q('ul');
-  }
+    function listRoot(){
+      return q('#notes-list') || q('ul.notes') || q('main ul') || q('section ul') || q('ol') || q('ul');
+    }
 
-  function makeLi(n){
-    const li = document.createElement('li');
-    li.className = 'note';
-    li.dataset.noteId = String(n.id);
-    li.id = 'note-'+n.id;
-    li.innerHTML = `
+    const esc = globalThis.p12Escape || ((s)=> (s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])));
+
+    function makeLi(n){
+      const li = document.createElement('li');
+      li.className = 'note';
+      li.dataset.noteId = String(n.id);
+      li.id = 'note-'+n.id;
+      li.innerHTML = `
       <div class="note-text">${esc(n.text)}</div>
       <div class="note-stats stats">
         <small>#${n.id}&nbsp;ts: ${String(n.timestamp||'').replace('T',' ')}&nbsp;&nbsp;expira: ${String(n.expires_at||'').replace('T',' ')}</small>
