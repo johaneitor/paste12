@@ -3,6 +3,32 @@
 
   const state = { enhanced: new WeakSet(), openPanel: null };
 
+  function closeMenuPanel(panel) {
+    if (!panel || !panel.classList?.contains('show')) return;
+    panel.classList.remove('show');
+    panel.__p12Trigger?.setAttribute('aria-expanded', 'false');
+    if (state.openPanel === panel) state.openPanel = null;
+  }
+
+  function openMenuPanel(panel, trigger) {
+    if (!panel) return;
+    if (state.openPanel && state.openPanel !== panel) closeMenuPanel(state.openPanel);
+    if (trigger) panel.__p12Trigger = trigger;
+    panel.classList.add('show');
+    trigger?.setAttribute('aria-expanded', 'true');
+    state.openPanel = panel;
+  }
+
+  document.addEventListener('click', (event) => {
+    const panels = document.querySelectorAll('.note-menu .panel.show');
+    if (!panels.length) return;
+    panels.forEach((panel) => {
+      const wrapper = panel.closest?.('.note-menu');
+      if (wrapper && wrapper.contains(event.target)) return;
+      closeMenuPanel(panel);
+    });
+  });
+
   function toast(msg) {
     const t = document.createElement('div');
     t.className = 'toast';
@@ -78,16 +104,15 @@
     `;
     const btn = wrap.querySelector('.kebab');
     const panel = wrap.querySelector('.panel');
+    panel.__p12Trigger = btn;
 
     // open/close with focus management
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (state.openPanel && state.openPanel !== panel) state.openPanel.classList.remove('show');
-      panel.classList.toggle('show');
-      const isOpen = panel.classList.contains('show');
-      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      state.openPanel = isOpen ? panel : null;
-      if (isOpen) {
+      if (panel.classList.contains('show')) {
+        closeMenuPanel(panel);
+      } else {
+        openMenuPanel(panel, btn);
         const first = panel.querySelector('.item');
         if (first) first.focus();
       }
@@ -98,18 +123,13 @@
       if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (!panel.classList.contains('show')) {
-          if (state.openPanel && state.openPanel !== panel) state.openPanel.classList.remove('show');
-          panel.classList.add('show');
-          btn.setAttribute('aria-expanded', 'true');
-          state.openPanel = panel;
+          openMenuPanel(panel, btn);
         }
         const first = panel.querySelector('.item');
         if (first) first.focus();
       } else if (e.key === 'Escape') {
         if (panel.classList.contains('show')) {
-          panel.classList.remove('show');
-          btn.setAttribute('aria-expanded', 'false');
-          state.openPanel = null;
+          closeMenuPanel(panel);
         }
       }
     });
@@ -135,9 +155,7 @@
         items[items.length - 1]?.focus();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        panel.classList.remove('show');
-        btn.setAttribute('aria-expanded', 'false');
-        state.openPanel = null;
+        closeMenuPanel(panel);
         btn.focus();
       }
     });
@@ -146,18 +164,9 @@
       const a = e.target.closest?.('[data-act]');
       if (!a) return;
       e.stopPropagation();
-      panel.classList.remove('show');
+      closeMenuPanel(panel);
       if (a.dataset.act === 'share')   doShare(id, noteEl);
       if (a.dataset.act === 'report')  doReport(id);
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!panel.classList.contains('show')) return;
-      if (!wrap.contains(e.target)) {
-        panel.classList.remove('show');
-        btn.setAttribute('aria-expanded', 'false');
-        if (state.openPanel === panel) state.openPanel = null;
-      }
     });
 
     noteEl.insertBefore(wrap, noteEl.firstChild);

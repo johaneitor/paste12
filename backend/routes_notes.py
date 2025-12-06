@@ -1,7 +1,11 @@
 from __future__ import annotations
 import hashlib, os
 from datetime import datetime, timedelta
-from flask import Blueprint, jsonify, request
+from urllib.parse import urlencode
+
+from flask import jsonify, request
+from sqlalchemy import or_
+
 from backend import limiter
 
 def _now(): 
@@ -27,14 +31,12 @@ def register_api(app):
     Registra /api/notes GET y POST si no existen aún. Idempotente.
     Requiere backend.models.Note y backend.db ya inicializados por create_app().
     """
-    already_had_list = _has_rule(app, "/api/notes", "GET") and _has_rule(app, "/api/notes", "POST")
+    needs_get = not _has_rule(app, "/api/notes", "GET")
+    needs_post = not _has_rule(app, "/api/notes", "POST")
 
     from backend import db
     from backend.models import Note  # debe existir el modelo con author_fp
 
-    api_bp = Blueprint("api_notes_capsule", __name__)
-
-    @api_bp.get("/notes")
     @limiter.limit("60/minute")
     def list_notes():
         """
@@ -58,18 +60,26 @@ def register_api(app):
             wrap = (request.args.get("wrap") or "").lower() in ("1", "true", "yes", "on")
             active_only = (request.args.get("active_only") or "").lower() in ("1", "true", "yes", "on")
 
+            passthrough = {}
+            if "wrap" in request.args:
+                passthrough["wrap"] = request.args.get("wrap")
+            if "active_only" in request.args:
+                passthrough["active_only"] = request.args.get("active_only")
+
+            now = _now()
+
             q = Note.query
             if active_only:
                 try:
-                    q = q.filter((Note.deleted_at.is_(None)))
+                    q = q.filter(Note.deleted_at.is_(None))
+                    q = q.filter(or_(Note.expires_at.is_(None), Note.expires_at > now))
                 except Exception:
                     pass
             if before_id:
                 q = q.filter(Note.id < before_id)
-            q = q.order_by(Note.id.desc())
-            rows = q.limit(limit).all()
+            rows = q.order_by(Note.id.desc()).limit(limit + 1).all()
 
-            now = _now()
+            page_rows = rows[:limit]
             items = [
                 {
                     "id": n.id,
@@ -81,20 +91,26 @@ def register_api(app):
                     "reports": n.reports,
                     "author_fp": getattr(n, "author_fp", None),
                 }
-                for n in rows
+                for n in page_rows
             ]
 
-            has_more = len(items) >= limit
-            next_before_id = (items[-1]["id"] if has_more else None)
+            has_more = len(rows) > limit
+            next_before_id = (items[-1]["id"] if has_more and items else None)
 
-            resp_body = ( {"items": items, "has_more": has_more, "next_before_id": next_before_id} if wrap else items )
+            resp_body = ({"items": items, "has_more": has_more, "next_before_id": next_before_id} if wrap else items)
             resp = jsonify(resp_body)
 
             # Link header para la siguiente página
             if has_more and next_before_id:
                 try:
                     base = (request.url_root or "").rstrip("/")
-                    nxt = f"{base}/api/notes?limit={limit}&before_id={next_before_id}"
+                    next_params = dict(passthrough)
+                    next_params["limit"] = str(limit)
+                    next_params["before_id"] = str(next_before_id)
+                    query = urlencode(next_params)
+                    nxt = f"{base}/api/notes"
+                    if query:
+                        nxt = f"{nxt}?{query}"
                     resp.headers["Link"] = f"<{nxt}>; rel=\"next\""
                 except Exception:
                     pass
@@ -102,7 +118,6 @@ def register_api(app):
         except Exception as exc:
             return jsonify(error="server_error"), 500
 
-    @api_bp.post("/notes")
     @limiter.limit("1 per 10 seconds")
     @limiter.limit("500 per day")
     def create_note():
@@ -150,9 +165,21 @@ def register_api(app):
             "author_fp": getattr(n, "author_fp", None),
         }), 201
 
-    # Registrar listado/creación solo si faltaban
-    if not already_had_list:
-        app.register_blueprint(api_bp, url_prefix="/api")
+    if needs_get:
+        app.add_url_rule(
+            "/api/notes",
+            endpoint="api_notes_capsule.list_notes",
+            view_func=list_notes,
+            methods=["GET"],
+        )
+
+    if needs_post:
+        app.add_url_rule(
+            "/api/notes",
+            endpoint="api_notes_capsule.create_note",
+            view_func=create_note,
+            methods=["POST"],
+        )
 
     # Asegurar detalle GET /api/notes/<id> siempre que falte
     if not _has_rule(app, "/api/notes/<int:note_id>", "GET"):
